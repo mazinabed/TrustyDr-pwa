@@ -1,0 +1,479 @@
+[
+  {
+    "name_en": "Cardiology",
+    "lang": {
+      "ar": "أمراض القلب",
+      "ku": "نەخۆشیی دڵ"
+    },
+    "icon": "assets/icons/cardiology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Dermatology",
+    "lang": {
+      "ar": "الأمراض الجلدية",
+      "ku": "نەخۆشیی پووست"
+    },
+    "icon": "assets/icons/dermatology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Pediatrics",
+    "lang": {
+      "ar": "طب الأطفال",
+      "ku": "پزیشکی منداڵان"
+    },
+    "icon": "assets/icons/pediatrics.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Gynecology",
+    "lang": {
+      "ar": "طب النساء والتوليد",
+      "ku": "پزیشکی ژنان و زایمان"
+    },
+    "icon": "assets/icons/gynecology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Dentistry",
+    "lang": {
+      "ar": "طب الأسنان",
+      "ku": "پزیشکی ددان"
+    },
+    "icon": "assets/icons/dentistry.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Neurology",
+    "lang": {
+      "ar": "طب الأعصاب",
+      "ku": "پزیشکی ئەسەب"
+    },
+    "icon": "assets/icons/neurology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Orthopedics",
+    "lang": {
+      "ar": "طب العظام",
+      "ku": "پزیشکی ئێسک و پەیوەند"
+    },
+    "icon": "assets/icons/orthopedics.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Ophthalmology",
+    "lang": {
+      "ar": "طب العيون",
+      "ku": "پزیشکی چاوان"
+    },
+    "icon": "assets/icons/ophthalmology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "ENT (Ear, Nose, Throat)",
+    "lang": {
+      "ar": "الأنف والأذن والحنجرة",
+      "ku": "گوێ، لووت، خوێ"
+    },
+    "icon": "assets/icons/ent_ear_nose_throat.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Psychiatry",
+    "lang": {
+      "ar": "الطب النفسي",
+      "ku": "پزیشکی دەروونی"
+    },
+    "icon": "assets/icons/psychiatry.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Psychology",
+    "lang": {
+      "ar": "علم النفس",
+      "ku": "زانستی دەروون"
+    },
+    "icon": "assets/icons/psychology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Radiology",
+    "lang": {
+      "ar": "الأشعة",
+      "ku": "پزیشکی رەشەبەری"
+    },
+    "icon": "assets/icons/radiology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Oncology",
+    "lang": {
+      "ar": "طب الأورام",
+      "ku": "پزیشکی شێرپەنجە"
+    },
+    "icon": "assets/icons/oncology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Anesthesiology",
+    "lang": {
+      "ar": "التخدير",
+      "ku": "بێ‌هوشکردن"
+    },
+    "icon": "assets/icons/anesthesiology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Endocrinology",
+    "lang": {
+      "ar": "الغدد الصماء",
+      "ku": "پزیشکی غدە"
+    },
+    "icon": "assets/icons/endocrinology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Gastroenterology",
+    "lang": {
+      "ar": "أمراض الجهاز الهضمي",
+      "ku": "نەخۆشیی توێنەر"
+    },
+    "icon": "assets/icons/gastroenterology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Hematology",
+    "lang": {
+      "ar": "أمراض الدم",
+      "ku": "نەخۆشیی خوێن"
+    },
+    "icon": "assets/icons/hematology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Immunology",
+    "lang": {
+      "ar": "علم المناعة",
+      "ku": "زانستی پاراستن"
+    },
+    "icon": "assets/icons/immunology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Nephrology",
+    "lang": {
+      "ar": "أمراض الكلى",
+      "ku": "نەخۆشیی گورچ"
+    },
+    "icon": "assets/icons/nephrology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Pulmonology",
+    "lang": {
+      "ar": "أمراض الرئة",
+      "ku": "نەخۆشیی سەرک"
+    },
+    "icon": "assets/icons/pulmonology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Urology",
+    "lang": {
+      "ar": "المسالك البولية",
+      "ku": "پزیشکی ئدراری"
+    },
+    "icon": "assets/icons/urology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Rheumatology",
+    "lang": {
+      "ar": "أمراض المفاصل والروماتيزم",
+      "ku": "نەخۆشیی پەیوەند"
+    },
+    "icon": "assets/icons/rheumatology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Neonatology",
+    "lang": {
+      "ar": "طب حديثي الولادة",
+      "ku": "پزیشکی منداڵی تازە"
+    },
+    "icon": "assets/icons/neonatology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Plastic Surgery",
+    "lang": {
+      "ar": "الجراحة التجميلية",
+      "ku": "جەراحەی جوانکاری"
+    },
+    "icon": "assets/icons/plastic_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "General Surgery",
+    "lang": {
+      "ar": "الجراحة العامة",
+      "ku": "جەراحەی گشتی"
+    },
+    "icon": "assets/icons/general_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Vascular Surgery",
+    "lang": {
+      "ar": "جراحة الأوعية الدموية",
+      "ku": "جەراحەی خوێنبەرد"
+    },
+    "icon": "assets/icons/vascular_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Neurosurgery",
+    "lang": {
+      "ar": "جراحة الأعصاب",
+      "ku": "جەراحەی ئەسەب"
+    },
+    "icon": "assets/icons/neurosurgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Thoracic Surgery",
+    "lang": {
+      "ar": "جراحة الصدر",
+      "ku": "جەراحەی سەرک"
+    },
+    "icon": "assets/icons/thoracic_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Pediatric Surgery",
+    "lang": {
+      "ar": "جراحة الأطفال",
+      "ku": "جەراحەی منداڵان"
+    },
+    "icon": "assets/icons/pediatric_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Trauma Surgery",
+    "lang": {
+      "ar": "جراحة الطوارئ",
+      "ku": "جەراحەی فەرمی"
+    },
+    "icon": "assets/icons/trauma_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Geriatrics",
+    "lang": {
+      "ar": "طب الشيخوخة",
+      "ku": "پزیشکی پیاوانی گەورە"
+    },
+    "icon": "assets/icons/geriatrics.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Allergy and Immunology",
+    "lang": {
+      "ar": "أمراض الحساسية والمناعة",
+      "ku": "نەخۆشیی هەستیار و پاراستن"
+    },
+    "icon": "assets/icons/allergy_and_immunology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Family Medicine",
+    "lang": {
+      "ar": "طب الأسرة",
+      "ku": "پزیشکی خێزان"
+    },
+    "icon": "assets/icons/family_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Internal Medicine",
+    "lang": {
+      "ar": "الطب الباطني",
+      "ku": "پزیشکی ناوخۆ"
+    },
+    "icon": "assets/icons/internal_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Infectious Diseases",
+    "lang": {
+      "ar": "الأمراض المعدية",
+      "ku": "نەخۆشیی وەبایی"
+    },
+    "icon": "assets/icons/infectious_diseases.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Otolaryngology",
+    "lang": {
+      "ar": "طب الأنف والأذن والحنجرة",
+      "ku": "گوێ و لووت و خوێ"
+    },
+    "icon": "assets/icons/otolaryngology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Ophthalmic Surgery",
+    "lang": {
+      "ar": "جراحة العيون",
+      "ku": "جەراحەی چاوان"
+    },
+    "icon": "assets/icons/ophthalmic_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Dermatologic Surgery",
+    "lang": {
+      "ar": "جراحة الجلد",
+      "ku": "جەراحەی پووست"
+    },
+    "icon": "assets/icons/dermatologic_surgery.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Podiatry",
+    "lang": {
+      "ar": "طب الأقدام",
+      "ku": "پزیشکی پێ"
+    },
+    "icon": "assets/icons/podiatry.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Nutrition",
+    "lang": {
+      "ar": "التغذية",
+      "ku": "خواردن"
+    },
+    "icon": "assets/icons/nutrition.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Sports Medicine",
+    "lang": {
+      "ar": "طب الرياضة",
+      "ku": "پزیشکی وەرزشی"
+    },
+    "icon": "assets/icons/sports_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Emergency Medicine",
+    "lang": {
+      "ar": "طب الطوارئ",
+      "ku": "پزیشکی فەرمی"
+    },
+    "icon": "assets/icons/emergency_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Pathology",
+    "lang": {
+      "ar": "علم الأمراض",
+      "ku": "زانستی نەخۆشی"
+    },
+    "icon": "assets/icons/pathology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Laboratory Medicine",
+    "lang": {
+      "ar": "التحاليل الطبية",
+      "ku": "پزیشکی تاقیکردنەوە"
+    },
+    "icon": "assets/icons/laboratory_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Public Health",
+    "lang": {
+      "ar": "الصحة العامة",
+      "ku": "تەندروستی گشتی"
+    },
+    "icon": "assets/icons/public_health.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Occupational Medicine",
+    "lang": {
+      "ar": "طب العمل",
+      "ku": "پزیشکی کار"
+    },
+    "icon": "assets/icons/occupational_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Palliative Care",
+    "lang": {
+      "ar": "الرعاية التلطيفية",
+      "ku": "چاودێری ئارام"
+    },
+    "icon": "assets/icons/palliative_care.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Rehabilitation Medicine",
+    "lang": {
+      "ar": "طب التأهيل",
+      "ku": "پزیشکی چاککردن"
+    },
+    "icon": "assets/icons/rehabilitation_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Genetics",
+    "lang": {
+      "ar": "الوراثة",
+      "ku": "واراثەت"
+    },
+    "icon": "assets/icons/genetics.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Forensic Medicine",
+    "lang": {
+      "ar": "الطب الشرعي",
+      "ku": "پزیشکی یاسایی"
+    },
+    "icon": "assets/icons/forensic_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Tropical Medicine",
+    "lang": {
+      "ar": "طب المناطق الحارة",
+      "ku": "پزیشکی ناوچە گەرم"
+    },
+    "icon": "assets/icons/tropical_medicine.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Pharmacology",
+    "lang": {
+      "ar": "علم الأدوية",
+      "ku": "زانستی دەرمان"
+    },
+    "icon": "assets/icons/pharmacology.png",
+    "status": "active"
+  },
+  {
+    "name_en": "Microbiology",
+    "lang": {
+      "ar": "علم الأحياء الدقيقة",
+      "ku": "زانستی ژینگەی بچووک"
+    },
+    "icon": "assets/icons/microbiology.png",
+    "status": "active"
+  }
+]

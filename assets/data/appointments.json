@@ -1,0 +1,18 @@
+{
+  "appointments": {
+    "appt_001": {
+      "userId": "user_ali_hassan",
+      "doctorId": "doc_zaid_alamiri",
+      "doctorName": "Zaid Al-Amiri",
+      "specialty": "Cardiology",
+      "appointmentDate": "2025-10-25",
+      "startTime": "09:30",
+      "endTime": "10:00",
+      "status": "booked",
+      "notes": "Bring previous ECG results.",
+      "fee": 35000,
+      "createdAt": "2025-10-19T09:00:00Z",
+      "updatedAt": "2025-10-19T09:00:00Z"
+    }
+  }
+}

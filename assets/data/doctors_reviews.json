@@ -1,0 +1,19 @@
+{
+  "reviews": {
+    "rev_001": {
+      "userId": "user_ali_hassan",
+      "userName": "Ali Hassan",
+      "userPhoto": "https://cdn-icons-png.flaticon.com/512/1946/1946429.png",
+      "comment": "He is ok",
+      "lang": { "en": "He is ok", "ar": "جيد", "ku": "باشە" },
+      "rating": 4,
+      "doctorId": "doc_zaid_alamiri",
+      "verified": true,
+      "status": "approved",
+      "helpfulCount": 2,
+      "source": "patient",
+      "createdAt": "2025-10-19T21:00:20Z",
+      "updatedAt": "2025-10-20T10:00:00Z"
+    }
+  }
+}

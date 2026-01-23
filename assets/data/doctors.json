@@ -1,0 +1,233 @@
+[
+  {
+    "name": "Ahmed Salem",
+    "name_lower": "ahmed salem",
+    "lang": {
+      "ar": "الدكتور أحمد سالم - طبيب جلدية",
+      "ku": "د. ئەحمەد سالم - دەرما"
+    },
+    "specialty": "Dermatology",
+    "specialty_lower": "dermatology",
+    "province": "Baghdad",
+    "province_key": "baghdad",
+    "city": "Mansour",
+    "city_en": "Mansour",
+    "clinicName": "SkinGlow Clinic",
+    "clinicAddress": "5 Al-Mutanabbi St.",
+    "about": "Specialist in skin care, acne, and cosmetic dermatology.",
+    "ratingAverage": 4.7,
+    "ratingCount": 5,
+    "experienceYears": 9,
+    "degree": "MBChB, Dermatology",
+    "consultationFee": 25000,
+    "languages": [
+      "Arabic",
+      "English"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2017/01/06/19/15/dermatologist-1951017_1280.jpg"
+    ],
+    "geo": {
+      "latitude": 33.325,
+      "longitude": 44.395
+    },
+    "slotDurationMinutes": 20,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-01-02T10:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  },
+  {
+    "name": "Sara Al-Hassan",
+    "name_lower": "sara al-hassan",
+    "lang": {
+      "ar": "الدكتورة سارة الحسن - طبيبة أسنان",
+      "ku": "د. سارا الحسەن - پزیشکی ددان"
+    },
+    "specialty": "Dentistry",
+    "specialty_lower": "dentistry",
+    "province": "Erbil",
+    "province_key": "erbil",
+    "city": "Erbil City",
+    "city_en": "Erbil City",
+    "clinicName": "BrightSmile Dental",
+    "clinicAddress": "Korek St., Erbil",
+    "about": "General and cosmetic dentistry with modern equipment.",
+    "ratingAverage": 4.9,
+    "ratingCount": 18,
+    "experienceYears": 11,
+    "degree": "BDS, Dental Surgery",
+    "consultationFee": 30000,
+    "languages": [
+      "Arabic",
+      "English",
+      "Kurdish"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2016/11/29/09/32/dentist-1864921_1280.jpg"
+    ],
+    "geo": {
+      "latitude": 36.191,
+      "longitude": 44.009
+    },
+    "slotDurationMinutes": 30,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-03-05T10:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  },
+  {
+    "name": "Ali Kareem",
+    "name_lower": "ali kareem",
+    "lang": {
+      "ar": "الدكتور علي كريم - طبيب قلب",
+      "ku": "د. عەلی کریم - پزیشکی دڵ"
+    },
+    "specialty": "Cardiology",
+    "specialty_lower": "cardiology",
+    "province": "Basra",
+    "province_key": "basra",
+    "city": "Basra City",
+    "city_en": "Basra City",
+    "clinicName": "Al-Basra Heart Center",
+    "clinicAddress": "Al-Jumhuriya St.",
+    "about": "Consultant cardiologist specializing in heart disease and hypertension.",
+    "ratingAverage": 4.8,
+    "ratingCount": 25,
+    "experienceYears": 15,
+    "degree": "MD, Cardiology",
+    "consultationFee": 40000,
+    "languages": [
+      "Arabic",
+      "English"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2015/09/02/12/45/heart-918453_1280.jpg"
+    ],
+    "geo": {
+      "latitude": 30.495,
+      "longitude": 47.819
+    },
+    "slotDurationMinutes": 25,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-02-10T09:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  },
+  {
+    "name": "Noor Hassan",
+    "name_lower": "noor hassan",
+    "lang": {
+      "ar": "الدكتورة نور حسن - طبيبة نساء وتوليد",
+      "ku": "د. نوور حسەن - ژنان و زایمان"
+    },
+    "specialty": "Gynecology",
+    "specialty_lower": "gynecology",
+    "province": "Kirkuk",
+    "province_key": "kirkuk",
+    "city": "Kirkuk City",
+    "city_en": "Kirkuk City",
+    "clinicName": "Kirkuk Women’s Health",
+    "clinicAddress": "Bab Baghdad Rd.",
+    "about": "Expert in women's reproductive health, pregnancy, and fertility care.",
+    "ratingAverage": 4.6,
+    "ratingCount": 12,
+    "experienceYears": 10,
+    "degree": "MBChB, Obstetrics and Gynecology",
+    "consultationFee": 28000,
+    "languages": [
+      "Arabic",
+      "Kurdish",
+      "English"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2016/03/27/19/39/gynecologist-1280.jpg"
+    ],
+    "geo": {
+      "latitude": 35.468,
+      "longitude": 44.392
+    },
+    "slotDurationMinutes": 30,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-04-01T08:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  },
+  {
+    "name": "Omar Jassim",
+    "name_lower": "omar jassim",
+    "lang": {
+      "ar": "الدكتور عمر جاسم - طبيب أعصاب",
+      "ku": "د. عومەر جاسیم - پزیشکی ئەسەب"
+    },
+    "specialty": "Neurology",
+    "specialty_lower": "neurology",
+    "province": "Sulaymaniyah",
+    "province_key": "sulaymaniyah",
+    "city": "Sulaymaniyah City",
+    "city_en": "Sulaymaniyah City",
+    "clinicName": "NeuroCare Center",
+    "clinicAddress": "Salim Street",
+    "about": "Specialist in brain, spine, and nervous system disorders.",
+    "ratingAverage": 4.5,
+    "ratingCount": 9,
+    "experienceYears": 13,
+    "degree": "MD, Neurology",
+    "consultationFee": 35000,
+    "languages": [
+      "Arabic",
+      "Kurdish",
+      "English"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2016/03/31/20/11/neurologist-1290.jpg"
+    ],
+    "geo": {
+      "latitude": 35.561,
+      "longitude": 45.435
+    },
+    "slotDurationMinutes": 30,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-05-15T10:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  },
+  {
+    "name": "Layla Mahmoud",
+    "name_lower": "layla mahmoud",
+    "lang": {
+      "ar": "الدكتورة ليلى محمود - طبيبة أطفال",
+      "ku": "د. لیلا محەمود - پزیشکی منداڵان"
+    },
+    "specialty": "Pediatrics",
+    "specialty_lower": "pediatrics",
+    "province": "Najaf",
+    "province_key": "najaf",
+    "city": "Najaf City",
+    "city_en": "Najaf City",
+    "clinicName": "Little Hearts Clinic",
+    "clinicAddress": "Al-Kufa Rd.",
+    "about": "Caring pediatrician offering check-ups, vaccinations, and child health advice.",
+    "ratingAverage": 4.8,
+    "ratingCount": 14,
+    "experienceYears": 8,
+    "degree": "MBChB, Pediatrics",
+    "consultationFee": 20000,
+    "languages": [
+      "Arabic",
+      "English"
+    ],
+    "photos": [
+      "https://cdn.pixabay.com/photo/2017/06/06/22/08/pediatrician-2383969_1280.jpg"
+    ],
+    "geo": {
+      "latitude": 31.989,
+      "longitude": 44.331
+    },
+    "slotDurationMinutes": 25,
+    "status": "active",
+    "verified": true,
+    "createdAt": "2025-06-10T11:00:00Z",
+    "updatedAt": "2025-10-20T10:00:00Z"
+  }
+]

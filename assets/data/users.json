@@ -1,0 +1,37 @@
+[
+  {
+    "uid": "user_001",
+    "email": "husamb@gmail.com",
+    "phoneNumber": "+964770123456",
+    "profileImage": "https://cdn-icons-png.flaticon.com/512/3774/3774299.png",
+    "createdAt": "2025-10-10T20:11:14Z"
+  },
+  {
+    "uid": "user_002",
+    "email": "sara.ahmed@example.com",
+    "phoneNumber": "+9647715552222",
+    "profileImage": "https://cdn-icons-png.flaticon.com/512/2922/2922510.png",
+    "createdAt": "2025-09-05T14:22:00Z"
+  },
+  {
+    "uid": "user_003",
+    "email": "ali.hassan@example.com",
+    "phoneNumber": "+9647731239876",
+    "profileImage": "https://cdn-icons-png.flaticon.com/512/4333/4333609.png",
+    "createdAt": "2025-07-18T09:44:30Z"
+  },
+  {
+    "uid": "user_004",
+    "email": "noor.khalid@example.com",
+    "phoneNumber": "+9647721114444",
+    "profileImage": "https://cdn-icons-png.flaticon.com/512/2922/2922656.png",
+    "createdAt": "2025-06-29T16:15:00Z"
+  },
+  {
+    "uid": "user_005",
+    "email": "omar.salem@example.com",
+    "phoneNumber": "+9647753328877",
+    "profileImage": "https://cdn-icons-png.flaticon.com/512/4333/4333601.png",
+    "createdAt": "2025-04-11T11:25:00Z"
+  }
+]

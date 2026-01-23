@@ -1,0 +1,42 @@
+[
+  {
+    "doctorId": "ahmed_salem",
+    "userId": "user_002",
+    "userName": "Sara Ahmed",
+    "rating": 5,
+    "comment": "Very professional and kind.",
+    "createdAt": "2025-10-19T21:30:10Z"
+  },
+  {
+    "doctorId": "sara_al-hassan",
+    "userId": "user_003",
+    "userName": "Ali Hassan",
+    "rating": 4,
+    "comment": "Excellent dental service, highly recommended!",
+    "createdAt": "2025-09-25T13:15:00Z"
+  },
+  {
+    "doctorId": "ali_kareem",
+    "userId": "user_001",
+    "userName": "Husam B.",
+    "rating": 5,
+    "comment": "Great cardiologist, took time to explain everything.",
+    "createdAt": "2025-08-12T10:10:00Z"
+  },
+  {
+    "doctorId": "noor_hassan",
+    "userId": "user_004",
+    "userName": "Noor Khalid",
+    "rating": 4,
+    "comment": "Friendly and knowledgeable. Highly recommended.",
+    "createdAt": "2025-07-03T09:45:00Z"
+  },
+  {
+    "doctorId": "layla_mahmoud",
+    "userId": "user_005",
+    "userName": "Omar Salem",
+    "rating": 5,
+    "comment": "Great with kids, very patient and caring.",
+    "createdAt": "2025-06-20T15:30:00Z"
+  }
+]

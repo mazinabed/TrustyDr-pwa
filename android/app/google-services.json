@@ -1,0 +1,198 @@
+{
+  "project_info": {
+    "project_number": "423685278731",
+    "project_id": "doctorapp-7e8b3",
+    "storage_bucket": "doctorapp-7e8b3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423685278731:android:a7adf33c4c7d2c272e8b0e",
+        "android_client_info": {
+          "package_name": "com.example.doctor_portal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyQqsOQNHRdQASw2zYC-8uGx2jLpFkbdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423685278731-3l40k72dug2kkucn5l47io7nlkldf9t5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doctorPortal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423685278731:android:5901e1d036a552172e8b0e",
+        "android_client_info": {
+          "package_name": "com.example.doctor_pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyQqsOQNHRdQASw2zYC-8uGx2jLpFkbdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423685278731-3l40k72dug2kkucn5l47io7nlkldf9t5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doctorPortal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423685278731:android:20f05733c89393eb2e8b0e",
+        "android_client_info": {
+          "package_name": "com.example.mydoctor_admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyQqsOQNHRdQASw2zYC-8uGx2jLpFkbdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423685278731-3l40k72dug2kkucn5l47io7nlkldf9t5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doctorPortal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423685278731:android:990247b984742c982e8b0e",
+        "android_client_info": {
+          "package_name": "com.trustydr.patient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyQqsOQNHRdQASw2zYC-8uGx2jLpFkbdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423685278731-3l40k72dug2kkucn5l47io7nlkldf9t5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doctorPortal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423685278731:android:c7e0986b5308e2d82e8b0e",
+        "android_client_info": {
+          "package_name": "com.yourcompany.doctorappointment"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "423685278731-qjq4g1bqgkb5trb6i19ld06d9l10o9g7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yourcompany.doctorappointment",
+            "certificate_hash": "06e618e87cd483a871b4d5e6c9fc0682301c521d"
+          }
+        },
+        {
+          "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDyQqsOQNHRdQASw2zYC-8uGx2jLpFkbdw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "423685278731-0255e4pde49370m7mkr6g1nrjlaijjr6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "423685278731-3l40k72dug2kkucn5l47io7nlkldf9t5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doctorPortal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

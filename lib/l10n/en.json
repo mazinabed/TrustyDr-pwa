@@ -1,0 +1,417 @@
+{
+  "app_name": "TrustyDr",
+
+  "select_location": "Select Location",
+  "province": "Province",
+  "city": "City",
+  "select_city": "Select City",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "continue": "Continue",
+  "detect_location": "Detect my location",
+  "change_language": "Language",
+  "login_continue_apple": "Continue with Apple",
+"login_privacy_note": "We use sign-in only to secure your account. We do not use your information for advertising.",
+"auth_cancelled": "Sign in was cancelled.",
+"auth_failed_try_again": "Sign in failed. Please try again.",
+"auth_account_exists_use_other_method": "This account already exists with another sign-in method.",
+"auth_apple_unavailable": "Apple Sign-In is currently unavailable.",
+
+
+  "find_doctor": "Find your doctor by specialty",
+  "view_all": "View All",
+  "not_registered": "Not registered",
+
+
+  "book_appointment": "Book Appointment",
+  "book_now": "Book now",
+  "book_appointment_hint": "Book an appointment with this doctor",
+    "search_hint": "Search for doctors & labs in {}",
+  "recent_searches": "Your recent searches",
+  "show_more": "Show more",
+  "trending_around_you": "Trending around you",
+  "no_results_for": "No results found for \"{}\"",
+  "search_error": "Something went wrong. Please try again.",
+
+  "login_required": "Login Required",
+  "please_login": "Please sign in to book an appointment.",
+  "login": "Login",
+  "logout": "Logout",
+  "login_title": "Welcome back",
+  "login_subtitle": "Login to your account",
+  "login_button": "Go to Login",
+  "login_to_book": "Login to book",
+  "login_continue_google": "Continue with Google",
+  "login_continue_facebook": "Continue with Facebook",
+
+  "otp_title": "Verification",
+  "otp_description": "Enter the 6-digit OTP sent to {phone}",
+  "otp_verify": "Verify",
+  "otp_sent": "OTP sent to {phone}",
+  "otp_info": "We'll send OTP for verification",
+  "otp_invalid_length": "Please enter the complete 6-digit OTP",
+  "otp_invalid": "Invalid OTP",
+  "otp_send_failed": "OTP sending failed",
+  "otp_verification_missing": "Verification ID missing. Try again.",
+  "otp_didnt_receive": "Didn't receive the code?",
+  "otp_resend": "Resend OTP",
+
+  "registration_title": "Create Account",
+  "registration_subtitle": "Register as a new user",
+  "registration_button": "Register",
+  "registration_success": "Registration successful!",
+  "registration_failed_no_user": "Registration failed. No user was created.",
+  "registration_email_in_use": "This email is already registered.",
+  "registration_invalid_email": "Please enter a valid email address.",
+  "registration_weak_password": "Your password is too weak.",
+  "registration_have_account": "Already have an account? Login",
+
+  "full_name": "Full Name",
+  "enter_full_name": "Enter your full name",
+  "full_name_required": "Please enter your name",
+
+  "email_address": "Email Address",
+  "email_required": "Enter your email",
+  "email_invalid": "Invalid email format",
+
+  "phone_optional": "Phone Number (optional)",
+
+  "password": "Password",
+  "password_required": "Enter a password",
+  "password_min_length": "Password must be at least 6 characters",
+  "passwords_not_match": "Passwords do not match",
+
+  "search_doctors": "Search doctors by name",
+  "search_doctor": "Search for a doctor",
+  "search_doctor_or_clinic": "Search for doctors or clinics…",
+  "search_placeholder": "Search for a doctor…",
+
+  "specialties": "Specialties",
+  "all_specialties": "All Specialties",
+  "choose_specialty": "Choose a specialty",
+"select_city_first": "Select a city first to see doctors.",
+
+
+  "doctors": "Doctors",
+  "all_doctors": "All Doctors",
+  "no_doctors_found": "No doctors found",
+"no_doctors_yet": "No doctors available yet",
+
+  "experience_years": "{years} years experience",
+  "years_experience": "years of experience",
+  "experience": "Experience",
+  "experience_not_available": "Experience not available",
+
+  "rating": "Rating",
+  "reviews": "reviews",
+
+  "verified": "Verified",
+  "verified_label": "Verified",
+  "unverified_label": "Not registered yet",
+
+  "clinic": "Clinic",
+  "clinic_address": "Clinic Address",
+  "no_address_available": "No clinic address available",
+  "address_not_available": "Address not available. Please use map location.",
+
+  "about_doctor": "About Doctor",
+  "no_description_available": "No description available",
+
+  "languages": "Languages",
+  "no_languages_listed": "No languages listed",
+
+  "call_now": "Call Now",
+  "no_contact_info": "No contact information",
+  "directions": "Directions",
+
+  "loading": "Loading…",
+  "no_results": "No results found",
+  "no_results_area": "No doctors available in this area",
+  "no_results_search": "No doctors matched your search",
+
+  "error_generic": "Something went wrong. Please try again.",
+  "error_user_not_logged_in": "User not logged in",
+  "error_with_message": "Error: {message}",
+
+  "guest_restriction_title": "Sign in to continue",
+  "guest_restriction_body": "Guests can browse doctors, but you need to sign in to book an appointment.",
+  "guest_browsing_notice": "You are currently browsing as a guest.",
+  "ok": "OK",
+
+  "province_city_required": "Please select province and city",
+  "clinics_loaded_in_city": "Loaded clinics in {city}",
+
+  "google_clinics_title": "Clinics in this province",
+  "from_google": "From Google",
+  "info_only": "Info only",
+  "clinic_info_only": "Info only · Not verified",
+  "clinic_from_google": "From Google",
+  "clinic_details": "Clinic details",
+  "claim_or_register": "Claim or register this clinic",
+  "are_you_owner": "Are you the owner or a doctor here?",
+  "claim_description": "Register to manage this clinic and receive bookings.",
+  "clinic_owner_title": "Are you the doctor or clinic owner?",
+  "clinic_owner_subtitle": "This clinic is listed for patient awareness only.",
+  "clinic_benefit_1": "Appear as a verified clinic",
+  "clinic_benefit_2": "Receive appointment requests",
+  "clinic_benefit_3": "Manage your and working hours",
+  "clinic_benefit_4": "Build trust with patients nearby",
+  "claim_disclaimer": "Takes only a few minutes. Verification required.",
+
+  "pharmacy": "Pharmacy",
+  "pharmacies_coming_soon": "Pharmacies list coming soon",
+  "labs": "Labs",
+  "labs_coming_soon": "Labs list coming soon",
+  "messages": "Messages",
+  "messages_coming_soon": "Messages coming soon",
+
+  "my_appointments": "My Appointments",
+  "my_doctors": "My Doctors",
+
+  "home.noUpcomingVisits": "No upcoming visits",
+
+  "status.pending": "Pending",
+  "status.confirmed": "Confirmed",
+  "status.completed": "Completed",
+  "status.canceled": "Canceled",
+  "status.label": "Status",
+
+  "upcoming": "Upcoming",
+  "past": "Past",
+  "canceled": "Canceled",
+  "upcoming_visit": "Upcoming Visit",
+
+  "appointments_error_loading": "Error loading appointments: {error}",
+
+  "cancel_appointment": "Cancel Appointment",
+  "cancel_appointment_confirm": "Are you sure you want to cancel this appointment?",
+  "appointment_canceled": "Appointment canceled.",
+
+  "doctor_prefix": "Dr.",
+  "write_review": "Write Review",
+  "reschedule": "Reschedule",
+  "location": "Location",
+
+  "login_required_title": "Login Required",
+  "login_required_body": "Please sign in to access this feature.",
+  "go_to_login": "Go to Login",
+
+  "my_profile": "My Profile",
+  "edit": "Edit",
+
+  "user": "User",
+  "signed_in": "Signed in",
+
+  "my_account": "My Account",
+  "recommendations": "Recommendations",
+  "phone": "Phone",
+
+
+  "about_app": "About App",
+  "about_us": "About Us",
+  "help_support": "Help & Support",
+
+  "not_logged_in": "You are not logged in",
+  "not_logged_in_body": "Please sign in to manage your account, appointments, and favorites.",
+
+  "nav_home": "Home",
+  "nav_doctors": "Doctors",
+  "nav_appointments": "Appointments",
+  "nav_profile": "Profile",
+
+  "index_needed_title": "Index needed",
+  "index_needed_body": "This query needs a Firestore index. Tap the link in the error to create it.",
+
+  "listed_specialty": "Listed specialty",
+  "appointment_not_found": "Appointment not found.",
+
+  "notes": "Notes",
+  "address": "Address",
+  "view_details": "View details",
+
+  "greeting_morning": "Good morning",
+  "greeting_afternoon": "Good afternoon",
+  "greeting_evening": "Good evening",
+
+  "patient_info_required": "Please enter patient name and relationship.",
+  "self": "Self",
+  "someone_else": "Someone else",
+  "patient_full_name": "Patient full name",
+  "relationship": "Relationship",
+  "reason_for_visit_optional": "Reason for visit (optional)",
+  "notes_optional": "Notes (optional)",
+
+  "confirm_booking": "Confirm Booking",
+  "confirm_booking_message": "Do you want to book\n{date} at {slot}\nwith Dr. {doctor}?",
+  "appointment_booked_message": "✅ Booked {date} • {slot}",
+
+  "select_time": "Select a Time",
+  "no_available_slots": "No available slots.",
+  "slot_full": "FULL",
+  "slot_full_pick_another": "That slot just became FULL. Pick another.",
+
+  "appointment_conflict_day": "You already have an active appointment for that day.",
+  "appointment_conflict_doctor_day": "You already have an active appointment with this doctor on this day.",
+
+  "confirm_reschedule": "Confirm Reschedule",
+  "reschedule_confirm_message": "Move to {date} • {slot} ?",
+  "appointment_rescheduled": "Appointment rescheduled.",
+  "no_clinic_hours_day": "No clinic hours for that day.",
+
+  "write_review_hint": "Write your review here...",
+  "your_rating": "Your Rating:",
+  "submit_review": "Submit Review",
+  "review_missing_fields": "Please add a rating and review text",
+  "review_submitted_success": "Review submitted successfully!",
+  "call_clinic": "Call clinic",
+"phone_not_available": "Phone number not available",
+
+ "card_waiting_title": "No more waiting all day",
+  "card_waiting_subtitle": "Book your appointment and arrive exactly on time — no lines, no stress.",
+
+  "card_schedule_title": "Clear and organized appointments",
+  "card_schedule_subtitle": "Know your visit time in advance and plan your day with confidence using TrustyDr.",
+
+  "card_doctor_title": "Are you a doctor?",
+  "card_doctor_subtitle": "With TrustyDr, see patients on your schedule — no crowding or long waits.",
+  "learn_more": "Learn more",
+    "sign_in_message": "Please sign in to continue",
+"no_reviews_yet": "No reviews yet",
+"patient_reviews": "Patient Reviews",
+  "consent_title": "Before You Continue",
+  "consent_description": "Please review and accept the following documents to continue using TrustyDr.",
+  "consent_checkbox": "I have read and agree to the Terms of Service, Privacy Policy, and Legal Disclaimer.",
+  "consent_continue": "Agree & Continue",
+
+  "visit_reason": {
+    "checkup": "Check-up",
+    "followup": "Follow-up",
+    "pain": "Pain",
+    "refill": "Prescription refill",
+    "consultation": "Consultation",
+    "other": "Other"
+  },
+
+  "profile": {
+    "fillAllFields": "Please fill all fields",
+    "updatedSuccessfully": "Profile updated successfully",
+    "errorUpdating": "Error updating profile",
+    "chooseOption": "Choose Option",
+    "camera": "Camera",
+    "uploadFromGallery": "Upload from Gallery",
+    "removePhoto": "Remove photo",
+    "save": "Save",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "email": "Email",
+    "password": "Password"
+  },
+
+  "auth": {
+    "enterPhoneNumber": "Please enter a phone number",
+    "otpSendingFailed": "OTP sending failed",
+    "otpSentTo": "OTP sent to",
+    "enterCompleteOtp": "Please enter complete 6-digit OTP",
+    "verificationIdMissing": "Verification ID missing. Try again.",
+    "invalidOtp": "Invalid OTP",
+    "phoneUpdatedSuccessfully": "Phone number updated successfully",
+    "errorUpdatingPhone": "Error updating phone",
+    "changePhone": "Change Phone",
+    "enterNewPhoneNumber": "Enter new phone number",
+    "phoneNumber": "Phone Number",
+    "sendOtp": "Send OTP",
+    "enterOtpSentTo": "Enter OTP sent to",
+    "verifyOtp": "Verify OTP",
+    "didntReceiveOtp": "Didn't receive OTP?",
+    "resend": "Resend",
+    "sign_in_message": "Please sign in to continue"
+  },
+  "about": {
+    "title": "About Us",
+    "p1": "TrustyDr helps patients find trusted and verified doctors. Patients can view doctor profiles, read reviews from other patients, and choose doctors with confidence based on real experiences.",
+    "p2": "In Iraq, finding a doctor often requires searching for phone numbers and making multiple calls, sometimes only to find that the doctor is unavailable or traveling. TrustyDr solves this by providing clear doctor information and real-time availability in one place.",
+    "p3": "Patients no longer need to arrive early and wait for hours at clinics. With TrustyDr, you can view a doctor’s schedule, book a specific time, and arrive when it’s your turn — saving time and reducing unnecessary waiting.",
+     "p4": "TrustyDr allows patients to add their medical conditions, history, and important health information. Doctors can review this information before the visit, helping them understand the patient better and provide more accurate care."
+  },
+   "footer": {
+    "rights": "© 2026 TrustyDr. All rights reserved.",
+    "website": "www.trustydr.com"
+  },
+   "help": {
+    "title": "Help & Support",
+    "p1": "If you need help using TrustyDr or have questions about appointments, doctors, or features, our support team is here to assist you.",
+    "p2": "You can contact us anytime by email at support@trustydr.com and our team will respond as soon as possible.",
+    "p3": "We value your feedback. If you have suggestions or ideas to improve TrustyDr, please share them with us. Your input helps us make the app better for everyone."
+  },
+   "privacy": {
+    "title": "Privacy Policy",
+    "p1": "TrustyDr respects your privacy and is committed to protecting your personal and medical information. This policy explains how we collect, use, and protect your data.",
+    "p2": "We may collect information such as your name, contact details, medical history, and appointment data to provide better healthcare services and improve your experience.",
+    "p3": "Your medical information is shared only with the doctors you choose and only for the purpose of providing medical care. We do not sell or share your data with third parties for marketing.",
+    "p4": "TrustyDr uses technical and organizational security measures to protect your data from unauthorized access, loss, or misuse.",
+    "p5": "If you have any questions or concerns about your privacy, you can contact us at support@trustydr.com."
+  },
+   "terms": {
+    "title": "Terms & Conditions",
+    "p1": "By using TrustyDr, you agree to comply with these Terms and Conditions. Please read them carefully before using the application.",
+    "p2": "Users are responsible for providing accurate and up-to-date personal and medical information. TrustyDr is not responsible for issues caused by incorrect information.",
+    "p3": "TrustyDr is a platform that helps patients connect with doctors. It does not provide medical advice, diagnosis, or treatment directly.",
+    "p4": "Appointment availability and schedules are managed by doctors. TrustyDr is not responsible for cancellations, delays, or changes made by healthcare providers.",
+    "p5": "TrustyDr reserves the right to update these Terms and Conditions at any time. Continued use of the app means you accept the updated terms."
+  },
+  "legal": {
+    "title": "Legal & Medical Disclaimer",
+    "p1": "TrustyDr is a technology platform designed to help patients find and connect with independent healthcare providers. TrustyDr does not provide medical care or healthcare services.",
+    "p2": "All doctors listed on TrustyDr are independent professionals. Medical advice, diagnosis, and treatment are provided solely by the doctor, not by TrustyDr.",
+    "p3": "TrustyDr is not intended for medical emergencies. In case of an emergency, please contact local emergency services or visit the nearest hospital immediately.",
+    "p4": "TrustyDr does not guarantee medical outcomes, treatment results, or the availability of any healthcare provider at a specific time.",
+    "p5": "By using TrustyDr, you agree that TrustyDr is not liable for medical decisions, treatments, or outcomes provided by healthcare professionals."
+  },
+   "faq": {
+    "title": "Frequently Asked Questions",
+    "q1": "How does TrustyDr work?",
+    "a1": "TrustyDr helps patients find doctors, view their availability, and book appointments easily without the need for phone calls.",
+    "q2": "Are doctors on TrustyDr verified?",
+    "a2": "Doctors on TrustyDr provide professional information and are reviewed by patients. Verification processes may vary by location and specialty.",
+    "q3": "Can I choose a specific appointment time?",
+    "a3": "Yes, you can view available schedules and book a specific time that works best for you.",
+    "q4": "Is TrustyDr free to use?",
+    "a4": "TrustyDr is free for patients to browse doctors and book appointments. Some services may be managed directly by doctors.",
+    "q5": "Is my medical information safe?",
+    "a5": "Yes. TrustyDr takes data privacy seriously and shares your medical information only with doctors you choose."
+  },
+   "contact": {
+    "title": "Contact Us",
+    "p1": "If you need assistance or have questions about TrustyDr, you can contact us by email at support@trustydr.com.",
+    "p2": "Our support team is available to help you with technical issues, account questions, or general inquiries.",
+    "p3": "We welcome your feedback and suggestions. Your input helps us improve TrustyDr and provide a better experience for everyone."
+  },
+    "home": {
+    "notifications_title": "Notifications",
+    "no_notifications_title": "You’re all set",
+    "no_notifications_message": "Find a trusted doctor today and book your appointment in minutes."
+  },
+
+  "DetailTitle": "Appointment",
+  "DetailPatient": "Patient",
+  "DetailFor": "For",
+  "DetailSelf": "Self",
+  "DetailSomeoneElse": "Someone else",
+  "DetailName": "Name",
+  "DetailRelationship": "Relationship",
+  "DetailPayment": "Payment",
+  "DetailAddress": "Address",
+  "DetailNotFound": "Appointment not found",
+
+  "Pending": "Pending",
+  "Confirmed": "Confirmed",
+  "Completed": "Completed",
+  "Canceled": "Canceled",
+  "Paid": "Paid",
+  "Unpaid": "Unpaid",
+
+  "benefit_verified": "Verified clinic profile",
+  "benefit_bookings": "Receive and manage appointments",
+  "benefit_manage_profile": "Edit clinic information anytime",
+  "benefit_trust": "Build trust with patients"
+}

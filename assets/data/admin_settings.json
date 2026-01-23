@@ -1,0 +1,11 @@
+{
+  "admin_settings": {
+    "settings_main": {
+      "version": "1.0.0",
+      "maintenanceMode": false,
+      "contactEmail": "support@doctorapp.com",
+      "allowedLanguages": ["en", "ar", "ku"],
+      "featuredDoctors": ["doc_zaid_alamiri", "doc_ahmed_salem"]
+    }
+  }
+}

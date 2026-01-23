@@ -1,0 +1,84 @@
+{
+  "schedules": [
+    {
+      "doctorId": "doctor_001",
+      "dayOfWeek": 1,
+      "startTime": "09:00",
+      "endTime": "13:00",
+      "slotDurationMinutes": 30
+    },
+    {
+      "doctorId": "doctor_001",
+      "dayOfWeek": 3,
+      "startTime": "16:00",
+      "endTime": "20:00",
+      "slotDurationMinutes": 30
+    },
+    {
+      "doctorId": "doctor_002",
+      "dayOfWeek": 2,
+      "startTime": "10:00",
+      "endTime": "18:00",
+      "slotDurationMinutes": 20
+    },
+    {
+      "doctorId": "doctor_002",
+      "dayOfWeek": 5,
+      "startTime": "11:00",
+      "endTime": "15:00",
+      "slotDurationMinutes": 20
+    },
+    {
+      "doctorId": "doctor_003",
+      "dayOfWeek": 1,
+      "startTime": "14:00",
+      "endTime": "21:00",
+      "slotDurationMinutes": 30
+    },
+    {
+      "doctorId": "doctor_003",
+      "dayOfWeek": 4,
+      "startTime": "08:00",
+      "endTime": "12:00",
+      "slotDurationMinutes": 30
+    }
+  ],
+  "appointments": [
+    {
+      "doctorId": "doctor_001",
+      "patientId": "patient_A",
+      "date": "2025-10-20",
+      "time": "09:00 AM",
+      "status": "Confirmed",
+      "notes": "Follow-up checkup",
+      "timestamp": "2025-10-18T15:00:00Z"
+    },
+    {
+      "doctorId": "doctor_001",
+      "patientId": "patient_B",
+      "date": "2025-10-20",
+      "time": "10:30 AM",
+      "status": "Confirmed",
+      "notes": "New consultation",
+      "timestamp": "2025-10-18T15:05:00Z"
+    },
+    {
+      "doctorId": "doctor_002",
+      "patientId": "patient_C",
+      "date": "2025-10-21",
+      "time": "02:00 PM",
+      "status": "Confirmed",
+      "notes": "Vaccination",
+      "timestamp": "2025-10-18T15:10:00Z"
+    },
+    {
+      "doctorId": "doctor_003",
+      "patientId": "patient_D",
+      "date": "2025-10-23",
+      "time": "11:30 AM",
+      "status": "Confirmed",
+      "notes": "Skin irritation",
+      "timestamp": "2025-10-18T15:15:00Z"
+    }
+  ]
+}

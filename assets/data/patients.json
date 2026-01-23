@@ -1,0 +1,17 @@
+{
+  "patients": {
+    "user_ali_hassan": {
+      "uid": "user_ali_hassan",
+      "name": "Ali Hassan",
+      "email": "ali@example.com",
+      "phone": "07701234567",
+      "photo": "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
+      "gender": "male",
+      "dob": "1990-05-14",
+      "address": "Basra, Hayaniyah",
+      "lang": "ar",
+      "isVerified": true,
+      "createdAt": "2025-01-10T08:00:00Z"
+    }
+  }
+}

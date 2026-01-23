@@ -1,0 +1,52 @@
+{
+  "schedules": [
+    {
+      "doctorId": "doc_zaid_alamiri",
+      "province": "Basra",
+      "city": "Hayaniyah",
+      "dayOfWeek": 1,
+      "startTime": "09:00",
+      "endTime": "13:00",
+      "status": "clinic",
+      "slotDurationMinutes": 30,
+      "createdAt": "2025-01-01T08:00:00Z",
+      "updatedAt": "2025-10-20T10:00:00Z"
+    },
+    {
+      "doctorId": "doc_zaid_alamiri",
+      "province": "Basra",
+      "city": "Hayaniyah",
+      "dayOfWeek": 3,
+      "startTime": "16:00",
+      "endTime": "20:00",
+      "status": "clinic",
+      "slotDurationMinutes": 30,
+      "createdAt": "2025-01-01T08:00:00Z",
+      "updatedAt": "2025-10-20T10:00:00Z"
+    },
+    {
+      "doctorId": "doc_ahmed_salem",
+      "province": "Baghdad",
+      "city": "Mansour",
+      "dayOfWeek": 2,
+      "startTime": "10:00",
+      "endTime": "14:00",
+      "status": "clinic",
+      "slotDurationMinutes": 20,
+      "createdAt": "2025-01-02T10:00:00Z",
+      "updatedAt": "2025-10-20T10:00:00Z"
+    },
+    {
+      "doctorId": "doc_ahmed_salem",
+      "province": "Baghdad",
+      "city": "Mansour",
+      "dayOfWeek": 5,
+      "startTime": "17:00",
+      "endTime": "21:00",
+      "status": "clinic",
+      "slotDurationMinutes": 20,
+      "createdAt": "2025-01-02T10:00:00Z",
+      "updatedAt": "2025-10-20T10:00:00Z"
+    }
+  ]
+}
