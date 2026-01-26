@@ -1466,7 +1466,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
         children: [
            TrustyDrCurvedHeader(
   title: 'specialties.title'.tr(),
-   showBack: widget.showBack,
+   showBack: widget.showBack, height: 160,
 ),
 
           const SizedBox(height: 12),

@@ -289,6 +289,7 @@ import 'package:trustydr/services/database_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/widgets/trustydr_curved_header.dart';
 
 class MyDoctorsPage extends StatefulWidget {
   const MyDoctorsPage({super.key});
@@ -358,58 +359,13 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
       body: Stack(
         children: [
           /// Gradient header
-          _CurvedGradientHeader(
-            height: 210,
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new,
-                            color: Colors.white, size: 20),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Spacer(),
-                    ],
-                  ),
-                  Text(
-                    tr('my_doctors'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  /// Search
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: TextField(
-                        onChanged: (v) =>
-                            setState(() => _searchQuery = v.toLowerCase()),
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: tr('search_doctor'),
-                          prefixIcon: const Icon(Icons.search),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
+            TrustyDrCurvedHeader(
+  title: tr('doctors'),
+          // no title
+  showBack: true,  // no arrow
+  height: 160,      // tall hero banner
+),
+        
           /// Content
           Padding(
             padding: const EdgeInsets.only(top: 220),

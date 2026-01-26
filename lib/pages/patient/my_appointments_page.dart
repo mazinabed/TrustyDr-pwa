@@ -582,7 +582,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       children: [
         TrustyDrCurvedHeader(
           title: 'my_appointments'.tr(),
-          showBack: widget.showBack,
+          showBack: widget.showBack, height: 100,
         ),
 
         Expanded(
@@ -642,7 +642,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
           // 🌈 Gradient Header with Title
       TrustyDrCurvedHeader(
   title: 'my_appointments'.tr(),
-  showBack: widget.showBack,
+  showBack: widget.showBack, height: 100,
 ),
 
           // White curved divider below gradient

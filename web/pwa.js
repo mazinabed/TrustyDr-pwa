@@ -1,5 +1,6 @@
 let deferredPrompt = null;
 
+// --- 1. Installation Logic (Existing) ---
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
@@ -15,3 +16,5 @@ window.trustyDrPromptInstall = async () => {
 };
 
 window.trustyDrCanInstall = () => !!deferredPrompt;
+
+// --- 2. Update Detection Logic (New) ---

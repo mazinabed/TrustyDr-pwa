@@ -3095,7 +3095,6 @@
 // }
 
 
-
 import 'package:flutter/foundation.dart';
 import 'package:trustydr/widget/home_notifications_widget.dart';
 import 'package:trustydr/widget/trustydr_info_cards.dart';
@@ -3117,9 +3116,6 @@ import 'dart:async' show unawaited;
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:trustydr/widgets/center_action_grid.dart';
 
-
-// import 'package:http/http.dart' as http;
-
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
 
@@ -3127,80 +3123,33 @@ class Home extends ConsumerStatefulWidget {
   ConsumerState<Home> createState() => _HomeState();
 }
 
-
-
-
 class _HomeState extends ConsumerState<Home>
     with SingleTickerProviderStateMixin {
   late FirebaseFirestore _db;
   late FirebaseAuth _auth;
 
-  // Cities/provinces
   bool _loadingCities = true;
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _provinceDocs = [];
   String? _selectedProvinceKey;
   String? _selectedCityEn;
 
-  // Greeting
   String? _displayName;
 
-  // Import loading
   bool _isImporting = false;
   bool _isGuest = true;
   User? _currentUser;
 
-  // Tiles animation (300ms fade + slight slide-up)
   late final AnimationController _tilesCtrl;
-
-  String _displaySelectedCity() {
-    // Nothing selected
-    if (_selectedProvinceKey == null || _selectedCityEn == null) {
-      return '';
-    }
-
-    // Cities not loaded yet → fallback to English key
-    if (_provinceDocs.isEmpty) {
-      return _selectedCityEn!;
-    }
-
-    final matches = _provinceDocs.where(
-      (d) => d.data()['province_key'] == _selectedProvinceKey,
-    );
-
-    // Province not found (async race, deleted doc, etc.)
-    if (matches.isEmpty) {
-      return _selectedCityEn!;
-    }
-
-    final prov = matches.first;
-    final subs = (prov.data()['subCities'] as List?) ?? [];
-
-    final lang = context.locale.languageCode;
-
-    for (final raw in subs) {
-      final c = Map<String, dynamic>.from(raw as Map);
-      if ((c['en'] ?? '').toString() == _selectedCityEn) {
-        return (c[lang] ?? c['en']).toString();
-      }
-    }
-
-    // Final fallback
-    return _selectedCityEn!;
-  }
 
   @override
   void initState() {
     super.initState();
-
     _tilesCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-
-
     _tilesCtrl.forward();
-
-    _bootstrap(); // 👈 move OUTSIDE
+    _bootstrap();
   }
 
   @override
@@ -3209,22 +3158,12 @@ class _HomeState extends ConsumerState<Home>
     super.dispose();
   }
 
-  // Future<void> _init() async {
-  //   await _loadUserName();
-  //   await _loadSavedLocation();
-  //   await _loadCities();
-  //   await _tryDetectLocation();
-  // }
-
   Future<void> _bootstrap() async {
     _db = FirebaseFirestore.instance;
     _auth = FirebaseAuth.instance;
-
-    // ✅ snapshot auth ONCE
     _currentUser = _auth.currentUser;
     _isGuest = _auth.currentUser == null;
 
-    // fire-and-forget (safe)
     unawaited(_loadUserName());
     unawaited(_loadSavedLocation());
     unawaited(_loadCities());
@@ -3232,21 +3171,15 @@ class _HomeState extends ConsumerState<Home>
 
   Future<void> _loadUserName() async {
     if (_displayName != null) return;
-
     try {
       final u = FirebaseAuth.instance.currentUser;
       if (u == null) return;
-
       final doc = await _db.collection('users').doc(u.uid).get();
       if (!doc.exists) return;
-
-      String? name =
-          (doc.data()?['name'] ?? doc.data()?['fullName'])?.toString();
-
+      String? name = (doc.data()?['name'] ?? doc.data()?['fullName'])?.toString();
       if (name != null && name.isNotEmpty) {
         name = name.split(' ').first;
       }
-
       if (!mounted) return;
       setState(() => _displayName = name);
     } catch (_) {}
@@ -3254,15 +3187,12 @@ class _HomeState extends ConsumerState<Home>
 
   String _greetingText() {
     final h = DateTime.now().hour;
-
     if (h < 12) return 'greeting_morning'.tr();
     if (h < 17) return 'greeting_afternoon'.tr();
     return 'greeting_evening'.tr();
   }
 
   static List<QueryDocumentSnapshot<Map<String, dynamic>>>? _cachedCities;
-  
-  get padding => null;
 
   Future<void> _loadCities() async {
     if (_cachedCities != null) {
@@ -3270,7 +3200,6 @@ class _HomeState extends ConsumerState<Home>
       _loadingCities = false;
       return;
     }
-
     try {
       final snap = await _db.collection('cities').get();
       _provinceDocs = snap.docs;
@@ -3284,14 +3213,33 @@ class _HomeState extends ConsumerState<Home>
 
   Future<void> _loadSavedLocation() async {
     final prefs = await SharedPreferences.getInstance();
-    _selectedProvinceKey = prefs.getString('selectedProvinceKey');
-    _selectedCityEn = prefs.getString('selectedCityEn');
+    setState(() {
+      _selectedProvinceKey = prefs.getString('selectedProvinceKey');
+      _selectedCityEn = prefs.getString('selectedCityEn');
+    });
   }
 
   Future<void> _saveLocation(String? provinceKey, String? cityEn) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedProvinceKey', provinceKey ?? '');
     await prefs.setString('selectedCityEn', cityEn ?? '');
+  }
+
+  String _displaySelectedCity() {
+    if (_selectedProvinceKey == null || _selectedCityEn == null) return '';
+    if (_provinceDocs.isEmpty) return _selectedCityEn!;
+    final matches = _provinceDocs.where((d) => d.data()['province_key'] == _selectedProvinceKey);
+    if (matches.isEmpty) return _selectedCityEn!;
+    final prov = matches.first;
+    final subs = (prov.data()['subCities'] as List?) ?? [];
+    final lang = context.locale.languageCode;
+    for (final raw in subs) {
+      final c = Map<String, dynamic>.from(raw as Map);
+      if ((c['en'] ?? '').toString() == _selectedCityEn) {
+        return (c[lang] ?? c['en']).toString();
+      }
+    }
+    return _selectedCityEn!;
   }
 
   String _displayProvince(Map<String, dynamic> p) {
@@ -3308,211 +3256,98 @@ class _HomeState extends ConsumerState<Home>
     return c['en']!;
   }
 
-Widget _webContainer({required Widget child}) {
-  return Center(
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 430),
-      child: child,
-    ),
-  );
-}
-
-
-
   String _localizedSpecialtyFromAppointment(Map<String, dynamic> data) {
     final lang = context.locale.languageCode;
-
-    if (lang == 'ar' && data['specialtyName_ar'] != null) {
-      return data['specialtyName_ar'].toString();
-    }
-    if (lang == 'ku' && data['specialtyName_ku'] != null) {
-      return data['specialtyName_ku'].toString();
-    }
-    if (data['specialtyName_en'] != null) {
-      return data['specialtyName_en'].toString();
-    }
-
-    // 🟡 old appointments fallback
-    if (data['doctorType'] != null) {
-      return data['doctorType'].toString();
-    }
-
+    if (lang == 'ar' && data['specialtyName_ar'] != null) return data['specialtyName_ar'].toString();
+    if (lang == 'ku' && data['specialtyName_ku'] != null) return data['specialtyName_ku'].toString();
+    if (data['specialtyName_en'] != null) return data['specialtyName_en'].toString();
+    if (data['doctorType'] != null) return data['doctorType'].toString();
     return '';
   }
-
-  // /// Call Google Cloud Function to import clinics from Google Places
-  // Future<void> _importClinics(String province, String city) async {
-  //   final query = "$city $province".trim();
-  //   final encoded = Uri.encodeComponent(query);
-
-  //   final url =
-  //       "https://us-central1-doctorapp-7e8b3.cloudfunctions.net/fetchGooglePlacesClinics?city=$encoded";
-
-  //   try {
-  //     final res = await http.get(Uri.parse(url));
-
-  //     if (res.statusCode == 200) {
-  //       debugPrint("Clinics imported successfully → ${res.body}");
-  //     } else {
-  //       debugPrint("❌ Import failed → ${res.statusCode} : ${res.body}");
-  //     }
-  //   } catch (e) {
-  //     debugPrint("❌ Error calling import API: $e");
-  //   }
-  // }
-
-
 
   void _openLocationSelector() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
         String? tempProvince = _selectedProvinceKey;
         String? tempCityEn = _selectedCityEn;
-
         List<Map<String, dynamic>> citiesForProvince() {
-          final prov = _provinceDocs
-              .where((d) => d.data()['province_key'] == tempProvince)
-              .cast<QueryDocumentSnapshot<Map<String, dynamic>>>()
-              .firstOrNull;
-          if (prov == null) return [];
-
+          final matches = _provinceDocs.where((d) => d.data()['province_key'] == tempProvince);
+          if (matches.isEmpty) return [];
+          final prov = matches.first;
           final subs = (prov.data()['subCities'] as List?) ?? [];
           return subs.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         }
-
         return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            top: 20,
-          ),
+          padding: EdgeInsets.only(left: 16, right: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 16, top: 20),
           child: StatefulBuilder(
             builder: (_, setModal) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+                  Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
                   const SizedBox(height: 20),
-
                   Text('select_location'.tr(), style: blackHeadingTextStyle),
                   const SizedBox(height: 20),
+                // PROVINCE DROPDOWN
+DropdownButtonFormField2<String>(
+  isExpanded: true,
+  decoration: InputDecoration(
+    labelText: 'province'.tr(),
+    border: const OutlineInputBorder(),
+  ),
+  value: tempProvince,
+  // Add <String> right here 👇
+  items: _provinceDocs.map((d) {
+    final p = d.data();
+    return DropdownMenuItem<String>(
+      value: p['province_key']?.toString(), // Ensure this is a string
+      child: Text(_displayProvince(p)),
+    );
+  }).toList(),
+  onChanged: (v) => setModal(() {
+    tempProvince = v;
+    tempCityEn = null;
+  }),
+),
 
-                  // PROVINCE
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: 'province'.tr(),
-                      border: const OutlineInputBorder(),
-                    ),
-                    value: tempProvince,
-                    items: _provinceDocs.map((d) {
-                      final p = d.data();
-                      return DropdownMenuItem<String>(
-                        value: p['province_key'],
-                        child: Text(_displayProvince(p)),
-                      );
-                    }).toList(),
-                    onChanged: (v) {
-                      setModal(() {
-                        tempProvince = v;
-                        tempCityEn = null;
-                      });
-                    },
-                  ),
+const SizedBox(height: 12),
 
-                  const SizedBox(height: 12),
-
-                  // CITY (✅ String only — NO MAPS)
-                  DropdownButtonFormField2<String>(
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: 'city'.tr(),
-                      border: const OutlineInputBorder(),
-                    ),
-                    value: tempCityEn,
-                    items: citiesForProvince().map((c) {
-                      return DropdownMenuItem<String>(
-                        value: c['en'], // ✅ STABLE KEY
-                        child: Text(_displayCity(c)), // localized label
-                      );
-                    }).toList(),
-                    onChanged: (v) => setModal(() => tempCityEn = v),
-                  ),
-
-                  const SizedBox(height: 20),
-
+// CITY DROPDOWN
+DropdownButtonFormField2<String>(
+  isExpanded: true,
+  decoration: InputDecoration(
+    labelText: 'city'.tr(),
+    border: const OutlineInputBorder(),
+  ),
+  value: tempCityEn,
+  // Add <String> right here 👇
+  items: citiesForProvince().map((c) {
+    return DropdownMenuItem<String>(
+      value: c['en']?.toString(), // Ensure this is a string
+      child: Text(_displayCity(c)),
+    );
+  }).toList(),
+  onChanged: (v) => setModal(() => tempCityEn = v),
+),
                   ElevatedButton(
                     onPressed: () async {
-                      if (tempProvince == null || tempCityEn == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('province_city_required'.tr()),
-                          ),
-                        );
-                        return;
-                      }
-
+                      if (tempProvince == null || tempCityEn == null) return;
                       Navigator.pop(context);
                       setState(() => _isImporting = true);
-
                       await _saveLocation(tempProvince, tempCityEn);
-
-                      if (!mounted) return;
-
-// 🔑 UPDATE GLOBAL LOCATION STATE
-                      ref.read(appLocationProvider.notifier).setLocation(
-                            provinceKey: tempProvince!,
-                            cityEn: tempCityEn!,
-                          );
-
-// 🔄 keep local UI state (no redesign)
+                      ref.read(appLocationProvider.notifier).setLocation(provinceKey: tempProvince!, cityEn: tempCityEn!);
                       setState(() {
                         _selectedProvinceKey = tempProvince;
                         _selectedCityEn = tempCityEn;
+                        _isImporting = false;
                       });
-
-                      setState(() => _isImporting = false);
-
-                      final cityLabel = (_selectedProvinceKey != null &&
-                              _selectedCityEn != null)
-                          ? _displaySelectedCity()
-                          : '';
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'clinics_loaded_in_city'.tr(
-                              namedArgs: {'city': cityLabel},
-                            ),
-                          ),
-                        ),
-                      );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      minimumSize: const Size.fromHeight(44),
-                    ),
-                    child: Text(
-                      'confirm'.tr(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size.fromHeight(44)),
+                    child: Text('confirm'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
                 ],
               );
@@ -3523,210 +3358,121 @@ Widget _webContainer({required Widget child}) {
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  final provinceName = (_selectedProvinceKey == null || _provinceDocs.isEmpty)
-      ? ''
-      : (() {
-          final matches = _provinceDocs.where(
-            (d) => d.data()['province_key'] == _selectedProvinceKey,
-          );
-          if (matches.isEmpty) return '';
-          return _displayProvince(matches.first.data());
-        })();
+  @override
+  Widget build(BuildContext context) {
+    final provinceName = (_selectedProvinceKey == null || _provinceDocs.isEmpty)
+        ? ''
+        : (() {
+            final matches = _provinceDocs.where((d) => d.data()['province_key'] == _selectedProvinceKey);
+            if (matches.isEmpty) return '';
+            return _displayProvince(matches.first.data());
+          })();
 
-  return Scaffold(
-    appBar: AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      title: InkWell(
-        onTap: _openLocationSelector,
-        child: Row(children: [
-          const Icon(Icons.location_on, color: Colors.black, size: 18),
-          const SizedBox(width: 6),
-          Text(
-            (_selectedProvinceKey != null && _selectedCityEn != null)
-                ? '${_displaySelectedCity()}, $provinceName'
-                : 'select_city'.tr(),
-            style: appBarLocationTextStyle,
-          ),
-          const Icon(Icons.keyboard_arrow_down),
-        ]),
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: const Color(0xFF4B96DF), // Seamless with header
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: InkWell(
+          onTap: _openLocationSelector,
+          child: Row(children: [
+            const Icon(Icons.location_on, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              (_selectedProvinceKey != null && _selectedCityEn != null)
+                  ? '${_displaySelectedCity()}, $provinceName'
+                  : 'select_city'.tr(),
+              style: appBarLocationTextStyle.copyWith(color: Colors.white),
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+          ]),
+        ),
+        actions: const [_LanguageSelector()],
       ),
-      actions: const [_LanguageSelector()],
-    ),
-  body: LayoutBuilder(
-  builder: (context, constraints) {
-    final isWeb = kIsWeb;
-
-
-
-    Widget page = ListView(
-      children: [
-        // ✅ HEADER MOVED HERE
-      const TrustyDrCurvedHeader(
-  title: '',        // empty title
-  showBack: false,  // no back arrow
-),
-
-
-
-
-
-        const SizedBox(height: 12),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          Widget page = ListView(
+            padding: EdgeInsets.zero,
             children: [
-              Text(
-                _displayName == null
-                    ? _greetingText()
-                    : '${_greetingText()}, $_displayName',
-                style: const TextStyle(color: Colors.white, fontSize: 22),
+              Stack(
+                children: [
+   TrustyDrCurvedHeader(
+  title: '',        // no title
+  showBack: false,  // no arrow
+  height: 160,      // tall hero banner
+),
+
+
+                  Positioned(
+                    bottom: 20,
+                    left: 24,
+                    right: 24,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _displayName == null ? _greetingText() : '${_greetingText()}, $_displayName',
+                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 14),
+                        _searchBar(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              _searchBar(),
+              if (kIsWeb) const TrustyInstallBanner(),
+              if (_isGuest) _guestBanner(context),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: CenterActionGrid(
+                  items: [
+                    ActionItem(
+                      icon: Icons.category_outlined,
+                      label: 'specialties'.tr(),
+                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const SpecialityScreen())),
+                    ),
+                    ActionItem(
+                      icon: Icons.calendar_month_outlined,
+                      label: 'my_appointments'.tr(),
+                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyAppointmentsPage(showBack: true))),
+                    ),
+                    ActionItem(
+                      icon: Icons.people_outline,
+                      label: 'my_doctors'.tr(),
+                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyDoctorsPage())),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const TrustyDrInfoCards(),
+              const SizedBox(height: 16),
+              _nextAppointmentCard(),
+              const SizedBox(height: 12),
+              const HomeNotificationsWidget(),
+              const SizedBox(height: 80),
             ],
-          ),
-        ),
+          );
 
-if (kIsWeb) const PwaInstallBanner(),
-if (kIsWeb) const IosInstallHint(),
+          if (kIsWeb) page = WebScaffoldContainer(child: page);
 
-
-        if (_isGuest) _guestBanner(context),
-
-        const SizedBox(height: 32),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child:CenterActionGrid(
-  items: [
-    ActionItem(
-      icon: Icons.category_outlined,
-      label: 'specialties'.tr(),
-      onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            type: PageTransitionType.rightToLeft,
-            child: const SpecialityScreen(),
-          ),
-        );
-      },
-    ),
-    ActionItem(
-      icon: Icons.calendar_month_outlined,
-      label: 'my_appointments'.tr(),
-      onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            type: PageTransitionType.rightToLeft,
-            child: const MyAppointmentsPage(showBack: true),
-          ),
-        );
-      },
-    ),
-    ActionItem(
-      icon: Icons.people_outline,
-      label: 'my_doctors'.tr(),
-      onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            type: PageTransitionType.rightToLeft,
-            child: const MyDoctorsPage(), // or your existing doctors screen
-          ),
-        );
-      },
-    ),
-  ],
-),
-
-        ),
-
-        const SizedBox(height: 40),
-        const TrustyDrInfoCards(),
-        const SizedBox(height: 16),
-        _nextAppointmentCard(),
-        const SizedBox(height: 12),
-        const HomeNotificationsWidget(),
-        const SizedBox(height: 80),
-      ],
-    );
-
-    if (isWeb) {
-      page = WebScaffoldContainer(child: page);
-    }
-
-    return Stack(
-      children: [
-        page,
-        if (_isImporting)
-          Container(
-            color: Colors.black.withOpacity(0.3),
-            child: const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          ),
-      ],
-    );
-  },
-),
-
-  
-  );
-}
-
- 
-
-
-
-
-  Widget _noUpcomingCard({bool innerOnly = false}) {
-    final card = Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+          return Stack(
+            children: [
+              page,
+              if (_isImporting)
+                Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+                ),
+            ],
+          );
+        },
       ),
-      child: Row(
-        children: [
-          _dateBadgeCustom(DateTime.now()),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              'home.noUpcomingVisits'.tr(),
-              // ✅ localize this key
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (innerOnly) return card;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: card,
     );
   }
 
-  // Search bar
   Widget _searchBar() {
     return InkWell(
       onTap: () => Navigator.push(
@@ -3742,264 +3488,53 @@ if (kIsWeb) const IosInstallHint(),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 3))],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
-            Icon(Icons.search, color: Colors.black54),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'search_doctor_or_clinic'.tr(),
-                style: TextStyle(color: Colors.black54, fontSize: 14),
-              ),
-            ),
+            const Icon(Icons.search, color: Colors.black54),
+            const SizedBox(width: 8),
+            Expanded(child: Text('search_doctor_or_clinic'.tr(), style: const TextStyle(color: Colors.black54, fontSize: 14))),
           ],
         ),
       ),
     );
   }
 
-  String _prettyStatus(String status) {
-    final s = status.trim().toLowerCase();
-    switch (s) {
-      case 'pending':
-        return 'status.pending'.tr();
-      case 'confirmed':
-        return 'status.confirmed'.tr();
-      case 'completed':
-        return 'status.completed'.tr();
-      case 'cancelled':
-        return 'status.cancelled'.tr();
-      default:
-        return status;
-    }
-  }
-
-  // Quick tile (pure white + shadow)
-  Widget _quickTile({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFFFFF),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 28, color: const Color(0xFF4A90E2)),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF4A4A4A),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-// Upcoming Visit (Firestore)
   Widget _nextAppointmentCard() {
     final user = _currentUser;
-
     if (user == null) return _noUpcomingCard();
-
-    final query = _db
-        .collection('appointments')
-        .where('userId', isEqualTo: user.uid)
-        .where('status', whereIn: ['pending', 'confirmed'])
-        .orderBy('createdAt', descending: true)
-        .limit(1);
-
     return StreamBuilder<QuerySnapshot>(
-      stream: query.snapshots(),
+      stream: _db.collection('appointments').where('userId', isEqualTo: user.uid).where('status', whereIn: ['pending', 'confirmed']).orderBy('createdAt', descending: true).limit(1).snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _noUpcomingCard(innerOnly: true);
-        }
-
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'appointments_error_loading'
-                  .tr(namedArgs: {'error': snapshot.error.toString()}),
-              style: const TextStyle(color: Colors.red),
-            ),
-          );
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _noUpcomingCard(innerOnly: true);
-        }
-
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _noUpcomingCard(innerOnly: true);
         final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-
-        // Date
-        DateTime appointmentDate = DateTime.now();
-        final raw = data['date'];
-        if (raw is Timestamp) {
-          appointmentDate = raw.toDate();
-        } else if (raw is String) {
-          appointmentDate = DateTime.tryParse(raw) ?? DateTime.now();
-        }
-
-        final doctorName = (data['doctorName'] ?? 'Doctor').toString();
-        final specialty = _localizedSpecialtyFromAppointment(data);
-        final clinic = (data['clinicName'] ?? 'Clinic').toString();
-        final slotTime = (data['slotTime'] ?? '').toString();
-        final status = (data['status'] ?? 'pending').toString();
-
+        DateTime appointmentDate = (data['date'] is Timestamp) ? (data['date'] as Timestamp).toDate() : DateTime.tryParse(data['date'] ?? '') ?? DateTime.now();
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _dateBadgeCustom(appointmentDate),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dr. $doctorName',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          if (specialty.isNotEmpty)
-                            Text(
-                              specialty,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on_outlined,
-                                size: 13,
-                                color: Colors.black45,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  clinic,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12.5,
-                                    color: Colors.black54,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                Row(children: [
+                  _dateBadgeCustom(appointmentDate),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Dr. ${data['doctorName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      Text(_localizedSpecialtyFromAppointment(data), style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                      Text(data['clinicName'] ?? '', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                    ]),
+                  ),
+                ]),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text(
-                      '${'status.label'.tr()}: ${_prettyStatus(status)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: status == 'pending'
-                            ? Colors.orange
-                            : Colors.teal.shade600,
-                      ),
-                    ),
-                    const Spacer(),
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: const MyAppointmentsPage(showBack: true),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A90E2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                        ),
-                        child: Text(
-                          'view_details'.tr(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                Row(children: [
+                  Text('${'status.label'.tr()}: ${_prettyStatus(data['status'] ?? '')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  ElevatedButton(onPressed: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyAppointmentsPage(showBack: true))), child: Text('view_details'.tr())),
+                ]),
               ],
             ),
           ),
@@ -4008,155 +3543,67 @@ if (kIsWeb) const IosInstallHint(),
     );
   }
 
+  Widget _noUpcomingCard({bool innerOnly = false}) {
+    final card = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+      child: Row(children: [
+        _dateBadgeCustom(DateTime.now()),
+        const SizedBox(width: 14),
+        Text('home.noUpcomingVisits'.tr(), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black54)),
+      ]),
+    );
+    return innerOnly ? card : Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: card);
+  }
 
+  String _prettyStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return 'status.pending'.tr();
+      case 'confirmed': return 'status.confirmed'.tr();
+      default: return status;
+    }
+  }
 
-  // Guest banner
   Widget _guestBanner(BuildContext context) => Container(
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF6D6),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFFE8A3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline, color: Colors.black54),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'guest_browsing_notice'.tr(),
-                style: const TextStyle(color: Colors.black87),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: const LoginScreen(),
-                ),
-              ),
-              child: Text('login'.tr()),
-            ),
-          ],
-        ),
-      );
+    margin: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(color: const Color(0xFFFFF6D6), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFFE8A3))),
+    child: Row(children: [
+      const Icon(Icons.info_outline),
+      const SizedBox(width: 8),
+      Expanded(child: Text('guest_browsing_notice'.tr())),
+      TextButton(onPressed: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const LoginScreen())), child: Text('login'.tr())),
+    ]),
+  );
 
-  // Date badge
   Widget _dateBadgeCustom(DateTime date) {
-    // const months = [
-    //   'JAN',
-    //   'FEB',
-    //   'MAR',
-    //   'APR',
-    //   'MAY',
-    //   'JUN',
-    //   'JUL',
-    //   'AUG',
-    //   'SEP',
-    //   'OCT',
-    //   'NOV',
-    //   'DEC'
-    // ];
-    // const dows = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
     final lang = context.locale.languageCode;
     final intlLocale = lang == 'ku' ? 'ar' : lang;
-
-    final month = DateFormat('MMM', intlLocale).format(date);
-    final day = DateFormat('dd', intlLocale).format(date);
-    final dow = DateFormat('EEE', intlLocale).format(date);
-
-    // final month = months[date.month - 1];
-    // final day = date.day.toString().padLeft(2, '0');
-    // final dow = dows[date.weekday - 1];
-
     return Container(
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4A90E2),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(month,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 2),
-          Text(day,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18)),
-          const SizedBox(height: 2),
-          Text(dow,
-              style: const TextStyle(
-                  color: Colors.white70, fontWeight: FontWeight.w500)),
-        ],
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF4A90E2), borderRadius: BorderRadius.circular(10)),
+      child: Column(children: [
+        Text(DateFormat('MMM', intlLocale).format(date), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Text(DateFormat('dd', intlLocale).format(date), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        Text(DateFormat('EEE', intlLocale).format(date), style: const TextStyle(color: Colors.white70)),
+      ]),
     );
   }
 }
 
-// Curved gradient header (teal → blue)
-class _CurvedGradientHeader extends StatelessWidget {
-  final Widget child;
-  final double height;
-  const _CurvedGradientHeader(
-      {required this.child, this.height = 180, Key? key})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      child: Container(
-        height: height,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: child,
-      ),
-    );
-  }
-}
-
-// Language selector (unchanged)
 class _LanguageSelector extends StatelessWidget {
   const _LanguageSelector();
-
   @override
   Widget build(BuildContext context) {
     final current = context.locale.languageCode;
     return PopupMenuButton<Locale>(
-      icon: const Icon(Icons.language, color: Colors.black),
+      icon: const Icon(Icons.language, color: Colors.white), // Changed to white to match new blue AppBar
       onSelected: (l) => context.setLocale(l),
       itemBuilder: (_) => [
-        CheckedPopupMenuItem(
-            checked: current == 'en',
-            value: const Locale('en'),
-            child: const Text('English')),
-        CheckedPopupMenuItem(
-            checked: current == 'ar',
-            value: const Locale('ar'),
-            child: const Text('العربية')),
-        CheckedPopupMenuItem(
-            checked: current == 'ku',
-            value: const Locale('ku', 'IQ'),
-            child: const Text('کوردی')),
+        CheckedPopupMenuItem(checked: current == 'en', value: const Locale('en'), child: const Text('English')),
+        CheckedPopupMenuItem(checked: current == 'ar', value: const Locale('ar'), child: const Text('العربية')),
+        CheckedPopupMenuItem(checked: current == 'ku', value: const Locale('ku', 'IQ'), child: const Text('کوردی')),
       ],
     );
   }

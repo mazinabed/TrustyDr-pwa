@@ -335,13 +335,14 @@
 //     );
 //   }
 // }
-
 import 'dart:async';
+import 'dart:html' as html; // 👈 Add this for PWA refresh
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:trustydr/firebase_options.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/services/database_service.dart';
-import 'package:firebase_core/firebase_core.dart';
-import '../firebase_options.dart';
+// Ensure your DatabaseService and BottomBar imports are here
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -350,74 +351,63 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
   bool _navigated = false;
+  bool _isUpdateAvailable = false; // 👈 Track if update found
 
   @override
   void initState() {
     super.initState();
-
+    
+    // Your original Animation Controller - DO NOT REMOVE
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
 
+    // 👈 Listen for the PWA update event from index.html
+    html.window.addEventListener('pwa_update_available', (event) {
+      if (mounted) {
+        setState(() {
+          _isUpdateAvailable = true;
+        });
+      }
+    });
+
     _start();
   }
 
-  // Future<void> _start() async {
-  //   // ✅ Firebase init — fire & forget (NO await)
-  //   Firebase.initializeApp(
-  //     options: DefaultFirebaseOptions.currentPlatform,
-  //   ).timeout(const Duration(seconds: 8)).catchError((e) {
-  //     debugPrint('[Firebase] init failed: $e');
-  //   });
-
-  //   // ✅ Other services — also non-blocking
-  //   DatabaseService.instance
-  //       .initialize()
-  //       .timeout(const Duration(seconds: 5))
-  //       .catchError((e) {
-  //     debugPrint('[DatabaseService] init failed: $e');
-  //   });
-
-  //   // let splash animation play
-  //   await Future.delayed(const Duration(milliseconds: 1200));
-
-  //   if (!mounted) return;
-  //   _route();
-  // }
-
   Future<void> _start() async {
-  try {
-    // 1️⃣ Firebase init (required)
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-      
-    ).timeout(const Duration(seconds: 8));
+    try {
+      // 1️⃣ Firebase init (required)
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 8));
 
-    debugPrint('[Startup] Firebase initialized');
+      debugPrint('[Startup] Firebase initialized');
+
+      // 2️⃣ DatabaseService init (required for auth + consent + profile)
+      await DatabaseService.instance
+          .initialize()
+          .timeout(const Duration(seconds: 5));
+
+      debugPrint('[Startup] DatabaseService initialized');
+    } catch (e, st) {
+      debugPrint('[Startup] Initialization failed: $e');
+      debugPrintStack(stackTrace: st);
+    }
+
+    // Keep your splash animation timing
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    if (!mounted) return;
     
-
-    // 2️⃣ DatabaseService init (required for auth + consent + profile)
-    await DatabaseService.instance
-        .initialize()
-        .timeout(const Duration(seconds: 5));
-
-    debugPrint('[Startup] DatabaseService initialized');
-  } catch (e, st) {
-    debugPrint('[Startup] Initialization failed: $e');
-    debugPrintStack(stackTrace: st);
+    // 👈 Only route to app if no update is waiting
+    if (!_isUpdateAvailable) {
+      _route();
+    }
   }
-
-  // Keep your splash animation timing
-  await Future.delayed(const Duration(milliseconds: 1200));
-
-  if (!mounted) return;
-  _route();
-}
 
   void _route() {
     if (_navigated) return;
@@ -444,16 +434,51 @@ class _SplashScreenState extends State<SplashScreen>
       textDirection: TextDirection.ltr, // 🔒 FORCE LTR FOR SPLASH
       child: Scaffold(
         backgroundColor: const Color(0xFF4B96DF),
-        body: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _letter('T', 68, 0.0, 0.25),
-              _letter('D', 48, 0.25, 0.5),
-              _letter('r', 44, 0.5, 0.75),
-              _letter('.', 56, 0.75, 1.0),
-            ],
-          ),
+        body: Stack( // 👈 Added Stack to show the update button on top
+          children: [
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _letter('T', 68, 0.0, 0.25),
+                  _letter('D', 48, 0.25, 0.5),
+                  _letter('r', 44, 0.5, 0.75),
+                  _letter('.', 56, 0.75, 1.0),
+                ],
+              ),
+            ),
+            
+            // 👈 The Update UI Overlay
+            if (_isUpdateAvailable)
+              Positioned(
+                bottom: 50,
+                left: 20,
+                right: 20,
+                child: Card(
+                  color: Colors.white,
+                  elevation: 20,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          "Update Available",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text("A new version of the app is ready."),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => html.window.location.reload(),
+                          child: const Text("REFRESH NOW"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

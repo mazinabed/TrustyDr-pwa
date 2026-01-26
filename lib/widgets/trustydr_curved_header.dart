@@ -1,3 +1,94 @@
+
+
+
+// import 'package:flutter/material.dart';
+
+// class TrustyDrCurvedHeader extends StatelessWidget {
+//   final String title;
+//   final bool showBack;
+
+//   const TrustyDrCurvedHeader({
+//     super.key,
+//     required this.title,
+//     this.showBack = true,
+//     required int height, // kept as requested
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+//     const double sideWidth = 48; // same space for logo & back button
+
+//     return ClipRRect(
+//       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+//       child: Container(
+//         height: 72,
+//         decoration: const BoxDecoration(
+//           gradient: LinearGradient(
+//             colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
+//             begin: Alignment.topLeft,
+//             end: Alignment.bottomRight,
+//           ),
+//         ),
+//         child: SafeArea(
+//           bottom: false,
+//           child: Stack(
+//             alignment: Alignment.center,
+//             children: [
+//               // ───────── Left: Logo ─────────
+//               Positioned(
+//                 left: isRtl ? null : 12,
+//                 right: isRtl ? 12 : null,
+//                 child: Image.asset(
+//                   'assets/icons/white-logo.png',
+//                   height: 70,
+//                 ),
+//               ),
+
+//               // ───────── Center: Title ─────────
+//               Center(
+//                 child: Text(
+//                   'TrustyDr',
+//                   style: const TextStyle(
+//                     color: Colors.white,
+//                     fontSize: 17,
+//                     fontWeight: FontWeight.w600,
+//                     letterSpacing: 0.4,
+//                   ),
+//                 ),
+//               ),
+
+//               // ───────── Right: Back button or placeholder ─────────
+//         // ───────── Back button (Standard placement) ─────────
+// Positioned(
+//   // In EN: left is 0. In AR: right is 0.
+//   left: isRtl ? null : 0,
+//   right: isRtl ? 0 : null,
+//   child: SizedBox(
+//     width: sideWidth,
+//     child: showBack
+//         ? IconButton(
+//             // Icons.adaptive automatically flips based on locale
+//             icon: const Icon(
+//               Icons.arrow_back_ios_new, 
+//               color: Colors.white,
+//               size: 20,
+//             ),
+//             onPressed: () => Navigator.pop(context),
+//           )
+//         : const SizedBox.shrink(),
+//   ),
+// ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
 import 'package:flutter/material.dart';
 
 class TrustyDrCurvedHeader extends StatelessWidget {
@@ -8,84 +99,79 @@ class TrustyDrCurvedHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.showBack = true,
+    required int height, // kept as requested
   });
 
- @override
-Widget build(BuildContext context) {
-  return ClipRRect(
-    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-    child: Container(
-      height: 180,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  @override
+  Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+    const double sideWidth = 48; // same space for logo & back button
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+      child: Container(
+        height: 72,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              // Top row (back + branding)
-              Row(
-                children: [
-                  if (showBack)
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    )
-                  else
-                    const SizedBox(width: 48),
-
-                  const Spacer(),
-
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/icon.png', // <-- your logo path
-                        height: 26,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'TrustyDr',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  const SizedBox(width: 48),
-                ],
+              // ───────── Logo (Moved to the opposite side of Arrow) ─────────
+              Positioned(
+                // Swapped logic: In EN (isRtl=false) it goes to the RIGHT. 
+                // In AR (isRtl=true) it goes to the LEFT.
+                left: isRtl ? 12 : null, 
+                right: isRtl ? null : 12,
+                child: Image.asset(
+                  'assets/icons/white-logo.png',
+                  height:50, // Adjusted height to look cleaner in the bar
+                ),
               ),
 
-              const SizedBox(height: 18),
-
-              // Page title
+              // ───────── Center: Title ─────────
               Center(
                 child: Text(
-                  title,
+                  title, // Used the variable title
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
                   ),
+                ),
+              ),
+
+              // ───────── Back Button (Kept your logic) ─────────
+              Positioned(
+                // In EN: left is 0. In AR: right is 0.
+                left: isRtl ? null : 0,
+                right: isRtl ? 0 : null,
+                child: SizedBox(
+                  width: sideWidth,
+                  child: showBack
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new, 
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ],
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }
