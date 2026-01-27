@@ -3423,9 +3423,9 @@ DropdownButtonFormField2<String>(
               ),
               if (kIsWeb) const TrustyInstallBanner(),
               if (_isGuest) _guestBanner(context),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: CenterActionGrid(
                   items: [
                     ActionItem(
@@ -3446,7 +3446,8 @@ DropdownButtonFormField2<String>(
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+             
+              const SizedBox(height: 20),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
               _nextAppointmentCard(),

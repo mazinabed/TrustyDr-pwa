@@ -1,50 +1,29 @@
 {
-  "name": "TrustyDr",
+  "name": "TrustyDr – Patient App",
   "short_name": "TrustyDr",
-  "description": "Book doctor appointments easily and securely with TrustyDr.",
-  "id": "/", 
+  "description": "TrustyDr patient application for booking doctors and managing appointments.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F6F8FB",
-  "theme_color": "#4A90E2",
   "orientation": "portrait",
-  "lang": "en",
-  "dir": "ltr",
-  "categories": ["medical", "health", "productivity"],
+  "background_color": "#5CC6BA",
+  "theme_color": "#4A90E2",
   "icons": [
     {
-      "src": "icons/icon-512.png",
+      "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-192-maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     },
     {
       "src": "icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshots/mobile.png",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Book appointments on the go"
     }
   ]
 }

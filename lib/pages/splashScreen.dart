@@ -335,6 +335,7 @@
 //     );
 //   }
 // }
+
 import 'dart:async';
 import 'dart:html' as html; // 👈 Add this for PWA refresh
 import 'package:flutter/material.dart';
@@ -433,21 +434,54 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     return Directionality(
       textDirection: TextDirection.ltr, // 🔒 FORCE LTR FOR SPLASH
       child: Scaffold(
-        backgroundColor: const Color(0xFF4B96DF),
-        body: Stack( // 👈 Added Stack to show the update button on top
+        backgroundColor: Colors.transparent,
+      body: Stack(
+  children: [
+    Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+    ),
+
+    Center(
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(20),
+      color: Colors.white.withOpacity(0.04),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _letter('T', 68, 0.0, 0.25),
-                  _letter('D', 48, 0.25, 0.5),
-                  _letter('r', 44, 0.5, 0.75),
-                  _letter('.', 56, 0.75, 1.0),
-                ],
-              ),
-            ),
-            
+            _letter('T', 68, 0.0, 0.25),
+            _letter('D', 48, 0.25, 0.5),
+            _letter('r', 44, 0.5, 0.75),
+            _letter('.', 56, 0.75, 1.0),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        const Text(
+          "Patient App",
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
             // 👈 The Update UI Overlay
             if (_isUpdateAvailable)
               Positioned(
@@ -455,8 +489,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 left: 20,
                 right: 20,
                 child: Card(
-                  color: Colors.white,
-                  elevation: 20,
+  color: Colors.white,
+  elevation: 24,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -470,6 +506,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         const Text("A new version of the app is ready."),
                         const SizedBox(height: 16),
                         ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF4A90E2),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+  ),
+
                           onPressed: () => html.window.location.reload(),
                           child: const Text("REFRESH NOW"),
                         ),
@@ -508,12 +550,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: size,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                height: 1,
-              ),
+           style: TextStyle(
+  fontSize: size,
+  fontWeight: FontWeight.w800,
+  color: Colors.white,
+  height: 1,
+  letterSpacing: 1.2,
+  shadows: const [
+    Shadow(
+      blurRadius: 12,
+      color: Color(0x66000000),
+      offset: Offset(0, 6),
+    ),
+  ],
+),
+
             ),
           ),
         ),
