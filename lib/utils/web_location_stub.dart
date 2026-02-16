@@ -1,0 +1,3 @@
+String getCurrentPath() {
+  return '';
+}

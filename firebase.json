@@ -1,13 +1,16 @@
 {
-    "hosting": {
-        "public": "build/web",
-        "target": "trustydr-app",
-        "ignore": [
-            "firebase.json",
-            "**/.*",
-            "**/node_modules/**"
-        ]
-    },
+   "hosting": {
+    "target": "trustydr-app",
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  },
     "flutter": {
         "platforms": {
             "android": {

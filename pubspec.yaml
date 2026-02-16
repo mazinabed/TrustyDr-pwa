@@ -52,6 +52,7 @@ dependencies:
 
   sign_in_with_apple: ^6.1.0
   crypto: ^3.0.3
+  youtube_player_iframe: ^5.1.2
 
 
   # --- Icons ---
@@ -87,6 +88,10 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icons/logo.png"
   remove_alpha_ios: true
 
+
+  trustydr_shared_core:
+    git:
+      url: git@github.com:mazinabed/trustydr_shared_core.git
 
 
 flutter:

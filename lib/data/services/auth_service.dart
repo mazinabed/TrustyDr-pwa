@@ -37,14 +37,32 @@ String _sha256ofString(String input) {
 }
 
 Future<UserCredential> signInWithApple() async {
+  // ---------- WEB / PWA ----------
+ // ---------- WEB / PWA ----------
+if (kIsWeb) {
+  final provider = AppleAuthProvider();
+  provider.addScope('email');
+  provider.addScope('name');
+
+  // ✅ Use popup instead of redirect
+  final result = await FirebaseAuth.instance.signInWithPopup(provider);
+
+  if (result.user == null) {
+    throw Exception('Apple sign-in failed on web');
+  }
+
+  return result;
+}
+
+  
+
+  // ---------- NATIVE IOS ----------
   try {
     debugPrint('[AppleAuth] Starting Apple Sign-In');
 
-    // 1. Generate Nonce for security
     final rawNonce = _generateNonce();
     final nonce = _sha256ofString(rawNonce);
 
-    // 2. Request Credential from Apple
     final appleCredential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -53,63 +71,47 @@ Future<UserCredential> signInWithApple() async {
       nonce: nonce,
     );
 
-    debugPrint('[AppleAuth] Apple credential received');
-    
-    // Safety check: Ensure tokens exist before proceeding
-    if (appleCredential.identityToken == null || appleCredential.authorizationCode == null) {
+    if (appleCredential.identityToken == null ||
+        appleCredential.authorizationCode == null) {
       throw FirebaseAuthException(
         code: 'missing-apple-tokens',
         message: 'Apple did not return the required tokens.',
       );
     }
 
-    // 3. Create Firebase Credential
-    // THE FIX: We now include the accessToken (authorizationCode)
     final oauthCredential = OAuthProvider("apple.com").credential(
       idToken: appleCredential.identityToken,
-      accessToken: appleCredential.authorizationCode, // <--- CRITICAL FIX
-      rawNonce: rawNonce, 
+      accessToken: appleCredential.authorizationCode,
+      rawNonce: rawNonce,
     );
 
-    // 4. Sign in to Firebase
-    final result = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+    final result =
+        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
 
-// UPDATE THE USER'S DISPLAY NAME
-if (appleCredential.givenName != null) {
-  final String firstName = appleCredential.givenName ?? "";
-  final String lastName = appleCredential.familyName ?? "";
-  final String fullName = "$firstName $lastName".trim();
+    // Save name once (Apple only provides it first time)
+    if (appleCredential.givenName != null) {
+      final fullName =
+          '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+              .trim();
 
-  // Save the name to the Firebase user profile
-  await result.user?.updateDisplayName(fullName);
-  await result.user?.reload(); // Refresh local user state
-  final user = result.user!;
+      await result.user?.updateDisplayName(fullName);
 
-  // ✅ SAVE TO FIRESTORE (this is what Home uses)
-  await FirebaseFirestore.instance
-      .collection('users')
-      .doc(user.uid)
-      .set({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(result.user!.uid)
+          .set({
         'name': fullName,
-        'email': user.email,
+        'email': result.user?.email,
         'provider': 'apple',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-}
-    debugPrint('[AppleAuth] Firebase sign-in complete. UID=${result.user?.uid}');
-    return result;
+    }
 
-  } on FirebaseAuthException catch (e) {
-    debugPrint('[AppleAuth] FIREBASE ERROR: ${e.code} - ${e.message}');
-    rethrow;
-  } catch (e, st) {
-    debugPrint('[AppleAuth] UNKNOWN ERROR TYPE: ${e.runtimeType}');
-    debugPrint('[AppleAuth] ERROR VALUE: $e');
-    debugPrintStack(stackTrace: st);
+    return result;
+  } catch (e) {
     rethrow;
   }
 }
-
 
 
 void debugJwt(String jwt) {
@@ -118,16 +120,19 @@ void debugJwt(String jwt) {
   debugPrint('APPLE JWT PAYLOAD = $payload');
 }
 
-  Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser!.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-    return await _auth.signInWithCredential(credential);
+Future<UserCredential> signInWithGoogle() async {
+  final provider = GoogleAuthProvider();
+  provider.setCustomParameters({'prompt': 'select_account'});
+
+  if (kIsWeb) {
+    // ✅ PWA / Web: use popup (no refresh)
+    return await _auth.signInWithPopup(provider);
+  } else {
+    // ✅ Mobile apps
+    return await _auth.signInWithProvider(provider);
   }
+}
+
 
   // Future<UserCredential> signInWithFacebook() async {
   //   final LoginResult result = await FacebookAuth.instance.login();

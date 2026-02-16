@@ -1351,6 +1351,10 @@ class _DoctorProfileState extends State<DoctorProfile> {
           final languages = List<String>.from(data['languages'] ?? []);
           final lat = data['latitude'];
           final lng = data['longitude'];
+          final centerId = data['centerId'] ?? '';
+final provinceKey = data['provinceKey'] ?? '';
+final cityKey = data['cityKey'] ?? '';
+
 
           final isVerified =
               data['verified'] == true || data['isVerified'] == true;
@@ -1518,22 +1522,28 @@ class _DoctorProfileState extends State<DoctorProfile> {
                                       context,
                                       PageTransition(
                                         type: PageTransitionType.rightToLeft,
-                                        child: DoctorTimeSlot(
-                                          doctorId: widget.doctorId,
-                                          doctorName: name,
-                                          doctorImage: imageUrl,
+                                    child: DoctorTimeSlot(
+  doctorId: widget.doctorId,
+  doctorName: name,
+  doctorImage: imageUrl,
 
-                                          // ✅ PASS SPECIALTY (production-ready)
-                                          specialtyKey: specialtyKey,
-                                          specialtyEn: specialtyEn,
-                                          specialtyAr: specialtyAr,
-                                          specialtyKu: specialtyKu,
+  specialtyKey: specialtyKey,
+  specialtyEn: specialtyEn,
+  specialtyAr: specialtyAr,
+  specialtyKu: specialtyKu,
 
-                                          experience: exp,
-                                          clinicName: clinic,
-                                          province: province,
-                                          city: city,
-                                        ),
+  experience: exp,
+  clinicName: clinic,
+  province: province,
+  city: city,
+
+  // ⭐ ADD THESE
+  centerId: centerId,
+  provinceKey: provinceKey,
+  cityKey: cityKey,
+)
+
+                                      
                                       ),
                                     );
                                   },

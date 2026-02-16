@@ -337,13 +337,17 @@ class _BottomBarState extends ConsumerState<BottomBar> {
         showBack: false,
       ),
 
-      const MyAppointmentsPage(showBack: false),
+     MyAppointmentsPage(
+  key: ValueKey(context.locale.languageCode),
+  showBack: false,
+),
 
-      Profile(
-        key: ValueKey(
-          '${context.locale.languageCode}_${user?.uid ?? 'guest'}',
-        ),
-      ),
+Profile(
+  key: ValueKey(
+    '${context.locale.languageCode}_${user?.uid ?? 'guest'}',
+  ),
+),
+
     ];
 
     return Scaffold(

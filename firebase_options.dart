@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     appId: '1:423685278731:web:bde8247c3b2698a12e8b0e',
     messagingSenderId: '423685278731',
     projectId: 'doctorapp-7e8b3',
-    authDomain: 'doctorapp-7e8b3.firebaseapp.com',
+    authDomain: 'app.trustydr.com',
     storageBucket: 'doctorapp-7e8b3.appspot.com',
     measurementId: 'G-HQEX6LQTFW',
   );
@@ -82,7 +82,7 @@ class DefaultFirebaseOptions {
     appId: '1:423685278731:web:767c5e00bb075e532e8b0e',
     messagingSenderId: '423685278731',
     projectId: 'doctorapp-7e8b3',
-    authDomain: 'doctorapp-7e8b3.firebaseapp.com',
+    authDomain: 'app.trustydr.com',
     storageBucket: 'doctorapp-7e8b3.firebasestorage.app',
     measurementId: 'G-2LYMM056XZ',
   );

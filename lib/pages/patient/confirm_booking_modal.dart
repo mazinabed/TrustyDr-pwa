@@ -343,20 +343,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:trustydr/data/services/appointment_builder.dart';
+import 'package:trustydr/services/database_service.dart';
 
 class ConfirmBookingModal extends StatefulWidget {
   final String specialtyKey;
   final String specialtyEn;
   final String specialtyAr;
   final String specialtyKu;
+final String scheduleId;
+  final DateTime slotStartAt;
+  final int slotDurationMinutes;
 
   final String doctorId;
   final String doctorName;
   final String doctorImage;
 
   final String clinicName;
-  final String province;
-  final String city;
+  
+final String centerId;
+final String provinceKey;
+final String cityKey;
 
   final DateTime date;
   final String slotLabel;
@@ -364,6 +371,9 @@ class ConfirmBookingModal extends StatefulWidget {
 
   const ConfirmBookingModal({
     super.key,
+     required this.scheduleId,
+  required this.slotStartAt,
+  required this.slotDurationMinutes,
     required this.specialtyKey,
     required this.specialtyEn,
     required this.specialtyAr,
@@ -372,11 +382,14 @@ class ConfirmBookingModal extends StatefulWidget {
     required this.doctorName,
     required this.doctorImage,
     required this.clinicName,
-    required this.province,
-    required this.city,
+  
     required this.date,
     required this.slotLabel,
     required this.capacityPerSlot,
+      // ⭐ ADD THESE
+  required this.centerId,
+  required this.provinceKey,
+  required this.cityKey,
   });
 
   @override
@@ -385,7 +398,7 @@ class ConfirmBookingModal extends StatefulWidget {
 
 class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
   final _auth = FirebaseAuth.instance;
-  final _fs = FirebaseFirestore.instance;
+  
 
   bool _forSelf = true;
   final _patientNameCtrl = TextEditingController();
@@ -396,13 +409,14 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
   // ✅ Visit reason
   final List<String> _visitReasons = [
-    'visit_reason.checkup'.tr(),
-    'visit_reason.followup'.tr(),
-    'visit_reason.pain'.tr(),
-    'visit_reason.refill'.tr(),
-    'visit_reason.consultation'.tr(),
-    'visit_reason.other'.tr(),
-  ];
+  'visit_reason.checkup',
+  'visit_reason.followup',
+  'visit_reason.pain',
+  'visit_reason.refill',
+  'visit_reason.consultation',
+  'visit_reason.other',
+];
+
 
   DateTime _buildAppointmentDateTime() {
     final label = widget.slotLabel; // e.g. "12:30 PM"
@@ -465,101 +479,100 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
   // ===========================================================
   // BOOK
   // ===========================================================
-  Future<void> _book() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+Future<void> _book() async {
+  final user = _auth.currentUser;
+  if (user == null) return;
 
-    // ---------------------------------------
-    // Resolve patient + bookedBy names
-    // ---------------------------------------
-    final userSnap = await _fs.collection('users').doc(user.uid).get();
+  //---------------------------------------
+  // Resolve patient + bookedBy names
+  //---------------------------------------
+  final userSnap =
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
-    String? profileName = userSnap.data()?['name'] ??
-        userSnap.data()?['username'] ??
-        user.displayName;
+  String? profileName = userSnap.data()?['name'] ??
+      userSnap.data()?['username'] ??
+      user.displayName;
 
-    if (_forSelf && (profileName == null || profileName.trim().isEmpty)) {
-      final enteredName = await _askForNameOnce(context);
-      if (enteredName == null) return;
+  if (_forSelf && (profileName == null || profileName.trim().isEmpty)) {
+    final enteredName = await _askForNameOnce(context);
+    if (enteredName == null) return;
 
-      profileName = enteredName;
+    profileName = enteredName;
 
-      // Save to user profile
-      await _fs.collection('users').doc(user.uid).set({
-        'name': enteredName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
-    if (!_forSelf &&
-        (_patientNameCtrl.text.trim().isEmpty ||
-            _relationshipCtrl.text.trim().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('patient_info_required'.tr()),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _submitting = true);
-
-    try {
-      final appointmentAt = _buildAppointmentDateTime();
-
-      final appt = {
-        'userId': user.uid,
-
-        'doctorId': widget.doctorId,
-        'doctorName': widget.doctorName,
-        'doctorImage': widget.doctorImage,
-
-        'specialtyKey': widget.specialtyKey,
-        'specialtyName_en': widget.specialtyEn,
-        'specialtyName_ar': widget.specialtyAr,
-        'specialtyName_ku': widget.specialtyKu,
-
-        'clinicName': widget.clinicName,
-        'province': widget.province,
-        'city': widget.city,
-
-        // ✅ CANONICAL TIME (THIS FIXES EVERYTHING)
-        'appointmentAt': Timestamp.fromDate(appointmentAt),
-
-        // Keep for grouping / UI
-        'dateKey': _dateKey,
-        'slotTime': widget.slotLabel,
-
-        'forSelf': _forSelf,
-        'patientName': _forSelf ? profileName : _patientNameCtrl.text.trim(),
-        'bookedByName': profileName,
-        'relationship': _forSelf ? 'Self' : _relationshipCtrl.text.trim(),
-
-        'visitReason': _visitReason,
-        'notes': _notesCtrl.text.trim(),
-
-        'paymentStatus': 'unpaid',
-
-        // ✅ NORMALIZED STATUS
-        'status': 'pending',
-
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      await _fs.collection('appointments').add(appt);
-
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } catch (e) {
-      debugPrint('❌ booking error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('error_generic'.tr())),
-      );
-    } finally {
-      if (mounted) setState(() => _submitting = false);
-    }
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .set({
+      'name': enteredName,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
+
+  //---------------------------------------
+  // Validate dependent
+  //---------------------------------------
+  if (!_forSelf &&
+      (_patientNameCtrl.text.trim().isEmpty ||
+          _relationshipCtrl.text.trim().isEmpty)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('patient_info_required'.tr())),
+    );
+    return;
+  }
+
+  setState(() => _submitting = true);
+
+  try {
+    //---------------------------------------
+    // 🔥 BUILD APPOINTMENT (ONLY WAY)
+    //---------------------------------------
+// 🔥 HARD GUARD — profileName can NEVER be null past this point
+profileName ??= user.displayName ?? 'Patient';
+
+   final slotId = await AppointmentBuilder.create(
+  scheduleId: widget.scheduleId,
+
+  doctorId: widget.doctorId,
+  doctorName: widget.doctorName,
+  doctorImage: widget.doctorImage,
+
+  patientId: user.uid,
+  patientName: _forSelf ? profileName! : _patientNameCtrl.text.trim(),
+
+  phone: null, // add later when patient model finalized
+  relationship: _forSelf ? null : _relationshipCtrl.text.trim(),
+
+  slotStartAt: widget.slotStartAt,
+  slotEndAt: widget.slotStartAt.add(
+    Duration(minutes: widget.slotDurationMinutes),
+  ),
+
+  source: "patient_app",
+  bookedByUserId: user.uid,
+  bookedByRole: "patient",
+  bookedByName: profileName,
+
+  visitReason: _visitReason,
+  notes: _notesCtrl.text.trim().isEmpty
+      ? null
+      : _notesCtrl.text.trim(),
+);
+
+    
+
+    if (!mounted) return;
+
+    Navigator.pop(context, true);
+  } catch (e) {
+    debugPrint('❌ booking error: $e');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('error_generic'.tr())),
+    );
+  } finally {
+    if (mounted) setState(() => _submitting = false);
+  }
+}
 
   // ===========================================================
   // UI
@@ -620,21 +633,21 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
             // VISIT REASON
             // -------------------------
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _visitReason,
-              decoration: InputDecoration(
-                labelText: 'reason_for_visit_optional'.tr(),
-              ),
-              items: _visitReasons
-                  .map(
-                    (r) => DropdownMenuItem(
-                      value: r,
-                      child: Text(r),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _visitReason = v),
-            ),
+       DropdownButtonFormField<String>(
+  value: _visitReason,
+  decoration: InputDecoration(
+    labelText: 'reason_for_visit_optional'.tr(),
+  ),
+  items: _visitReasons.map((key) {
+    return DropdownMenuItem(
+      value: key, // store the key!
+      child: Text(key.tr()), // translate ONLY for display
+    );
+  }).toList(),
+  onChanged: (v) {
+    setState(() => _visitReason = v);
+  },
+),
 
             const SizedBox(height: 12),
             TextField(

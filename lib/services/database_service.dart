@@ -520,16 +520,58 @@ class DatabaseService {
   // --------------------------
   // 🔹 Appointments
   // --------------------------
-  Future<String> saveAppointment(Map<String, dynamic> data) async {
-    if (!_initialized) await initialize();
-    _requireAuth();
-    final doc = await _withRetry(() => _db!.collection('appointments').add({
-          ...data,
-          'userId': _userId,
-          'createdAt': FieldValue.serverTimestamp(),
-        }));
-    return doc.id;
+  // Future<String> saveAppointment(Map<String, dynamic> data) async {
+  //   if (!_initialized) await initialize();
+  //   _requireAuth();
+  //   final doc = await _withRetry(() => _db!.collection('appointments').add({
+  //         ...data,
+  //         'userId': _userId,
+  //         'createdAt': FieldValue.serverTimestamp(),
+  //       }));
+  //   return doc.id;
+  // }
+
+
+
+Future<String> createAppointment(Map<String, dynamic> appointment) async {
+  if (!_initialized) await initialize();
+  _requireAuth();
+
+  //-----------------------------------------
+  // 🔥 CRITICAL — deterministic slotId
+  //-----------------------------------------
+
+  final scheduleId = appointment['scheduleId'];
+  final slotStart = appointment['slotStartAt'] as Timestamp;
+
+  if (scheduleId == null || slotStart == null) {
+    throw Exception('Missing scheduleId or slotStartAt');
   }
+
+  final slotId =
+      '${scheduleId}_${slotStart.millisecondsSinceEpoch}';
+
+  final ref = _db!.collection('appointments').doc(slotId);
+
+  //-----------------------------------------
+  // 🔥 TRANSACTION = DOUBLE BOOK PROTECTION
+  //-----------------------------------------
+
+  await _db!.runTransaction((tx) async {
+    final existing = await tx.get(ref);
+
+    if (existing.exists) {
+      throw Exception('SLOT_ALREADY_BOOKED');
+    }
+
+    tx.set(ref, {
+      ...appointment,
+      'slotId': slotId, // keep parity with doctor portal
+    });
+  });
+
+  return slotId;
+}
 
   Stream<QuerySnapshot<Map<String, dynamic>>> streamAppointments() {
     if (!_initialized) {

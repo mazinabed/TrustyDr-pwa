@@ -90,7 +90,9 @@
   "all_specialties": "All Specialties",
   "choose_specialty": "Choose a specialty",
 "select_city_first": "Select a city first to see doctors.",
-
+"home_tutorials_title": "How to use TrustyDr",
+  "home_video_book": "Book an appointment",
+  "home_video_manage": "Manage appointments",
 
   "doctors": "Doctors",
   "all_doctors": "All Doctors",

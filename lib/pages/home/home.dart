@@ -3110,6 +3110,7 @@ import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trustydr/widgets/home_tutorial_videos.dart';
 import 'package:trustydr/widgets/pwa_install_banner.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'dart:async' show unawaited;
@@ -3450,14 +3451,23 @@ DropdownButtonFormField2<String>(
               const SizedBox(height: 20),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
+              
               _nextAppointmentCard(),
               const SizedBox(height: 12),
-              const HomeNotificationsWidget(),
+              const SizedBox(height: 16),
+// HomeTutorialVideos(
+//   // This key changes whenever the user switches language,
+//   // forcing Flutter to delete the old widget and build a new translated one.
+//   key: ValueKey(context.locale.languageCode), 
+// ),
+// const SizedBox(height: 24),
+
+               HomeNotificationsWidget(),
               const SizedBox(height: 80),
             ],
           );
 
-          if (kIsWeb) page = WebScaffoldContainer(child: page);
+          // if (kIsWeb) page = WebScaffoldContainer(child: page);
 
           return Stack(
             children: [

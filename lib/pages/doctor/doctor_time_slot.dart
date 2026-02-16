@@ -20,13 +20,27 @@ class DoctorTimeSlot extends StatefulWidget {
   final String specialtyAr;
   final String specialtyKu;
   final String experience;
+final String centerId;
+final String provinceKey;
+final String cityKey;
+final String? province;
+final String? city;
+final String clinicName;
+final String? clinicAddress;
+// ✅ ADD THIS
 
-  final String clinicName;
-  final String province;
-  final String city;
+ 
+ 
 
   const DoctorTimeSlot({
     super.key,
+      required this.centerId,
+  required this.provinceKey,
+  required this.cityKey,
+this.province,
+this.city,
+
+
     required this.doctorId,
     required this.doctorName,
     required this.doctorImage,
@@ -37,13 +51,17 @@ class DoctorTimeSlot extends StatefulWidget {
     required this.specialtyKu,
     required this.experience,
     required this.clinicName,
-    required this.province,
-    required this.city,
+ this.clinicAddress,
+
   });
 
   @override
   State<DoctorTimeSlot> createState() => _DoctorTimeSlotState();
 }
+
+
+
+
 
 class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   final _fs = FirebaseFirestore.instance;
@@ -113,11 +131,17 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         return;
       }
 
-      final data = qs.docs.first.data();
-      _scheduleForDay = data;
-      _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
-          ? data['capacityPerSlot'] as int
-          : int.tryParse("${data['capacityPerSlot']}") ?? 1;
+final doc = qs.docs.first;
+final data = doc.data(); // ⭐ DEFINE DATA AGAIN
+
+_scheduleForDay = {
+  ...data,
+  'scheduleId': doc.id,
+};
+
+_capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
+    ? data['capacityPerSlot'] as int
+    : int.tryParse("${data['capacityPerSlot']}") ?? 1;
 
       setState(() => _loadingSchedule = false);
 
@@ -198,10 +222,10 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     try {
       final qs = await _fs
           .collection('appointments')
-          .where('userId', isEqualTo: userId)
+.where('patientId', isEqualTo: userId)
           .where('doctorId', isEqualTo: doctorId)
           .where('dateKey', isEqualTo: dateKey)
-          .where('status', whereIn: ['Pending', 'Confirmed'])
+          .where('status', whereIn: ['pending', 'confirmed'])
           .limit(1)
           .get();
       return qs.docs.isNotEmpty;
@@ -405,6 +429,13 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     );
   }
 
+String _to24Hour(String label) {
+  final parsed = DateFormat('h:mm a').parse(label);
+  return DateFormat('HH:mm').format(parsed);
+}
+
+
+
   Future<void> _onPickSlot(String slotLabel) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -441,6 +472,12 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       );
       return;
     }
+final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
+
+final slotStart = _parseHm(
+  _to24Hour(slotLabel), // helper below
+  _selectedDay,
+);
 
     final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
     final sure = await showDialog<bool>(
@@ -471,26 +508,55 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       ),
     );
 
+
+final schedule = _scheduleForDay!;
+
+final centerId = (schedule['centerId'] ?? '').toString();
+final clinicName = (schedule['clinicName'] ?? '').toString();
+final provinceKey = (schedule['provinceKey'] ?? '').toString();
+final cityKey = (schedule['cityKey'] ?? '').toString();
+
+// 🔥 HARD GUARD (VERY IMPORTANT)
+if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Center location is missing. Please contact the clinic.')),
+  );
+  return;
+}
+
     if (sure != true) return;
     final wasBooked = await showModalBottomSheet<bool>(
+      
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ConfirmBookingModal(
-        doctorId: widget.doctorId,
-        doctorName: widget.doctorName,
-        doctorImage: widget.doctorImage,
-        specialtyKey: widget.specialtyKey,
-        specialtyEn: widget.specialtyEn,
-        specialtyAr: widget.specialtyAr,
-        specialtyKu: widget.specialtyKu,
-        clinicName: widget.clinicName,
-        province: widget.province,
-        city: widget.city,
-        date: _selectedDay,
-        slotLabel: slotLabel,
-        capacityPerSlot: _capacityPerSlot,
-      ),
+      
+    builder: (_) => ConfirmBookingModal(
+  scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
+
+  slotStartAt: slotStart,
+  slotDurationMinutes: dur,
+
+  doctorId: widget.doctorId,
+  doctorName: widget.doctorName,
+  doctorImage: widget.doctorImage,
+
+  specialtyKey: widget.specialtyKey,
+  specialtyEn: widget.specialtyEn,
+  specialtyAr: widget.specialtyAr,
+  specialtyKu: widget.specialtyKu,
+
+  clinicName: clinicName,   // ✅ FROM SCHEDULE
+
+  date: _selectedDay,
+  slotLabel: slotLabel,
+  capacityPerSlot: _capacityPerSlot,
+
+  centerId: centerId,        // ✅ FROM SCHEDULE
+  provinceKey: provinceKey,  // ✅ FROM SCHEDULE
+  cityKey: cityKey,          // ✅ FROM SCHEDULE
+),
+
     );
 
     if (wasBooked == true && mounted) {

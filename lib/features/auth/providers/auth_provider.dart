@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -27,6 +28,19 @@ class AuthController extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+Future<void> handleWebRedirectResult() async {
+  if (!kIsWeb) return;
+
+  try {
+    final result = await FirebaseAuth.instance.getRedirectResult();
+
+    if (result.user != null) {
+      state = AsyncValue.data(result.user);
+    }
+  } catch (e, st) {
+    state = AsyncValue.error(e, st);
+  }
+}
 
 
 Future<void> signInWithApple() async {

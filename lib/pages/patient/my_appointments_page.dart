@@ -523,9 +523,9 @@ class MyAppointmentsPage extends StatefulWidget {
   final bool showBack;
 
   const MyAppointmentsPage({
-    super.key,
-    this.showBack = true, // default = bottom tab
-  });
+    Key? key,
+    this.showBack = true,
+  }) : super(key: key);
 
   @override
   State<MyAppointmentsPage> createState() => _MyAppointmentsPageState();
@@ -570,6 +570,21 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
     return '';
   }
+String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) {
+  final lang = ctx.locale.languageCode;
+
+  final localized = data['${base}_$lang'];
+  if (localized != null && localized.toString().isNotEmpty) {
+    return localized.toString();
+  }
+
+  final en = data['${base}_en'];
+  if (en != null && en.toString().isNotEmpty) {
+    return en.toString();
+  }
+
+  return (data[base] ?? '').toString();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -702,10 +717,14 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
 // ⚠️ Firestore whereIn limit = 10 values MAX
   Widget _buildList(String userId, List<String> statuses) {
+    print("LOGGED USER = $userId");
+
     assert(statuses.length <= 10);
+    
     final q = _fs
         .collection('appointments')
-        .where('userId', isEqualTo: userId)
+    .where('patientId', isEqualTo: userId)
+
         .where('status', whereIn: statuses)
         .orderBy('createdAt', descending: true);
 
@@ -740,14 +759,17 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
             final doctorName = (data['doctorName'] ?? '').toString();
 
             final doctorImage = (data['doctorImage'] ?? '').toString();
-            final clinicName = (data['clinicName'] ?? '').toString();
             final dateKey = (data['dateKey'] ?? '').toString();
             final time = (data['time'] ?? data['slotTime'] ?? '').toString();
             final status = (data['status'] ?? 'Pending').toString();
-            final city = (data['city'] ?? '').toString();
-            final province = (data['province'] ?? '').toString();
+           final clinicName = localizedField(data, 'clinicName', context);
+final clinicAddress = localizedField(data, 'clinicAddress', context);
+
             final doctorId = (data['doctorId'] ?? '').toString();
             final experience = (data['experience'] ?? '').toString();
+final centerId = data['centerId'] ?? '';
+final provinceKey = data['provinceKey'] ?? '';
+final cityKey = data['cityKey'] ?? '';
 
             final isPastTab =
                 statuses.length == 1 && statuses.first == 'completed';
@@ -760,8 +782,8 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
               doctorType: specialty,
               doctorImage: doctorImage,
               clinicName: clinicName,
-              city: city,
-              province: province,
+clinicAddress: clinicAddress,
+
               experience: experience,
               dateKey: dateKey,
               time: time,
@@ -786,6 +808,9 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                       doctorId: doctorId,
                       doctorName: doctorName,
                       doctorImage: doctorImage,
+centerId: centerId,
+provinceKey: provinceKey,
+cityKey: cityKey,
 
                       // ✅ SOURCE OF TRUTH = appointment
                       specialtyKey: data['specialtyKey'] ?? '',
@@ -794,8 +819,9 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                       specialtyKu: data['specialtyName_ku'] ?? '',
                       experience: experience.isEmpty ? 'N/A' : experience,
                       clinicName: clinicName,
-                      province: province,
-                      city: city,
+                   
+clinicAddress: clinicAddress,
+
                     ),
                   ),
                 );
@@ -811,6 +837,8 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
             );
           },
         );
+      
+      
       },
     );
   }
@@ -889,8 +917,9 @@ class _AppointmentCard extends StatelessWidget {
   final String doctorType;
   final String doctorImage;
   final String clinicName;
-  final String city;
-  final String province;
+final String clinicAddress;
+
+  
   final String experience;
   final String dateKey;
   final String time;
@@ -908,8 +937,6 @@ class _AppointmentCard extends StatelessWidget {
     required this.doctorType,
     required this.doctorImage,
     required this.clinicName,
-    required this.city,
-    required this.province,
     required this.experience,
     required this.dateKey,
     required this.time,
@@ -919,6 +946,8 @@ class _AppointmentCard extends StatelessWidget {
     required this.onReschedule,
     this.onWriteReview,
     required this.hasReviewed,
+    required this.clinicAddress,
+
   });
 
   Color get _statusColor {
@@ -1009,11 +1038,18 @@ class _AppointmentCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           if (clinicName.isNotEmpty)
                             Text('🏥 $clinicName', style: greySmallTextStyle),
-                          if (city.isNotEmpty || province.isNotEmpty)
-                            Text(
-                              '📍 $city${city.isNotEmpty && province.isNotEmpty ? ', ' : ''}$province',
-                              style: greySmallTextStyle,
-                            ),
+                          if (clinicAddress.isNotEmpty)
+  Text(
+    '📍 $clinicAddress',
+    style: greySmallTextStyle,
+  ),
+
+                            if (clinicAddress.isNotEmpty)
+  Text(
+    '📍 $clinicAddress',
+    style: greySmallTextStyle,
+  ),
+
                           const SizedBox(height: 6),
                           Row(
                             children: [

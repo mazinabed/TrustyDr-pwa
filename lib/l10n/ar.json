@@ -60,7 +60,9 @@
   "otp_didnt_receive": "لم يصلك الرمز؟",
   "otp_resend": "إعادة الإرسال",
   "phone": "رقم الهاتف",
-
+"home_tutorials_title": "كيفية استخدام TrustyDr",
+  "home_video_book": "حجز موعد",
+  "home_video_manage": "إدارة المواعيد",
 
   "registration_title": "إنشاء حساب",
   "registration_subtitle": "سجّل كمستخدم جديد",

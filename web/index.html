@@ -21,9 +21,11 @@
   <meta name="theme-color" content="#4A90E2" />
 
   <!-- iOS Icons -->
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+ <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-patient-v2.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-patient-v2.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-patient-v2.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-patient-v2.png">
+
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png" />
@@ -106,13 +108,14 @@
   </div>
 
   <script>
-    window.addEventListener('flutter-first-frame', function () {
-      const loader = document.getElementById('flutter-loader');
-      if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.remove(), 200);
-      }
-    });
+ window.addEventListener('load', function () {
+  const loader = document.getElementById('flutter-loader');
+  if (loader) {
+    loader.style.opacity = '0';
+    setTimeout(() => loader.remove(), 300);
+  }
+});
+
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

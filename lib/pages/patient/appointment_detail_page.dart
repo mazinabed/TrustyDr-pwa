@@ -740,6 +740,25 @@ import 'package:flutter/material.dart';
 class AppointmentDetailPage extends StatelessWidget {
   final String appointmentId;
   const AppointmentDetailPage({super.key, required this.appointmentId});
+String localizedField(
+  Map<String, dynamic> data,
+  String base,
+  BuildContext context,
+) {
+  final lang = context.locale.languageCode;
+
+  final localized = data['${base}_$lang'];
+  if (localized != null && localized.toString().isNotEmpty) {
+    return localized.toString();
+  }
+
+  final en = data['${base}_en'];
+  if (en != null && en.toString().isNotEmpty) {
+    return en.toString();
+  }
+
+  return (data[base] ?? '').toString();
+}
 
   @override
   Widget build(BuildContext context) {
@@ -763,11 +782,20 @@ class AppointmentDetailPage extends StatelessWidget {
         final data = snap.data!.data() as Map<String, dynamic>;
 
         final status = (data['status'] ?? '').toString();
-        final clinicName = (data['clinicName'] ?? '').toString();
-        final city = (data['city'] ?? '').toString();
-        final province = (data['province'] ?? '').toString();
-        final time = (data['time'] ?? '').toString();
+
+       final clinicName = localizedField(data, 'clinicName', context);
+final clinicAddress = localizedField(data, 'clinicAddress', context);
+
+// 🔥 NEW TIME (correct)
+String formattedTime = '';
+if (data['slotStartAt'] != null) {
+  final dt = (data['slotStartAt'] as Timestamp).toDate();
+  formattedTime = DateFormat('EEE, MMM d • h:mm a').format(dt);
+}
+
         final dateKey = (data['dateKey'] ?? '').toString();
+final province = localizedField(data, 'province', context);
+final city = localizedField(data, 'city', context);
 
         final forSelf = data['forSelf'] ?? true;
         final patientName = (data['patientName'] ?? '').toString();
@@ -808,16 +836,24 @@ class AppointmentDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '$clinicName • $city, $province',
-                      style: primaryColorsmallBoldTextStyle,
-                    ),
+                  Text(
+  clinicName,
+  style: primaryColorsmallBoldTextStyle,
+),
+
+if (clinicAddress.isNotEmpty)
+  Text(
+    clinicAddress,
+    style: greyNormalTextStyle,
+  ),
+
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(Icons.event, size: 18, color: Colors.teal),
                         const SizedBox(width: 6),
-                        Text('$dateKey • $time', style: blackNormalTextStyle),
+                       Text(formattedTime, style: blackNormalTextStyle),
+
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -873,8 +909,12 @@ class AppointmentDetailPage extends StatelessWidget {
                   children: [
                     Text('DetailAddress'.tr(), style: blackHeadingTextStyle),
                     const SizedBox(height: 6),
-                    Text(clinicName, style: blackNormalBoldTextStyle),
-                    Text('$city, $province', style: greyNormalTextStyle),
+                Text('$city, $province'),
+
+
+if (clinicAddress.isNotEmpty)
+  Text(clinicAddress, style: greyNormalTextStyle),
+
                   ],
                 ),
               ),
@@ -884,6 +924,73 @@ class AppointmentDetailPage extends StatelessWidget {
       },
     );
   }
+
+
+
+// Future<Map<String, String>> getLocationNames(
+//   BuildContext context,
+//   String provinceKey,
+//   String cityKey,
+// ) async {
+//   if (provinceKey.isEmpty || cityKey.isEmpty) {
+//     return {'province': '', 'city': ''};
+//   }
+
+//   final lang = context.locale.languageCode;
+
+//   final doc = await FirebaseFirestore.instance
+//       .collection('cities')
+//       .doc(provinceKey)
+//       .get();
+
+//   if (!doc.exists) {
+//     return {'province': '', 'city': ''};
+//   }
+
+//   final data = doc.data()!;
+
+//   //-----------------------------
+//   // ✅ PROVINCE
+//   //-----------------------------
+//   final province =
+//     data[lang] ?? data['name_en'] ?? '';
+
+
+//   //-----------------------------
+//   // ✅ CITY
+//   //-----------------------------
+//   final subCities = List<Map<String, dynamic>>.from(
+//     data['subCities'] ?? [],
+//   );
+
+// final cityKeyPart = cityKey.split('_').last.toLowerCase();
+
+// Map<String, dynamic>? cityMatch;
+
+// for (final c in subCities) {
+//   final en = (c['en'] ?? '').toString().toLowerCase();
+
+//   if (en.contains(cityKeyPart) || cityKeyPart.contains(en)) {
+//     cityMatch = c;
+//     break;
+//   }
+// }
+
+// final city =
+//     cityMatch?[lang] ??
+//     cityMatch?['en'] ??
+//     '';
+
+
+ 
+//   return {
+//     'province': province,
+//     'city': city,
+//   };
+// }
+
+
+
 
   Widget _card({required Widget child}) {
     return Container(
@@ -901,6 +1008,11 @@ class AppointmentDetailPage extends StatelessWidget {
       child: child,
     );
   }
+
+
+
+
+
 
   Widget _row(String title, String value) {
     return Padding(

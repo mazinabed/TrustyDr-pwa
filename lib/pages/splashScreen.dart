@@ -336,48 +336,87 @@
 //   }
 // }
 
-import 'dart:async';
-import 'dart:html' as html; // 👈 Add this for PWA refresh
+import 'dart:async';// 👈 Add this for PWA refresh
+
+import 'package:trustydr/utils/web_location.dart';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/features/auth/providers/auth_provider.dart';
 import 'package:trustydr/firebase_options.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
+import 'package:trustydr/pages/public_doctor_profile_page.dart';
 import 'package:trustydr/services/database_service.dart';
 // Ensure your DatabaseService and BottomBar imports are here
+import 'package:trustydr/utils/web_reload_stub.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
+
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  @override
+ConsumerState<SplashScreen> createState() => _SplashScreenState();
+
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+ with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   bool _navigated = false;
   bool _isUpdateAvailable = false; // 👈 Track if update found
 
   @override
-  void initState() {
-    super.initState();
-    
-    // Your original Animation Controller - DO NOT REMOVE
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..forward();
+void initState() {
+  super.initState();
 
-    // 👈 Listen for the PWA update event from index.html
-    html.window.addEventListener('pwa_update_available', (event) {
-      if (mounted) {
-        setState(() {
-          _isUpdateAvailable = true;
-        });
-      }
+  _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..forward();
+
+  // ✅ Handle Google/Apple redirect result (WEB ONLY internally)
+   // ✅ Firebase web redirect handler
+    Future.microtask(() {
+      ref.read(authControllerProvider.notifier).handleWebRedirectResult();
     });
 
-    _start();
+  listenForPwaUpdate(() {
+    if (mounted) {
+      setState(() => _isUpdateAvailable = true);
+    }
+  });
+
+  _start();
+}
+
+bool _handlePublicDoctorDeepLink() {
+  try {
+    final path = getCurrentPath();
+
+    if (path.startsWith('/p/doctor/')) {
+      final doctorId = path.split('/').last;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => PublicDoctorProfilePage(doctorId: doctorId),
+          ),
+        );
+      });
+
+      return true;
+    }
+  } catch (e) {
+    debugPrint('Deep link parse error: $e');
   }
+
+  return false;
+}
+
+
+
 
   Future<void> _start() async {
     try {
@@ -398,6 +437,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       debugPrint('[Startup] Initialization failed: $e');
       debugPrintStack(stackTrace: st);
     }
+if (!_isUpdateAvailable) {
+  final handled = _handlePublicDoctorDeepLink();
+  if (!handled) {
+    _route();
+  }
+}
 
     // Keep your splash animation timing
     await Future.delayed(const Duration(milliseconds: 1200));
@@ -512,7 +557,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
   ),
 
-                          onPressed: () => html.window.location.reload(),
+                          onPressed: () => reloadPage(),
+
                           child: const Text("REFRESH NOW"),
                         ),
                       ],

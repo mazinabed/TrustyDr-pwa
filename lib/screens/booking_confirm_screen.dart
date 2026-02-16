@@ -4,6 +4,7 @@ import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:flutter/foundation.dart';
 
+
 class BookAppointmentScreen extends StatefulWidget {
   final String doctorId;
   final String doctorName;
@@ -19,6 +20,9 @@ class BookAppointmentScreen extends StatefulWidget {
     required this.doctorType,
     required this.doctorExp,
   });
+
+
+
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -102,6 +106,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       ],
     );
   }
+
+
+
+
 
   Widget _buildTappableField({
     required String label,
@@ -313,7 +321,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         'patientId': 'patient_B',
       };
 
-      await _db.saveAppointment(appointmentData);
+      await _db.createAppointment(appointmentData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -1693,14 +1693,31 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
 
     return doctorsAsync.when(
       data: (docs) {
-        final filtered = docs.where((doc) {
-          if (_searchQuery.isEmpty) return true;
-          final q = _searchQuery.toLowerCase();
-          final d = doc.data();
-          return (d['name'] ?? '').toString().toLowerCase().contains(q) ||
-              (d['specialty'] ?? '').toString().toLowerCase().contains(q) ||
-              (d['clinicName'] ?? '').toString().toLowerCase().contains(q);
-        }).toList();
+   final filtered = docs.where((doc) {
+  final d = doc.data();
+
+  // 1️⃣ Specialty filter
+  if (_selectedSpecialty != 'all') {
+    final doctorSpecialty =
+        (d['specialty'] ?? '').toString().toLowerCase();
+
+    if (doctorSpecialty != _selectedSpecialty) {
+      return false;
+    }
+  }
+
+  // 2️⃣ Search filter
+  if (_searchQuery.isNotEmpty) {
+    final q = _searchQuery.toLowerCase();
+
+    return (d['name'] ?? '').toString().toLowerCase().contains(q) ||
+        (d['specialty'] ?? '').toString().toLowerCase().contains(q) ||
+        (d['clinicName'] ?? '').toString().toLowerCase().contains(q);
+  }
+
+  return true;
+}).toList();
+
 
         if (filtered.isEmpty) {
           return Padding(
