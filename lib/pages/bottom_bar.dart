@@ -398,7 +398,7 @@ Profile(
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.local_hospital_rounded),
-                label: tr('nav_doctors'),
+                label: tr('nav_speciality'),
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_today_rounded),

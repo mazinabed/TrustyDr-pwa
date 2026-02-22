@@ -857,20 +857,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 30),
 
             /// 🍎 Apple login
-            ElevatedButton(
-              onPressed: _isLoading ? null : _loginWithApple,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: Text('login_continue_apple'.tr()),
-            ),
+            // ElevatedButton(
+            //   onPressed: _isLoading ? null : _loginWithApple,
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Colors.black,
+            //     foregroundColor: Colors.white,
+            //     minimumSize: const Size.fromHeight(50),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(30),
+            //     ),
+            //   ),
+            //   child: Text('login_continue_apple'.tr()),
+            // ),
 
-            const SizedBox(height: 12),
+            // const SizedBox(height: 12),
 
             /// 🔵 Google login
             ElevatedButton(

@@ -577,28 +577,176 @@ profileName ??= user.displayName ?? 'Patient';
   // ===========================================================
   // UI
   // ===========================================================
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.8,
+@override
+Widget build(BuildContext context) {
+  final locale = context.locale.languageCode;
+
+  final specialty = locale == 'ar'
+      ? widget.specialtyAr
+      : locale == 'ku'
+          ? widget.specialtyKu
+          : widget.specialtyEn;
+
+  final formattedDate = DateFormat.yMMMEd(locale)
+      .add_jm()
+      .format(widget.slotStartAt);
+
+ return Directionality(
+  textDirection: Directionality.of(context),
+  child: DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.75,
       builder: (_, controller) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: whiteColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(28),
+          ),
         ),
         child: ListView(
           controller: controller,
           children: [
-            Text(
-              '${DateFormat('EEE, MMM d, yyyy').format(widget.date)} • ${widget.slotLabel}',
-              style: blackNormalBoldTextStyle,
-            ),
-            const SizedBox(height: 16),
 
-            // -------------------------
-            // FOR WHOM
-            // -------------------------
+            // ===========================
+            // DOCTOR + CENTER HEADER
+            // ===========================
+
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: primaryColor.withOpacity(.1),
+                    backgroundImage: widget.doctorImage.isNotEmpty
+                        ? NetworkImage(widget.doctorImage)
+                        : null,
+                    child: widget.doctorImage.isEmpty
+                        ? Icon(Icons.person, color: primaryColor)
+                        : null,
+                  ),
+
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        Text(
+                          'doctor_prefix_name'
+                              .tr(args: [widget.doctorName]),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          specialty,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Row(
+                          children: [
+                            Icon(Icons.local_hospital,
+                                size: 16,
+                                color: Colors.grey.shade600),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                widget.clinicName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 18),
+
+            // ===========================
+            // DATE CARD
+            // ===========================
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: primaryColor.withOpacity(.07),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_month,
+                      color: primaryColor),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Text(
+                      formattedDate,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  Text(
+                    'minutes_short'
+                        .tr(args: [widget.slotDurationMinutes.toString()]),
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ===========================
+            // WHO IS THIS FOR
+            // ===========================
+
+            Text(
+              'who_is_this_for'.tr(),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
             Row(
               children: [
                 ChoiceChip(
@@ -606,7 +754,7 @@ profileName ??= user.displayName ?? 'Patient';
                   selected: _forSelf,
                   onSelected: (_) => setState(() => _forSelf = true),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 ChoiceChip(
                   label: Text('someone_else'.tr()),
                   selected: !_forSelf,
@@ -616,61 +764,111 @@ profileName ??= user.displayName ?? 'Patient';
             ),
 
             if (!_forSelf) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: _patientNameCtrl,
-                decoration:
-                    InputDecoration(labelText: 'patient_full_name'.tr()),
+                decoration: InputDecoration(
+                  labelText: 'patient_full_name'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               TextField(
                 controller: _relationshipCtrl,
-                decoration: InputDecoration(labelText: 'relationship'.tr()),
+                decoration: InputDecoration(
+                  labelText: 'relationship'.tr(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ],
 
-            // -------------------------
-            // VISIT REASON
-            // -------------------------
-            const SizedBox(height: 16),
-       DropdownButtonFormField<String>(
-  value: _visitReason,
-  decoration: InputDecoration(
-    labelText: 'reason_for_visit_optional'.tr(),
-  ),
-  items: _visitReasons.map((key) {
-    return DropdownMenuItem(
-      value: key, // store the key!
-      child: Text(key.tr()), // translate ONLY for display
-    );
-  }).toList(),
-  onChanged: (v) {
-    setState(() => _visitReason = v);
-  },
-),
+            const SizedBox(height: 20),
 
-            const SizedBox(height: 12),
+            // ===========================
+            // VISIT REASON
+            // ===========================
+
+            DropdownButtonFormField<String>(
+              value: _visitReason,
+              decoration: InputDecoration(
+                labelText: 'reason_for_visit_optional'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              items: _visitReasons.map((key) {
+                return DropdownMenuItem(
+                  value: key,
+                  child: Text(key.tr()),
+                );
+              }).toList(),
+              onChanged: (v) {
+                setState(() => _visitReason = v);
+              },
+            ),
+
+            const SizedBox(height: 14),
+
             TextField(
               controller: _notesCtrl,
               maxLines: 3,
-              decoration: InputDecoration(labelText: 'notes_optional'.tr()),
+              decoration: InputDecoration(
+                labelText: 'additional_notes_optional'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
+
+            // ===========================
+            // CONFIRM BUTTON
+            // ===========================
+
             ElevatedButton(
               onPressed: _submitting ? null : _book,
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: _submitting
-                  ? CircularProgressIndicator(color: Colors.white)
-                  : Text('confirm_booking'.tr(),
-                      style: TextStyle(color: Colors.white)),
+                  ? const CircularProgressIndicator(
+                      color: Colors.white,
+                    )
+                  : Text(
+                      'book_appointment'.tr(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Center(
+              child: Text(
+                'secure_booking'.tr(),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

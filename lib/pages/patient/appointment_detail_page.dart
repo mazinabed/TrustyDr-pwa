@@ -790,7 +790,9 @@ final clinicAddress = localizedField(data, 'clinicAddress', context);
 String formattedTime = '';
 if (data['slotStartAt'] != null) {
   final dt = (data['slotStartAt'] as Timestamp).toDate();
-  formattedTime = DateFormat('EEE, MMM d • h:mm a').format(dt);
+ formattedTime = DateFormat.yMMMEd(context.locale.languageCode)
+    .add_jm()
+    .format(dt);
 }
 
         final dateKey = (data['dateKey'] ?? '').toString();
@@ -832,92 +834,186 @@ final city = localizedField(data, 'city', context);
             ),
             children: [
               /// 📅 APPOINTMENT CARD
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                  Text(
-  clinicName,
-  style: primaryColorsmallBoldTextStyle,
-),
+           _card(
+  child: Row(
+    children: [
 
-if (clinicAddress.isNotEmpty)
-  Text(
-    clinicAddress,
-    style: greyNormalTextStyle,
-  ),
+      /// Doctor Avatar
+      Container(
+        height: 64,
+        width: 64,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.grey.shade200,
+        ),
+        child: data['doctorImage'] != null &&
+                data['doctorImage'].toString().isNotEmpty
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  data['doctorImage'],
+                  fit: BoxFit.cover,
+                ),
+              )
+            : const Icon(Icons.person, size: 32),
+      ),
 
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.event, size: 18, color: Colors.teal),
-                        const SizedBox(width: 6),
-                       Text(formattedTime, style: blackNormalTextStyle),
+      const SizedBox(width: 14),
 
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: statusColor().withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            status.tr(),
-                            style: TextStyle(
-                              color: statusColor(),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            /// Doctor Name
+            Text(
+              data['doctorName'] ?? '',
+              style: blackHeadingTextStyle.copyWith(fontSize: 18),
+            ),
+
+            const SizedBox(height: 4),
+
+            /// Specialty
+            Text(
+              localizedField(data, 'specialtyName', context),
+              style: TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            /// STATUS CHIP
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor().withOpacity(.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'status.$status'.tr(),
+                style: TextStyle(
+                  color: statusColor(),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
+            
+            
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
 
               const SizedBox(height: 14),
 
               /// 👤 PATIENT
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('DetailPatient'.tr(), style: blackHeadingTextStyle),
-                    const SizedBox(height: 8),
-                    _row(
-                      'DetailFor'.tr(),
-                      forSelf ? 'DetailSelf'.tr() : 'DetailSomeoneElse'.tr(),
-                    ),
-                    if (!forSelf) _row('DetailName'.tr(), patientName),
-                    if (!forSelf) _row('DetailRelationship'.tr(), relationship),
-                    _row(
-                      'DetailPayment'.tr(),
-                      paymentStatus.tr(),
-                    ),
-                  ],
-                ),
-              ),
+         _card(
+  child: Row(
+    children: [
+      Icon(Icons.calendar_month, color: primaryColor, size: 26),
+      const SizedBox(width: 12),
+
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'appointment_time'.tr(),
+            style: greySmallBoldTextStyle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formattedTime,
+            style: blackHeadingTextStyle,
+          ),
+        ],
+      ),
+    ],
+  ),
+),
 
               const SizedBox(height: 14),
 
               /// 📍 ADDRESS
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('DetailAddress'.tr(), style: blackHeadingTextStyle),
-                    const SizedBox(height: 6),
-                Text('$city, $province'),
+            _card(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
 
+      Row(
+        children: [
+          Icon(Icons.local_hospital, color: primaryColor),
+          const SizedBox(width: 6),
+          Text('clinic'.tr(), style: blackHeadingTextStyle),
+        ],
+      ),
 
-if (clinicAddress.isNotEmpty)
-  Text(clinicAddress, style: greyNormalTextStyle),
+      const SizedBox(height: 10),
 
-                  ],
-                ),
-              ),
+      Text(
+        clinicName,
+        style: blackNormalBoldTextStyle,
+      ),
+
+      if (clinicAddress.isNotEmpty) ...[
+        const SizedBox(height: 4),
+        Text(clinicAddress, style: greyNormalTextStyle),
+      ],
+
+      const SizedBox(height: 4),
+
+      Text(
+        "$city, $province",
+        style: greyNormalTextStyle,
+      ),
+    ],
+  ),
+),
+_card(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+
+      Text('patient'.tr(), style: blackHeadingTextStyle),
+
+      const SizedBox(height: 8),
+
+      _row('name'.tr(), patientName),
+
+      if (!forSelf)
+        _row('relationship'.tr(), relationship),
+
+      _row('payment'.tr(), paymentStatus),
+    ],
+  ),
+),
+if (data['visitReason'] != null || data['notes'] != null)
+  _card(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        Text('visit_details'.tr(), style: blackHeadingTextStyle),
+
+        const SizedBox(height: 8),
+
+        if (data['visitReason'] != null)
+          _row(
+            'reason'.tr(),
+            (data['visitReason'] as String).tr(),
+          ),
+
+        if (data['notes'] != null &&
+            data['notes'].toString().isNotEmpty)
+          _row('notes'.tr(), data['notes']),
+      ],
+    ),
+  ),
+
             ],
           ),
         );

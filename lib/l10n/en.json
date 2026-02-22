@@ -16,13 +16,14 @@
 "auth_failed_try_again": "Sign in failed. Please try again.",
 "auth_account_exists_use_other_method": "This account already exists with another sign-in method.",
 "auth_apple_unavailable": "Apple Sign-In is currently unavailable.",
-
-
+"doctor_prefix_name": "Dr. {}",
+"who_is_this_for": "Who is this for?",
   "find_doctor": "Find your doctor by specialty",
   "view_all": "View All",
+  "secure_booking": "Secure booking • Encrypted & protected",
   "not_registered": "Not registered",
-
-
+"additional_notes_optional": "Additional notes (optional)",
+"minutes_short": "{} min",
   "book_appointment": "Book Appointment",
   "book_now": "Book now",
   "book_appointment_hint": "Book an appointment with this doctor",
@@ -99,7 +100,7 @@
   "no_doctors_found": "No doctors found",
 "no_doctors_yet": "No doctors available yet",
 
-  "experience_years": "{years} years experience",
+  "experience_years": "years experience",
   "years_experience": "years of experience",
   "experience": "Experience",
   "experience_not_available": "Experience not available",
@@ -220,6 +221,7 @@
   "nav_doctors": "Doctors",
   "nav_appointments": "Appointments",
   "nav_profile": "Profile",
+  "nav_speciality": "Specialties",
 
   "index_needed_title": "Index needed",
   "index_needed_body": "This query needs a Firestore index. Tap the link in the error to create it.",
@@ -280,11 +282,19 @@
     "sign_in_message": "Please sign in to continue",
 "no_reviews_yet": "No reviews yet",
 "patient_reviews": "Patient Reviews",
-  "consent_title": "Before You Continue",
-  "consent_description": "Please review and accept the following documents to continue using TrustyDr.",
-  "consent_checkbox": "I have read and agree to the Terms of Service, Privacy Policy, and Legal Disclaimer.",
-  "consent_continue": "Agree & Continue",
-
+"consent_title": "Patient Consent & Agreement",
+"consent_description": "Before continuing, please review and accept the following documents:",
+"consent_checkbox": "I confirm that I have read and agree to the Terms & Conditions, Privacy Policy, and Legal & Medical Disclaimer. I understand that TrustyDr is a technology platform and not a medical provider. I consent to share my information with the healthcare provider I select for the purpose of receiving medical services.",
+"consent_continue": "Agree & Continue",
+   "appointment_time": "Appointment Time",
+ 
+  "patient": "Patient",
+  "payment": "Payment",
+  "visit_details": "Visit Details",
+  "reason": "Reason",
+ 
+  "name": "Name",
+"available_at": "Available at",
   "visit_reason": {
     "checkup": "Check-up",
     "followup": "Follow-up",
@@ -306,7 +316,8 @@
     "fullName": "Full Name",
     "phone": "Phone",
     "email": "Email",
-    "password": "Password"
+    "password": "Password",
+      "noChanges": "No changes to save."
   },
 
   "auth": {
@@ -345,30 +356,35 @@
     "p2": "You can contact us anytime by email at support@trustydr.com and our team will respond as soon as possible.",
     "p3": "We value your feedback. If you have suggestions or ideas to improve TrustyDr, please share them with us. Your input helps us make the app better for everyone."
   },
-   "privacy": {
-    "title": "Privacy Policy",
-    "p1": "TrustyDr respects your privacy and is committed to protecting your personal and medical information. This policy explains how we collect, use, and protect your data.",
-    "p2": "We may collect information such as your name, contact details, medical history, and appointment data to provide better healthcare services and improve your experience.",
-    "p3": "Your medical information is shared only with the doctors you choose and only for the purpose of providing medical care. We do not sell or share your data with third parties for marketing.",
-    "p4": "TrustyDr uses technical and organizational security measures to protect your data from unauthorized access, loss, or misuse.",
-    "p5": "If you have any questions or concerns about your privacy, you can contact us at support@trustydr.com."
-  },
+ "privacy": {
+  "title": "Privacy Policy",
+  "p1": "TrustyDr is committed to protecting your personal and medical information. This Privacy Policy explains how we collect, use, process, and safeguard your data when you use the TrustyDr platform.",
+  "p2": "We may collect personal information including your name, phone number, email address, appointment history, and medical details you voluntarily provide for booking and consultation purposes.",
+  "p3": "Your medical information is shared only with the healthcare provider you select for the purpose of delivering medical care. TrustyDr does not sell, rent, or trade your personal data to third parties.",
+  "p4": "We implement administrative, technical, and security safeguards to protect your data. However, no digital platform can guarantee absolute security.",
+  "p5": "Data may be stored securely on cloud infrastructure and may be processed outside your country of residence in compliance with applicable laws.",
+  "p6": "You may request access, correction, or deletion of your personal information, subject to medical record retention requirements.",
+  "p7": "By using TrustyDr, you consent to the collection and processing of your information as described in this policy.",
+  "p8": "For privacy inquiries, contact support@trustydr.com."
+},
    "terms": {
-    "title": "Terms & Conditions",
-    "p1": "By using TrustyDr, you agree to comply with these Terms and Conditions. Please read them carefully before using the application.",
-    "p2": "Users are responsible for providing accurate and up-to-date personal and medical information. TrustyDr is not responsible for issues caused by incorrect information.",
-    "p3": "TrustyDr is a platform that helps patients connect with doctors. It does not provide medical advice, diagnosis, or treatment directly.",
-    "p4": "Appointment availability and schedules are managed by doctors. TrustyDr is not responsible for cancellations, delays, or changes made by healthcare providers.",
-    "p5": "TrustyDr reserves the right to update these Terms and Conditions at any time. Continued use of the app means you accept the updated terms."
-  },
+  "title": "Terms & Conditions",
+  "p1": "TrustyDr is a technology platform that enables patients to search for healthcare providers and book appointments. TrustyDr does not provide medical advice or treatment.",
+  "p2": "Healthcare providers listed on TrustyDr are independent professionals responsible for the medical services they provide.",
+  "p3": "Patients are responsible for providing accurate and complete information when booking appointments.",
+  "p4": "Appointment availability, cancellations, fees, and medical decisions are managed directly by the healthcare provider.",
+  "p5": "TrustyDr is not responsible for medical outcomes, treatment decisions, or provider availability.",
+  "p6": "TrustyDr reserves the right to suspend or terminate accounts that misuse the platform.",
+  "p7": "These Terms may be updated from time to time. Continued use of the platform constitutes acceptance of the updated terms."
+},
   "legal": {
-    "title": "Legal & Medical Disclaimer",
-    "p1": "TrustyDr is a technology platform designed to help patients find and connect with independent healthcare providers. TrustyDr does not provide medical care or healthcare services.",
-    "p2": "All doctors listed on TrustyDr are independent professionals. Medical advice, diagnosis, and treatment are provided solely by the doctor, not by TrustyDr.",
-    "p3": "TrustyDr is not intended for medical emergencies. In case of an emergency, please contact local emergency services or visit the nearest hospital immediately.",
-    "p4": "TrustyDr does not guarantee medical outcomes, treatment results, or the availability of any healthcare provider at a specific time.",
-    "p5": "By using TrustyDr, you agree that TrustyDr is not liable for medical decisions, treatments, or outcomes provided by healthcare professionals."
-  },
+  "title": "Legal & Medical Disclaimer",
+  "p1": "TrustyDr is not a medical provider. It is a digital platform facilitating appointment scheduling between patients and independent healthcare professionals.",
+  "p2": "All medical advice, diagnosis, and treatment are provided solely by licensed healthcare providers.",
+  "p3": "TrustyDr does not guarantee medical results, provider availability, or treatment outcomes.",
+  "p4": "TrustyDr is not intended for emergency medical situations. In case of emergency, contact local emergency services immediately.",
+  "p5": "To the maximum extent permitted by law, TrustyDr disclaims liability for medical decisions, treatment outcomes, or damages arising from the use of the platform."
+},
    "faq": {
     "title": "Frequently Asked Questions",
     "q1": "How does TrustyDr work?",

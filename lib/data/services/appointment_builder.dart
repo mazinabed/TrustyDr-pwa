@@ -367,7 +367,9 @@ class AppointmentBuilder {
         'centerId': schedule['centerId'],
        'centerName': schedule['clinicName'], // future architecture
 'clinicName': schedule['clinicName'], // current UI expects this
-
+'clinicName_en': schedule['clinicName_en'],
+'clinicName_ar': schedule['clinicName_ar'],
+'clinicName_ku': schedule['clinicName_ku'],
         'provinceKey': schedule['provinceKey'],
         'cityKey': schedule['cityKey'],
 

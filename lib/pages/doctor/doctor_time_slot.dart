@@ -512,17 +512,30 @@ final slotStart = _parseHm(
 final schedule = _scheduleForDay!;
 
 final centerId = (schedule['centerId'] ?? '').toString();
-final clinicName = (schedule['clinicName'] ?? '').toString();
+final lang = context.locale.languageCode;
+
+String clinicName;
+
+if (lang == 'ar') {
+  clinicName =
+      (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '').toString();
+} else if (lang == 'ku') {
+  clinicName =
+      (schedule['clinicName_ku'] ?? schedule['clinicName_en'] ?? '').toString();
+} else {
+  clinicName =
+      (schedule['clinicName_en'] ?? schedule['clinicName'] ?? '').toString();
+}
 final provinceKey = (schedule['provinceKey'] ?? '').toString();
 final cityKey = (schedule['cityKey'] ?? '').toString();
 
 // 🔥 HARD GUARD (VERY IMPORTANT)
-if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Center location is missing. Please contact the clinic.')),
-  );
-  return;
-}
+// if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
+//   ScaffoldMessenger.of(context).showSnackBar(
+//     const SnackBar(content: Text('Center location is missing. Please contact the clinic.')),
+//   );
+//   return;
+// }
 
     if (sure != true) return;
     final wasBooked = await showModalBottomSheet<bool>(

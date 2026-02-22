@@ -3159,33 +3159,86 @@ class _HomeState extends ConsumerState<Home>
     super.dispose();
   }
 
-  Future<void> _bootstrap() async {
-    _db = FirebaseFirestore.instance;
-    _auth = FirebaseAuth.instance;
-    _currentUser = _auth.currentUser;
-    _isGuest = _auth.currentUser == null;
+  
+Future<void> _bootstrap() async {
+  _db = FirebaseFirestore.instance;
+  _auth = FirebaseAuth.instance;
 
-    unawaited(_loadUserName());
-    unawaited(_loadSavedLocation());
-    unawaited(_loadCities());
+  _currentUser = _auth.currentUser;
+  _isGuest = _currentUser == null;
+
+  // ✅ Keep your existing user name logic
+  await _loadUserName();
+
+  // ✅ Cities first (needed for display)
+  await _loadCities();
+
+  // ✅ Load saved location from SharedPreferences
+  await _loadSavedLocation();
+
+  // ✅ Inject into provider if valid saved location exists
+  final hasSavedLocation =
+      _selectedProvinceKey != null &&
+      _selectedProvinceKey!.isNotEmpty &&
+      _selectedCityEn != null &&
+      _selectedCityEn!.isNotEmpty;
+
+  if (hasSavedLocation) {
+    ref.read(appLocationProvider.notifier).setLocation(
+          provinceKey: _selectedProvinceKey!,
+          cityEn: _selectedCityEn!,
+        );
   }
+
+  // ✅ First launch behavior: force selector only if no saved location
+  if (!hasSavedLocation && mounted) {
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) _openLocationSelector();
+    });
+  }
+
+  if (mounted) {
+    setState(() => _loadingCities = false);
+  }
+}
+
 
   Future<void> _loadUserName() async {
-    if (_displayName != null) return;
-    try {
-      final u = FirebaseAuth.instance.currentUser;
-      if (u == null) return;
-      final doc = await _db.collection('users').doc(u.uid).get();
-      if (!doc.exists) return;
-      String? name = (doc.data()?['name'] ?? doc.data()?['fullName'])?.toString();
-      if (name != null && name.isNotEmpty) {
-        name = name.split(' ').first;
-      }
-      if (!mounted) return;
-      setState(() => _displayName = name);
-    } catch (_) {}
-  }
+  if (_currentUser == null) return;
 
+  try {
+    final doc = await _db
+        .collection('users')
+        .doc(_currentUser!.uid)
+        .get();
+
+    if (!doc.exists) {
+      debugPrint('User doc not found');
+      return;
+    }
+
+    final data = doc.data();
+    debugPrint('USER DOC DATA = $data');
+
+    String? name =
+        (data?['name'] ?? data?['fullName'])?.toString();
+
+    if (name != null && name.isNotEmpty) {
+      name = name.split(' ').first;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _displayName = name;
+    });
+
+    debugPrint('Loaded displayName = $_displayName');
+  } catch (e) {
+    debugPrint('Load user name failed: $e');
+  }
+}
+ 
   String _greetingText() {
     final h = DateTime.now().hour;
     if (h < 12) return 'greeting_morning'.tr();
@@ -3212,14 +3265,19 @@ class _HomeState extends ConsumerState<Home>
     }
   }
 
-  Future<void> _loadSavedLocation() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _selectedProvinceKey = prefs.getString('selectedProvinceKey');
-      _selectedCityEn = prefs.getString('selectedCityEn');
-    });
-  }
+ Future<void> _loadSavedLocation() async {
+  final prefs = await SharedPreferences.getInstance();
 
+  final p = prefs.getString('selectedProvinceKey');
+  final c = prefs.getString('selectedCityEn');
+
+  if (!mounted) return;
+
+  setState(() {
+    _selectedProvinceKey = (p != null && p.isNotEmpty) ? p : null;
+    _selectedCityEn = (c != null && c.isNotEmpty) ? c : null;
+  });
+}
   Future<void> _saveLocation(String? provinceKey, String? cityEn) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedProvinceKey', provinceKey ?? '');
@@ -3411,10 +3469,17 @@ DropdownButtonFormField2<String>(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _displayName == null ? _greetingText() : '${_greetingText()}, $_displayName',
-                          style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                        ),
+                      Text(
+  (_displayName == null || _displayName!.isEmpty)
+      ? _greetingText()
+      : '${_greetingText()}, $_displayName',
+  style: const TextStyle(
+    color: Colors.white,
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+  ),
+),
+                       
                         const SizedBox(height: 14),
                         _searchBar(),
                       ],
@@ -3451,7 +3516,7 @@ DropdownButtonFormField2<String>(
               const SizedBox(height: 20),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
-              
+
               _nextAppointmentCard(),
               const SizedBox(height: 12),
               const SizedBox(height: 16),
@@ -3513,11 +3578,34 @@ DropdownButtonFormField2<String>(
     );
   }
 
+
+
+
+  
+String localizedField(
+  Map<String, dynamic> data,
+  String base,
+  BuildContext context,
+) {
+  final lang = context.locale.languageCode;
+
+  final localized = data['${base}_$lang'];
+  if (localized != null && localized.toString().isNotEmpty) {
+    return localized.toString();
+  }
+
+  final en = data['${base}_en'];
+  if (en != null && en.toString().isNotEmpty) {
+    return en.toString();
+  }
+
+  return (data[base] ?? '').toString();
+}
   Widget _nextAppointmentCard() {
     final user = _currentUser;
     if (user == null) return _noUpcomingCard();
     return StreamBuilder<QuerySnapshot>(
-      stream: _db.collection('appointments').where('userId', isEqualTo: user.uid).where('status', whereIn: ['pending', 'confirmed']).orderBy('createdAt', descending: true).limit(1).snapshots(),
+      stream: _db.collection('appointments').where('patientId', isEqualTo: user.uid).where('status', whereIn: ['pending', 'confirmed']).orderBy('createdAt', descending: true).limit(1).snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _noUpcomingCard(innerOnly: true);
         final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
@@ -3534,10 +3622,22 @@ DropdownButtonFormField2<String>(
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Dr. ${data['doctorName'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      Text(_localizedSpecialtyFromAppointment(data), style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                      Text(data['clinicName'] ?? '', style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                    ]),
+Text(
+  'doctor_prefix_name'.tr(
+    args: [localizedField(data, 'doctorName', context)],
+  ),
+  style: const TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 15,
+  ),
+),                      Text(_localizedSpecialtyFromAppointment(data), style: const TextStyle(color: Colors.black54, fontSize: 13)),
+Text(
+  localizedField(data, 'clinicName', context),
+  style: const TextStyle(
+    color: Colors.black54,
+    fontSize: 12,
+  ),
+),                    ]),
                   ),
                 ]),
                 const SizedBox(height: 8),

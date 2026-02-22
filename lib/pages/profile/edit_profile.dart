@@ -1,3 +1,363 @@
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:trustydr/pages/profile/ChangePhoneNumberScreen.dart';
+// import 'package:easy_localization/easy_localization.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:trustydr/constant/constant.dart';
+// import 'package:flutter/material.dart';
+// import 'package:image_picker/image_picker.dart';
+// import 'dart:io';
+
+// class EditProfile extends StatefulWidget {
+//   const EditProfile({super.key});
+
+//   @override
+//   _EditProfileState createState() => _EditProfileState();
+// }
+
+// class _EditProfileState extends State<EditProfile> {
+//   User? currentUser;
+//   DocumentReference? userRef;
+
+//   final nameController = TextEditingController();
+//   final phoneController = TextEditingController();
+//   final emailController = TextEditingController();
+
+//   String profileImage = 'https://via.placeholder.com/150';
+
+//   File? pickedImage;
+//   bool isLoading = false;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     currentUser = FirebaseAuth.instance.currentUser;
+//     if (currentUser != null) {
+//       userRef =
+//           FirebaseFirestore.instance.collection('users').doc(currentUser!.uid);
+//       _loadUserData();
+//     }
+//   }
+
+//   Future<void> _loadUserData() async {
+//     if (userRef == null) return;
+//     final snapshot = await userRef!.get();
+//     if (snapshot.exists) {
+//       final data = snapshot.data() as Map<String, dynamic>;
+//       setState(() {
+//         nameController.text = data['name'] ?? '';
+//         phoneController.text = data['phoneNumber'] ?? '';
+//         emailController.text = data['email'] ?? '';
+//         profileImage =
+//             data['profileImage'] ?? 'https://via.placeholder.com/150';
+//       });
+//     }
+//   }
+
+//  Future<void> _saveProfile() async {
+//   if (userRef == null) return;
+
+//   if (nameController.text.trim().isEmpty ||
+//       emailController.text.trim().isEmpty) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(tr('profile.fillAllFields'))),
+//     );
+//     return;
+//   }
+
+//   setState(() => isLoading = true);
+
+//   try {
+//     String imageUrl = profileImage;
+
+//     if (pickedImage != null) {
+//       final storageRef = FirebaseStorage.instance
+//           .ref()
+//           .child('profile_images/${currentUser!.uid}.jpg');
+//       await storageRef.putFile(pickedImage!);
+//       imageUrl = await storageRef.getDownloadURL();
+//     }
+
+//     await userRef!.update({
+//       'name': nameController.text.trim(),
+//       'phoneNumber': phoneController.text.trim().isEmpty
+//           ? null
+//           : phoneController.text.trim(),
+//       'email': emailController.text.trim(),
+//       'profileImage': imageUrl,
+//     });
+
+//     if (!mounted) return;
+//     setState(() {
+//       profileImage = imageUrl;
+//       isLoading = false;
+//     });
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(content: Text(tr('profile.updatedSuccessfully'))),
+//     );
+
+//     Navigator.pop(context, true);
+//   } catch (e) {
+//     if (mounted) setState(() => isLoading = false);
+//     if (mounted) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text('${tr('profile.errorUpdating')}: $e')),
+//       );
+//     }
+//   }
+// }
+
+//   Future<void> _pickImage(ImageSource source) async {
+//     final picker = ImagePicker();
+//     final picked = await picker.pickImage(source: source, imageQuality: 80);
+//     if (picked != null) {
+//       setState(() => pickedImage = File(picked.path));
+//     }
+//   }
+
+//   void _removePhoto() {
+//     setState(() {
+//       pickedImage = null;
+//       profileImage = '';
+//     });
+//   }
+
+//   void _selectOptionBottomSheet() {
+//     double width = MediaQuery.of(context).size.width;
+//     showModalBottomSheet(
+//       context: context,
+//       builder: (BuildContext bc) {
+//         return Container(
+//           color: whiteColor,
+//           child: Wrap(
+//             children: [
+//               Container(
+//                 padding: const EdgeInsets.all(8.0),
+//                 child: Column(
+//                   children: [
+//                     Container(
+//                       width: width,
+//                       padding: const EdgeInsets.all(10.0),
+//                       child: Text(tr('profile.chooseOption'),
+//                           textAlign: TextAlign.center,
+//                           style: blackHeadingTextStyle),
+//                     ),
+//                     InkWell(
+//                       onTap: () {
+//                         Navigator.pop(context);
+//                         _pickImage(ImageSource.camera);
+//                       },
+//                       child:
+//                           _optionTile(Icons.camera_alt, tr('profile.camera')),
+//                     ),
+//                     InkWell(
+//                       onTap: () {
+//                         Navigator.pop(context);
+//                         _pickImage(ImageSource.gallery);
+//                       },
+//                       child: _optionTile(
+//                           Icons.photo_album, tr('profile.uploadFromGallery')),
+//                     ),
+//                     InkWell(
+//                       onTap: () {
+//                         Navigator.pop(context);
+//                         _removePhoto();
+//                       },
+//                       child: _optionTile(
+//                           Icons.delete, tr('profile.removePhoto'),
+//                           color: Colors.red),
+//                     ),
+//                   ],
+//                 ),
+//               )
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   Widget _optionTile(IconData icon, String title,
+//       {Color color = Colors.black}) {
+//     return Container(
+//       padding: const EdgeInsets.all(10.0),
+//       child: Row(
+//         children: [
+//           Icon(icon, color: color.withOpacity(0.7), size: 18),
+//           const SizedBox(width: 10),
+//           Text(title,
+//               style: TextStyle(
+//                   color: color,
+//                   fontSize: 15,
+//                   fontWeight: title == tr('profile.removePhoto')
+//                       ? FontWeight.bold
+//                       : FontWeight.normal)),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget getTile(String title, TextEditingController controller,
+//       {bool readOnly = false, VoidCallback? onTap}) {
+//     return Container(
+//       margin: EdgeInsets.symmetric(
+//           horizontal: fixPadding, vertical: fixPadding * 0.75),
+//       padding: EdgeInsets.symmetric(
+//           horizontal: fixPadding * 1.5, vertical: fixPadding * 1.2),
+//       decoration: BoxDecoration(
+//         color: whiteColor,
+//         borderRadius: BorderRadius.circular(10),
+//         boxShadow: [
+//           BoxShadow(
+//             blurRadius: 2,
+//             spreadRadius: 1,
+//             color: Colors.grey[200]!,
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Text(title, style: greyNormalTextStyle),
+//           const SizedBox(height: 6),
+//           TextField(
+//             controller: controller,
+//             readOnly: readOnly,
+//             onTap: readOnly ? onTap : null,
+//             decoration: const InputDecoration(
+//               isDense: true,
+//               border: OutlineInputBorder(),
+//               enabledBorder: OutlineInputBorder(
+//                   borderSide: BorderSide(color: Colors.grey)),
+//               focusedBorder: OutlineInputBorder(
+//                   borderSide: BorderSide(color: Colors.teal)),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: scaffoldBgColor,
+//       appBar: AppBar(
+//         backgroundColor: Colors.transparent,
+//         elevation: 0.0,
+//         leading: IconButton(
+//           icon: Icon(Icons.arrow_back, color: blackColor),
+//           onPressed: () => Navigator.pop(context),
+//         ),
+//       ),
+//       body: Stack(
+//         children: [
+//           ListView(
+//             children: [
+//               Column(
+//                 crossAxisAlignment: CrossAxisAlignment.center,
+//                 children: [
+//                   InkWell(
+//                     onTap: _selectOptionBottomSheet,
+//                     child: Container(
+//                       width: 100.0,
+//                       height: 100.0,
+//                       margin: EdgeInsets.all(fixPadding * 4.0),
+//                       alignment: Alignment.bottomRight,
+//                       decoration: BoxDecoration(
+//                         borderRadius: BorderRadius.circular(5.0),
+//                         border: Border.all(width: 2.0, color: whiteColor),
+//                         image: DecorationImage(
+//                           image: pickedImage != null
+//                               ? FileImage(pickedImage!) as ImageProvider
+//                               : NetworkImage(profileImage),
+//                           fit: BoxFit.cover,
+//                         ),
+//                       ),
+//                       child: Container(
+//                         height: 22.0,
+//                         width: 22.0,
+//                         margin: EdgeInsets.all(fixPadding / 2),
+//                         alignment: Alignment.center,
+//                         decoration: BoxDecoration(
+//                           borderRadius: BorderRadius.circular(11.0),
+//                           border: Border.all(
+//                               width: 1.0, color: whiteColor.withOpacity(0.7)),
+//                           color: Colors.orange,
+//                         ),
+//                         child: Icon(Icons.add, color: whiteColor, size: 15.0),
+//                       ),
+//                     ),
+//                   ),
+//                   getTile(tr('profile.fullName'), nameController),
+//                   getTile(tr('profile.phone'), phoneController, readOnly: true,
+//                       onTap: () {
+//                     Navigator.push(
+//                       context,
+//                       MaterialPageRoute(
+//                           builder: (_) => const ChangePhoneNumberScreen()),
+//                     ).then((_) => _loadUserData());
+//                   }),
+//                   getTile(tr('profile.email'), emailController),
+//                   getTile(tr('profile.password'),
+//                       TextEditingController(text: '******'),
+//                       readOnly: true),
+//                   const SizedBox(height: 20),
+//                   Padding(
+//                     padding: EdgeInsets.symmetric(
+//                       horizontal: fixPadding * 2,
+//                       vertical: fixPadding * 2,
+//                     ),
+//                     child: SizedBox(
+//                       width: double.infinity,
+//                       height: 48,
+//                       child: ElevatedButton(
+//                         onPressed: isLoading ? null : _saveProfile,
+//                         style: ElevatedButton.styleFrom(
+//                           backgroundColor:
+//                               const Color(0xFF4A90E2), // same as before
+//                           shape: RoundedRectangleBorder(
+//                             borderRadius: BorderRadius.circular(10),
+//                           ),
+//                         ),
+//                         child: isLoading
+//                             ? const SizedBox(
+//                                 height: 20,
+//                                 width: 20,
+//                                 child: CircularProgressIndicator(
+//                                   strokeWidth: 2,
+//                                   color: Colors.white,
+//                                 ),
+//                               )
+//                             : Text(
+//                                 tr('profile.save'),
+//                                 style: const TextStyle(
+//                                   color: Colors.white,
+//                                   fontSize: 16,
+//                                   fontWeight: FontWeight.w600,
+//                                 ),
+//                               ),
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ],
+//           ),
+//           if (isLoading)
+//             Container(
+//               color: Colors.black.withOpacity(0.3),
+//               child: const Center(
+//                   child: CircularProgressIndicator(color: Colors.orange)),
+//             ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/pages/profile/ChangePhoneNumberScreen.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -6,7 +366,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
+import 'dart:io' show File; // ✅ allowed ONLY because we will guard it with !kIsWeb
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -25,8 +387,18 @@ class _EditProfileState extends State<EditProfile> {
 
   String profileImage = 'https://via.placeholder.com/150';
 
-  File? pickedImage;
+  XFile? pickedImage;
   bool isLoading = false;
+
+  // ✅ PATCH architecture state (initial snapshot for change-detection)
+  String _initialName = '';
+  String _initialEmail = '';
+  String _initialPhone = '';
+  String _initialProfileImage = '';
+  bool _loaded = false;
+
+  // ✅ Explicit intent flag so "empty string" never accidentally wipes data
+  bool _photoRemoveRequested = false;
 
   @override
   void initState() {
@@ -39,87 +411,201 @@ class _EditProfileState extends State<EditProfile> {
     }
   }
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
     if (userRef == null) return;
+
     final snapshot = await userRef!.get();
-    if (snapshot.exists) {
-      final data = snapshot.data() as Map<String, dynamic>;
-      setState(() {
-        nameController.text = data['name'] ?? '';
-        phoneController.text = data['phoneNumber'] ?? '';
-        emailController.text = data['email'] ?? '';
-        profileImage =
-            data['profileImage'] ?? 'https://via.placeholder.com/150';
-      });
-    }
-  }
+    if (!snapshot.exists) return;
 
- Future<void> _saveProfile() async {
-  if (userRef == null) return;
+    final data = snapshot.data() as Map<String, dynamic>;
 
-  if (nameController.text.trim().isEmpty ||
-      emailController.text.trim().isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(tr('profile.fillAllFields'))),
-    );
-    return;
-  }
-
-  setState(() => isLoading = true);
-
-  try {
-    String imageUrl = profileImage;
-
-    if (pickedImage != null) {
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_images/${currentUser!.uid}.jpg');
-      await storageRef.putFile(pickedImage!);
-      imageUrl = await storageRef.getDownloadURL();
-    }
-
-    await userRef!.update({
-      'name': nameController.text.trim(),
-      'phoneNumber': phoneController.text.trim().isEmpty
-          ? null
-          : phoneController.text.trim(),
-      'email': emailController.text.trim(),
-      'profileImage': imageUrl,
-    });
+    final name = (data['name'] ?? '').toString();
+    final phone = (data['phoneNumber'] ?? '').toString();
+    final email = (data['email'] ?? '').toString();
+    final img =
+        (data['profileImage'] ?? 'https://via.placeholder.com/150').toString();
 
     if (!mounted) return;
+
     setState(() {
-      profileImage = imageUrl;
-      isLoading = false;
+      nameController.text = name;
+      phoneController.text = phone;
+      emailController.text = email;
+      profileImage = img;
+
+      // ✅ snapshot for PATCH detection
+      _initialName = name;
+      _initialPhone = phone;
+      _initialEmail = email;
+      _initialProfileImage = img;
+
+      // reset intent flags
+      pickedImage = null;
+      _photoRemoveRequested = false;
+
+      _loaded = true;
     });
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(tr('profile.updatedSuccessfully'))),
+  /// ✅ Production-safe: PATCH-only update (optional fields)
+  /// - updates ONLY fields changed
+  /// - does NOT overwrite with empty values
+  /// - Email is READONLY here (1A) to avoid Auth/Firestore mismatch
+  /// - Photo removal (2A): delete Firestore field + delete Storage file
+  Future<void> _saveProfile() async {
+    if (userRef == null || currentUser == null) return;
+    if (!_loaded) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      final updates = <String, dynamic>{};
+
+      final newName = nameController.text.trim();
+      final newEmail = emailController.text.trim(); // readOnly but keep for diff
+      final newPhone = phoneController.text.trim();
+
+      // ✅ Optional fields: update only if user provided non-empty value AND changed.
+      if (newName.isNotEmpty && newName != _initialName) {
+        updates['name'] = newName;
+      }
+
+      // ✅ Email is READONLY in UI (1A), so we do not update it here.
+      // If you later build ChangeEmailScreen, it should update FirebaseAuth + Firestore together.
+
+      // Phone is readOnly on this page, but keep patch-safe logic for future use.
+      if (newPhone.isNotEmpty && newPhone != _initialPhone) {
+        updates['phoneNumber'] = newPhone;
+      }
+
+      // ✅ Image handling (upload OR explicit clear)
+      String? uploadedUrl;
+
+      if (pickedImage != null) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_images/${currentUser!.uid}.jpg');
+if (pickedImage != null) {
+  final storageRef = FirebaseStorage.instance
+      .ref()
+      .child('profile_images/${currentUser!.uid}.jpg');
+
+  if (kIsWeb) {
+    final Uint8List bytes = await pickedImage!.readAsBytes();
+    await storageRef.putData(
+      bytes,
+      SettableMetadata(contentType: 'image/jpeg'),
     );
+  } else {
+    await storageRef.putFile(File(pickedImage!.path));
+  }
 
-    Navigator.pop(context, true);
-  } catch (e) {
-    if (mounted) setState(() => isLoading = false);
-    if (mounted) {
+  uploadedUrl = await storageRef.getDownloadURL();
+
+  if (uploadedUrl != _initialProfileImage) {
+    updates['profileImage'] = uploadedUrl;
+  }
+}
+
+        if (uploadedUrl != _initialProfileImage) {
+          updates['profileImage'] = uploadedUrl;
+        }
+      } else if (_photoRemoveRequested) {
+        // ✅ Explicit removal intent: delete Firestore field + delete Storage file (2A)
+        updates['profileImage'] = FieldValue.delete();
+
+        // Best-effort delete. If file doesn't exist, ignore.
+        try {
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('profile_images/${currentUser!.uid}.jpg');
+          await storageRef.delete();
+        } catch (_) {
+          // ignore: missing file / no permission / already deleted
+        }
+      }
+
+      // ✅ Audit field (only when there is a real change)
+      if (updates.isNotEmpty) {
+        updates['updatedAt'] = FieldValue.serverTimestamp();
+      }
+
+      // ✅ No changes => no write
+      if (updates.isEmpty) {
+        if (!mounted) return;
+        setState(() => isLoading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('profile.noChanges'))),
+        );
+        return;
+      }
+
+      await userRef!.update(updates);
+
+      if (!mounted) return;
+
+      // ✅ Update local state + initial snapshot (prevents repeated writes)
+      setState(() {
+        if (updates.containsKey('name')) _initialName = newName;
+        if (updates.containsKey('phoneNumber')) _initialPhone = newPhone;
+
+        if (updates.containsKey('profileImage')) {
+          if (uploadedUrl != null) {
+            profileImage = uploadedUrl!;
+            _initialProfileImage = uploadedUrl!;
+          } else {
+            // deleted
+            profileImage = 'https://via.placeholder.com/150';
+            _initialProfileImage = '';
+          }
+        }
+
+        pickedImage = null;
+        _photoRemoveRequested = false;
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr('profile.updatedSuccessfully'))),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${tr('profile.errorUpdating')}: $e')),
       );
     }
   }
-}
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, imageQuality: 80);
     if (picked != null) {
-      setState(() => pickedImage = File(picked.path));
+      setState(() {
+        pickedImage = picked;
+        _photoRemoveRequested = false; // uploading overrides remove intent
+      });
     }
   }
 
+  /// ✅ Explicit removal intent (handled in _saveProfile as FieldValue.delete + Storage delete)
   void _removePhoto() {
     setState(() {
       pickedImage = null;
-      profileImage = '';
+      profileImage = 'https://via.placeholder.com/150';
+      _photoRemoveRequested = true;
     });
   }
 
@@ -139,17 +625,21 @@ class _EditProfileState extends State<EditProfile> {
                     Container(
                       width: width,
                       padding: const EdgeInsets.all(10.0),
-                      child: Text(tr('profile.chooseOption'),
-                          textAlign: TextAlign.center,
-                          style: blackHeadingTextStyle),
+                      child: Text(
+                        tr('profile.chooseOption'),
+                        textAlign: TextAlign.center,
+                        style: blackHeadingTextStyle,
+                      ),
                     ),
                     InkWell(
                       onTap: () {
                         Navigator.pop(context);
                         _pickImage(ImageSource.camera);
                       },
-                      child:
-                          _optionTile(Icons.camera_alt, tr('profile.camera')),
+                      child: _optionTile(
+                        Icons.camera_alt,
+                        tr('profile.camera'),
+                      ),
                     ),
                     InkWell(
                       onTap: () {
@@ -157,7 +647,9 @@ class _EditProfileState extends State<EditProfile> {
                         _pickImage(ImageSource.gallery);
                       },
                       child: _optionTile(
-                          Icons.photo_album, tr('profile.uploadFromGallery')),
+                        Icons.photo_album,
+                        tr('profile.uploadFromGallery'),
+                      ),
                     ),
                     InkWell(
                       onTap: () {
@@ -165,8 +657,10 @@ class _EditProfileState extends State<EditProfile> {
                         _removePhoto();
                       },
                       child: _optionTile(
-                          Icons.delete, tr('profile.removePhoto'),
-                          color: Colors.red),
+                        Icons.delete,
+                        tr('profile.removePhoto'),
+                        color: Colors.red,
+                      ),
                     ),
                   ],
                 ),
@@ -178,33 +672,47 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
-  Widget _optionTile(IconData icon, String title,
-      {Color color = Colors.black}) {
+  Widget _optionTile(
+    IconData icon,
+    String title, {
+    Color color = Colors.black,
+  }) {
     return Container(
       padding: const EdgeInsets.all(10.0),
       child: Row(
         children: [
           Icon(icon, color: color.withOpacity(0.7), size: 18),
           const SizedBox(width: 10),
-          Text(title,
-              style: TextStyle(
-                  color: color,
-                  fontSize: 15,
-                  fontWeight: title == tr('profile.removePhoto')
-                      ? FontWeight.bold
-                      : FontWeight.normal)),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontSize: 15,
+              fontWeight: title == tr('profile.removePhoto')
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget getTile(String title, TextEditingController controller,
-      {bool readOnly = false, VoidCallback? onTap}) {
+  Widget getTile(
+    String title,
+    TextEditingController controller, {
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
     return Container(
       margin: EdgeInsets.symmetric(
-          horizontal: fixPadding, vertical: fixPadding * 0.75),
+        horizontal: fixPadding,
+        vertical: fixPadding * 0.75,
+      ),
       padding: EdgeInsets.symmetric(
-          horizontal: fixPadding * 1.5, vertical: fixPadding * 1.2),
+        horizontal: fixPadding * 1.5,
+        vertical: fixPadding * 1.2,
+      ),
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(10),
@@ -228,10 +736,10 @@ class _EditProfileState extends State<EditProfile> {
             decoration: const InputDecoration(
               isDense: true,
               border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey)),
-              focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.teal)),
+              enabledBorder:
+                  OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+              focusedBorder:
+                  OutlineInputBorder(borderSide: BorderSide(color: Colors.teal)),
             ),
           ),
         ],
@@ -239,6 +747,23 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+ ImageProvider _resolveProfileImageProvider() {
+  if (pickedImage != null) {
+    if (kIsWeb) {
+      // Web preview: requires bytes
+      // We'll render using Image.memory in the widget instead (recommended),
+      // because ImageProvider needs bytes which are async.
+      return NetworkImage(profileImage.trim().isEmpty
+          ? 'https://via.placeholder.com/150'
+          : profileImage);
+    } else {
+      return FileImage(File(pickedImage!.path));
+    }
+  }
+
+  final url = profileImage.trim();
+  return NetworkImage(url.isEmpty ? 'https://via.placeholder.com/150' : url);
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -269,9 +794,7 @@ class _EditProfileState extends State<EditProfile> {
                         borderRadius: BorderRadius.circular(5.0),
                         border: Border.all(width: 2.0, color: whiteColor),
                         image: DecorationImage(
-                          image: pickedImage != null
-                              ? FileImage(pickedImage!) as ImageProvider
-                              : NetworkImage(profileImage),
+                          image: _resolveProfileImageProvider(),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -283,7 +806,9 @@ class _EditProfileState extends State<EditProfile> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(11.0),
                           border: Border.all(
-                              width: 1.0, color: whiteColor.withOpacity(0.7)),
+                            width: 1.0,
+                            color: whiteColor.withOpacity(0.7),
+                          ),
                           color: Colors.orange,
                         ),
                         child: Icon(Icons.add, color: whiteColor, size: 15.0),
@@ -291,18 +816,30 @@ class _EditProfileState extends State<EditProfile> {
                     ),
                   ),
                   getTile(tr('profile.fullName'), nameController),
-                  getTile(tr('profile.phone'), phoneController, readOnly: true,
-                      onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ChangePhoneNumberScreen()),
-                    ).then((_) => _loadUserData());
-                  }),
-                  getTile(tr('profile.email'), emailController),
-                  getTile(tr('profile.password'),
-                      TextEditingController(text: '******'),
-                      readOnly: true),
+                  getTile(
+                    tr('profile.phone'),
+                    phoneController,
+                    readOnly: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ChangePhoneNumberScreen(),
+                        ),
+                      ).then((_) => _loadUserData());
+                    },
+                  ),
+                  // ✅ 1A: Email readOnly (change via dedicated flow later)
+                  getTile(
+                    tr('profile.email'),
+                    emailController,
+                    readOnly: true,
+                  ),
+                  getTile(
+                    tr('profile.password'),
+                    TextEditingController(text: '******'),
+                    readOnly: true,
+                  ),
                   const SizedBox(height: 20),
                   Padding(
                     padding: EdgeInsets.symmetric(
@@ -315,8 +852,7 @@ class _EditProfileState extends State<EditProfile> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF4A90E2), // same as before
+                          backgroundColor: const Color(0xFF4A90E2),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -349,7 +885,8 @@ class _EditProfileState extends State<EditProfile> {
             Container(
               color: Colors.black.withOpacity(0.3),
               child: const Center(
-                  child: CircularProgressIndicator(color: Colors.orange)),
+                child: CircularProgressIndicator(color: Colors.orange),
+              ),
             ),
         ],
       ),

@@ -285,6 +285,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/pages/doctor/doctor_profile.dart';
+import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -374,7 +375,7 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
                 : StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('appointments')
-                        .where('userId', isEqualTo: user.uid)
+                        .where('patientId', isEqualTo: user.uid)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -423,7 +424,7 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
                                     context,
                                     PageTransition(
                                       type: PageTransitionType.rightToLeft,
-                                      child: DoctorProfile(
+                                      child: DoctorProfileV2(
                                         doctorId: data['doctorId'] ?? '',
                                       ),
                                     ),

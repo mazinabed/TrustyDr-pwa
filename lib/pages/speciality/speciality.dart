@@ -1417,6 +1417,7 @@
 
 import 'dart:async';
 
+import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/widget/doctor_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1737,12 +1738,47 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
             final data = doc.data();
 
             final id = doc.id;
-            final name = (data['name'] ?? 'Unknown')
-                .toString()
-                .replaceFirst(RegExp(r'^Dr\. ?', caseSensitive: false), '');
+          
+          final lang = context.locale.languageCode;
 
-            final specialty = data['specialty'] ?? '';
-            final exp = (data['experienceYears'] ?? 0).toString();
+// ---------- NAME ----------
+final nameEn = (data['name_en'] ?? '').toString();
+final nameAr = (data['name_ar'] ?? nameEn).toString();
+final nameKu = (data['name_ku'] ?? nameEn).toString();
+
+final name = lang == 'ar'
+    ? nameAr
+    : lang == 'ku'
+        ? nameKu
+        : nameEn;
+
+// ---------- SPECIALTY ----------
+final specialtyEn =
+    (data['specialty_en'] ??
+     data['specialtyName_en'] ??
+     '').toString();
+
+final specialtyAr =
+    (data['specialty_ar'] ??
+     data['specialtyName_ar'] ??
+     specialtyEn).toString();
+
+final specialtyKu =
+    (data['specialty_ku'] ??
+     data['specialtyName_ku'] ??
+     specialtyEn).toString();
+
+final specialty = lang == 'ar'
+    ? specialtyAr
+    : lang == 'ku'
+        ? specialtyKu
+        : specialtyEn;
+
+// ---------- EXPERIENCE ----------
+final exp = (data['yearsOfExperience'] ?? 0).toString();
+
+
+
             final rating = (data['ratingAverage'] is num)
                 ? (data['ratingAverage'] as num).toDouble()
                 : 0.0;
@@ -1774,7 +1810,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                   PageTransition(
                     type: PageTransitionType.fade,
                     duration: const Duration(milliseconds: 400),
-                    child: DoctorProfile(doctorId: id),
+                    child: DoctorProfileV2(doctorId: id),
                   ),
                 );
               },
@@ -1805,12 +1841,12 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    "Dr. $name",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+  'doctor_prefix_name'.tr(args: [name]),
+  style: const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+  ),
+),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
