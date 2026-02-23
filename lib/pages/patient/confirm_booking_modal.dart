@@ -543,9 +543,7 @@ profileName ??= user.displayName ?? 'Patient';
   relationship: _forSelf ? null : _relationshipCtrl.text.trim(),
 
   slotStartAt: widget.slotStartAt,
-  slotEndAt: widget.slotStartAt.add(
-    Duration(minutes: widget.slotDurationMinutes),
-  ),
+  
 
   source: "patient_app",
   bookedByUserId: user.uid,

@@ -291,7 +291,6 @@ class AppointmentBuilder {
 
     // SLOT SNAPSHOT
     required DateTime slotStartAt,
-    required DateTime slotEndAt,
 
     // BOOKING META
     required String source, // patient | reception | doctor
@@ -318,6 +317,15 @@ class AppointmentBuilder {
     }
 
     final schedule = scheduleDoc.data()!;
+
+if (schedule['slotDurationMinutes'] == null) {
+  throw Exception('Schedule missing slotDurationMinutes');
+}
+
+final duration = schedule['slotDurationMinutes'] as int;
+
+final computedSlotEnd =
+    slotStartAt.add(Duration(minutes: duration));
 
     if (!schedule.containsKey('province_en') ||
         !schedule.containsKey('city_en') ||
@@ -387,7 +395,7 @@ class AppointmentBuilder {
         'clinicAddress_ar': center['clinicAddress_ar'],
         'clinicAddress_ku': center['clinicAddress_ku'],
 
-        'slotDurationMinutes': schedule['slotDurationMinutes'],
+       
         'visitType': schedule['visitType'],
 
         //------------------------------------------------
@@ -413,7 +421,8 @@ class AppointmentBuilder {
         // SLOT SNAPSHOT
         //------------------------------------------------
         'slotStartAt': Timestamp.fromDate(slotStartAt),
-        'slotEndAt': Timestamp.fromDate(slotEndAt),
+'slotEndAt': Timestamp.fromDate(computedSlotEnd),
+'slotDurationMinutes': duration,
 
         //------------------------------------------------
         // BOOKING META

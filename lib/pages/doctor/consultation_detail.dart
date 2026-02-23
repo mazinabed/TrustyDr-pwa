@@ -235,7 +235,7 @@ class _ConsultationDetailState extends State<ConsultationDetail> {
   relationship: selectedPatient!.isSelf ? null : "family",
 
   slotStartAt: slotStartAt,
-  slotEndAt: slotStartAt.add(Duration(minutes: duration)),
+ 
 
   source: "patient_app",
   bookedByUserId: user.uid,
