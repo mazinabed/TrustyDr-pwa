@@ -1,9 +1,12 @@
+import 'dart:ui' as ui show TextDirection;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CenterProfilePage extends ConsumerWidget {
   final String centerId;
@@ -38,6 +41,7 @@ Widget build(BuildContext context, WidgetRef ref) {
         if (data == null) {
           return const Center(child: Text("Center not found"));
         }
+final phone = data['phone'] ?? '';
 
         final lang = context.locale.languageCode;
 
@@ -55,64 +59,198 @@ Widget build(BuildContext context, WidgetRef ref) {
 
         final imageUrl = data['imageUrl'];
 
+
+
+String formatIraqiPhone(String phone) {
+  if (phone.isEmpty) return '';
+
+  String p = phone.replaceAll(' ', '');
+
+  // Convert +964XXXXXXXXX → 0XXXXXXXXX
+  if (p.startsWith('+964')) {
+    p = '0${p.substring(4)}';
+  }
+
+  // Convert 964XXXXXXXXX → 0XXXXXXXXX
+  if (p.startsWith('964')) {
+    p = '0${p.substring(3)}';
+  }
+
+  // Format spacing
+  if (p.length == 11) {
+    return "${p.substring(0,4)} ${p.substring(4,7)} ${p.substring(7)}";
+  }
+
+  return p;
+}
+
+
         return CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(
-              child: Column(
-                children: [
-                  TrustyDrCurvedHeader(
-                    title: name ?? '',
-                    showBack: true,
-                    height: 140,
+        SliverToBoxAdapter(
+  child: Column(
+    children: [
+
+      TrustyDrCurvedHeader(
+        title: name ?? '',
+        showBack: true,
+        height: 140,
+      ),
+
+      const SizedBox(height: 12),
+
+      /// CENTER CARD
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.05),
+                blurRadius: 8,
+                offset: const Offset(0,3),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+
+              /// IMAGE (FULL WIDTH)
+              if (imageUrl != null &&
+                  imageUrl.toString().isNotEmpty)
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(
+                          top:
+                              Radius.circular(
+                                  18)),
+                  child: Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.contain,
                   ),
+                ),
 
-                  const SizedBox(height: 12),
+             Padding(
+  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
 
-                  if (imageUrl != null)
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 20),
-                      child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(20),
-                        child: Image.network(
-                          imageUrl,
-                          height: 160,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+      /// CENTER NAME
+      Text(
+        name ?? '',
+        style: const TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+
+      const SizedBox(height: 10),
+
+      /// ADDRESS + PHONE + DOCTORS
+      Column(
+        children: [
+
+          /// ADDRESS
+          if (address.toString().isNotEmpty)
+            Row(
+              children: [
+                const SizedBox(width: 2),
+
+                const Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: Colors.teal,
+                ),
+
+                const SizedBox(width: 8),
+
+                Expanded(
+                  child: Text(
+                    address.toString(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
                     ),
-
-                  if (address != null &&
-                      address.toString().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.location_on,
-                              size: 16,
-                              color: Colors.teal),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              address.toString(),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 12),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
 
+          const SizedBox(height: 6),
+
+          /// PHONE
+          Row(
+            children: [
+              const SizedBox(width: 2),
+
+              const Icon(
+                Icons.phone,
+                size: 16,
+                color: Colors.teal,
+              ),
+
+              const SizedBox(width: 8),
+
+              Directionality(
+                textDirection: ui.TextDirection.ltr,
+                child: Text(
+                  formatIraqiPhone(phone.toString()),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.teal,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          /// DOCTOR COUNT
+          Row(
+            children: [
+              const SizedBox(width: 2),
+
+              const Icon(
+                Icons.people_outline,
+                size: 16,
+                color: Colors.black45,
+              ),
+
+              const SizedBox(width: 8),
+
+              Text(
+                "${data['doctorCount'] ?? 0} ${tr('centers.doctors')}",
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+
+        ],
+      ),
+    ],
+  ),
+)
+            ],
+          ),
+        ),
+      ),
+
+      const SizedBox(height: 16),
+    ],
+  ),
+),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -268,6 +406,8 @@ Widget build(BuildContext context, WidgetRef ref) {
             ),
           ],
         );
+     
+     
       },
     ),
   );
