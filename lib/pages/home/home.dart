@@ -3096,6 +3096,7 @@
 
 
 import 'package:flutter/foundation.dart';
+import 'package:trustydr/pages/CentersPage.dart';
 import 'package:trustydr/widget/home_notifications_widget.dart';
 import 'package:trustydr/widget/trustydr_info_cards.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -3509,6 +3510,19 @@ DropdownButtonFormField2<String>(
                       label: 'my_doctors'.tr(),
                       onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyDoctorsPage())),
                     ),
+                  ActionItem(
+  icon: Icons.local_hospital,
+  label: 'medical_centers'.tr(),
+  onTap: () => Navigator.push(
+    context,
+    PageTransition(
+      type: PageTransitionType.rightToLeft,
+      child: const CentersScreen(),
+    ),
+  ),
+),
+                
+                
                   ],
                 ),
               ),

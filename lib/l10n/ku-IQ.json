@@ -225,6 +225,15 @@
   "nav_profile": "پرۆفایل",
   "nav_speciality": "پسپۆڕییەکان",
 
+
+"medical_centers": "ناوەندە پزیشکییەکان",
+  "search_center": "گەڕان بە ناوەند...",
+  "centers.empty": "هیچ ناوەندێک لەم شارەدا نییە",
+  "centers.doctors": "دکتۆرەکان",
+  "centers.no_doctors": "هیچ دکتۆرێک لەم ناوەندەدا نییە",
+  "view_center": "بینینی ناوەند",
+  "center_details": "وردەکاری ناوەند",
+
   "index_needed_title": "پێویستی بە ئیندەکسە",
   "index_needed_body": "ئەم داواکارییە پێویستی بە ئیندەکسی Firestore هەیە. تکایە بەستەری هەڵەکە بکەوە بۆ دروستکردنی.",
 

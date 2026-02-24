@@ -227,6 +227,15 @@
   "nav_profile": "الملف الشخصي",
   "nav_speciality": "التخصصات",
 
+ "medical_centers": "المراكز الطبية",
+  "search_center": "ابحث عن مركز...",
+  "centers.empty": "لا توجد مراكز متاحة في هذه المدينة",
+  "centers.doctors": "الأطباء",
+  "centers.no_doctors": "لا يوجد أطباء في هذا المركز",
+  "view_center": "عرض المركز",
+  "center_details": "تفاصيل المركز",
+
+
   "index_needed_title": "مؤشر مطلوب",
   "index_needed_body": "هذا الاستعلام يحتاج إلى فهرس في فايرستور. اضغط على الرابط في رسالة الخطأ لإنشائه.",
 

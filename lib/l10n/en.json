@@ -141,6 +141,17 @@
   "guest_browsing_notice": "You are currently browsing as a guest.",
   "ok": "OK",
 
+
+
+  "medical_centers": "Medical Centers",
+  "search_center": "Search center...",
+  "centers.empty": "No centers available in this city",
+  "centers.doctors": "Doctors",
+  "centers.no_doctors": "No doctors available in this center",
+  "view_center": "View Center",
+  "center_details": "Center Details",
+
+
   "province_city_required": "Please select province and city",
   "clinics_loaded_in_city": "Loaded clinics in {city}",
 
