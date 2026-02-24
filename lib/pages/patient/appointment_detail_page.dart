@@ -802,7 +802,25 @@ final city = localizedField(data, 'city', context);
         final forSelf = data['forSelf'] ?? true;
         final patientName = (data['patientName'] ?? '').toString();
         final relationship = (data['relationship'] ?? '').toString();
-        final paymentStatus = (data['paymentStatus'] ?? '').toString();
+final rawStatus = (data['paymentStatus'] ?? '').toString();
+
+String paymentStatusKey;
+
+switch (rawStatus.toLowerCase()) {
+  case 'paid':
+    paymentStatusKey = 'Paid';
+    break;
+
+  case 'unpaid':
+    paymentStatusKey = 'Unpaid';
+    break;
+
+  default:
+    paymentStatusKey = rawStatus;
+}
+
+
+final paymentStatus = tr(rawStatus);
 
         Color statusColor() {
           switch (status.toLowerCase()) {
