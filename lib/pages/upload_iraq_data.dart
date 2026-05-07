@@ -19,8 +19,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
     try {
       final raw = await rootBundle.loadString('assets/data/$fileName');
       return json.decode(raw) as List<dynamic>;
-    } catch (e) {
-      debugPrint('❌ Failed to load $fileName: $e');
+    } catch (_) {
       return null;
     }
   }
@@ -81,8 +80,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
 
         await docRef.set(review);
         count++;
-      } catch (e) {
-        debugPrint('⚠️ Failed to upload review: $e');
+      } catch (_) {
       }
     }
 
@@ -123,8 +121,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
         'ratingAverage': double.parse(avg.toStringAsFixed(1)),
         'ratingCount': count,
       });
-    } catch (e) {
-      debugPrint('⚠️ Rating update failed for $doctorId: $e');
+    } catch (_) {
     }
   }
 

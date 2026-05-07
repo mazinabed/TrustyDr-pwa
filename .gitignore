@@ -48,6 +48,15 @@ firebase-debug.log
 .firebaserc
 .firebase/
 
+# Sensitive Firebase config files
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+
+# Service account keys (never commit these)
+**/serviceAccountKey.json
+**/serviceAccount.json
+
 # IDE
 .vscode/
 .idea/

@@ -64,8 +64,7 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
       });
 
       if (mounted) Navigator.pop(context);
-    } catch (e) {
-      debugPrint('❌ Review error: $e');
+    } catch (_) {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

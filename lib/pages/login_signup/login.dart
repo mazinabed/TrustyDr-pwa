@@ -933,11 +933,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       _navigateAfterLogin(needsConsent);
-    }  catch (e, st) {
-  debugPrint('APPLE LOGIN ERROR TYPE: ${e.runtimeType}');
-  debugPrint('APPLE LOGIN ERROR VALUE: $e');
-  debugPrintStack(stackTrace: st);
-
+    } catch (e) {
   Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
 
   

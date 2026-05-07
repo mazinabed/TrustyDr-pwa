@@ -40,10 +40,6 @@ class _ProfileState extends State<Profile> {
       _hasLoadedOnce = true;
     }
 
-    // 🔍 Debug (remove later)
-    debugPrint(
-      'uid=${user?.uid}, anon=${user?.isAnonymous}, phone=${user?.phoneNumber}',
-    );
   }
 
   String _resolveLocalizedName(dynamic value) {
@@ -101,8 +97,7 @@ class _ProfileState extends State<Profile> {
         await user.updateDisplayName(userName);
         await user.reload();
       }
-    } catch (e) {
-      debugPrint('[Profile] Load error: $e');
+    } catch (_) {
     }
 
     if (mounted) setState(() => _isLoadingProfile = false);

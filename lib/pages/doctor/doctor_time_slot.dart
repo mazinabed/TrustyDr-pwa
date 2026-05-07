@@ -146,8 +146,7 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
       setState(() => _loadingSchedule = false);
 
       await _loadUsageForSelectedDate();
-    } catch (e) {
-      debugPrint("❌ Failed to load schedule: $e");
+    } catch (_) {
       setState(() {
         _scheduleForDay = null;
         _capacityPerSlot = 1;
@@ -186,8 +185,7 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
         if (t.isEmpty) continue;
         _slotUsage[t] = (_slotUsage[t] ?? 0) + 1;
       }
-    } catch (e) {
-      debugPrint("⚠️ usage load error: $e");
+    } catch (_) {
     } finally {
       if (mounted) setState(() => _loadingUsage = false);
     }
@@ -229,8 +227,7 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
           .limit(1)
           .get();
       return qs.docs.isNotEmpty;
-    } catch (e) {
-      debugPrint('⚠️ duplicate check failed: $e');
+    } catch (_) {
       return false;
     }
   }

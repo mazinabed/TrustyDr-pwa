@@ -58,8 +58,6 @@ if (kIsWeb) {
 
   // ---------- NATIVE IOS ----------
   try {
-    debugPrint('[AppleAuth] Starting Apple Sign-In');
-
     final rawNonce = _generateNonce();
     final nonce = _sha256ofString(rawNonce);
 
@@ -113,12 +111,6 @@ if (kIsWeb) {
   }
 }
 
-
-void debugJwt(String jwt) {
-  final parts = jwt.split('.');
-  final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
-  debugPrint('APPLE JWT PAYLOAD = $payload');
-}
 
 Future<UserCredential> signInWithGoogle() async {
   final provider = GoogleAuthProvider();

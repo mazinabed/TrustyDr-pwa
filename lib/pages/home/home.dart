@@ -3213,13 +3213,9 @@ Future<void> _bootstrap() async {
         .doc(_currentUser!.uid)
         .get();
 
-    if (!doc.exists) {
-      debugPrint('User doc not found');
-      return;
-    }
+    if (!doc.exists) return;
 
     final data = doc.data();
-    debugPrint('USER DOC DATA = $data');
 
     String? name =
         (data?['name'] ?? data?['fullName'])?.toString();
@@ -3234,9 +3230,7 @@ Future<void> _bootstrap() async {
       _displayName = name;
     });
 
-    debugPrint('Loaded displayName = $_displayName');
-  } catch (e) {
-    debugPrint('Load user name failed: $e');
+  } catch (_) {
   }
 }
  
@@ -3259,8 +3253,7 @@ Future<void> _bootstrap() async {
       final snap = await _db.collection('cities').get();
       _provinceDocs = snap.docs;
       _cachedCities = snap.docs;
-    } catch (e) {
-      debugPrint('Cities load failed: $e');
+    } catch (_) {
     } finally {
       if (mounted) setState(() => _loadingCities = false);
     }

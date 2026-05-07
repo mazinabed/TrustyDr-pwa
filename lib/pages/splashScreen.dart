@@ -408,8 +408,8 @@ bool _handlePublicDoctorDeepLink() {
 
       return true;
     }
-  } catch (e) {
-    debugPrint('Deep link parse error: $e');
+  } catch (_) {
+    return false;
   }
 
   return false;
@@ -425,17 +425,12 @@ bool _handlePublicDoctorDeepLink() {
         options: DefaultFirebaseOptions.currentPlatform,
       ).timeout(const Duration(seconds: 8));
 
-      debugPrint('[Startup] Firebase initialized');
-
       // 2️⃣ DatabaseService init (required for auth + consent + profile)
       await DatabaseService.instance
           .initialize()
           .timeout(const Duration(seconds: 5));
-
-      debugPrint('[Startup] DatabaseService initialized');
-    } catch (e, st) {
-      debugPrint('[Startup] Initialization failed: $e');
-      debugPrintStack(stackTrace: st);
+    } catch (e) {
+      rethrow;
     }
 if (!_isUpdateAvailable) {
   final handled = _handlePublicDoctorDeepLink();

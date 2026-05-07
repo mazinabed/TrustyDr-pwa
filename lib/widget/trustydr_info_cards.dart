@@ -219,8 +219,7 @@ class _TrustyDrInfoCardsState extends State<TrustyDrInfoCards> {
         uri,
         mode: LaunchMode.externalApplication,
       );
-    } catch (e) {
-      debugPrint('Failed to open Doctor Portal: $e');
+    } catch (_) {
     }
   }
 

@@ -804,6 +804,7 @@ final city = localizedField(data, 'city', context);
         final relationship = (data['relationship'] ?? '').toString();
 final rawStatus = (data['paymentStatus'] ?? '').toString();
 
+
 String paymentStatusKey;
 
 switch (rawStatus.toLowerCase()) {
@@ -820,7 +821,7 @@ switch (rawStatus.toLowerCase()) {
 }
 
 
-final paymentStatus = tr(rawStatus);
+
 
         Color statusColor() {
           switch (status.toLowerCase()) {
@@ -1005,7 +1006,7 @@ _card(
       if (!forSelf)
         _row('relationship'.tr(), relationship),
 
-      _row('payment'.tr(), paymentStatus),
+      _row('payment'.tr(), (tr(paymentStatusKey))),
     ],
   ),
 ),

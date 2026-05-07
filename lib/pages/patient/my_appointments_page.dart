@@ -717,8 +717,6 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
 
 // ⚠️ Firestore whereIn limit = 10 values MAX
   Widget _buildList(String userId, List<String> statuses) {
-    print("LOGGED USER = $userId");
-
     assert(statuses.length <= 10);
     
     final q = _fs

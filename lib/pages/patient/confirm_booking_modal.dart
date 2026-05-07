@@ -562,8 +562,6 @@ profileName ??= user.displayName ?? 'Patient';
 
     Navigator.pop(context, true);
   } catch (e) {
-    debugPrint('❌ booking error: $e');
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('error_generic'.tr())),
     );

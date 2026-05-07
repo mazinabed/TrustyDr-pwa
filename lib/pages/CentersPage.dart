@@ -175,8 +175,6 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
     child: InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
-        debugPrint("Tapped center: ${doc.id}");
-
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => CenterProfilePage(

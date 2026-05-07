@@ -247,7 +247,6 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DatabaseService {
@@ -344,16 +343,8 @@ class DatabaseService {
       _initialized = true;
       _initLock!.complete();
 
-      if (kDebugMode) {
-        debugPrint('[DatabaseService] ✅ Ready for user=$_userId');
-      }
     } catch (e, s) {
       _initLock!.completeError(e, s);
-
-      if (kDebugMode) {
-        debugPrint('[DatabaseService] ❌ Init failed\n$e\n$s');
-      }
-
       rethrow;
     }
   }
@@ -465,10 +456,8 @@ class DatabaseService {
         await _cacheUserData(data);
       }
       return data;
-    } catch (e) {
-      debugPrint('[DatabaseService] ❌ fetchCurrentUserProfile: $e');
-      final cached = await getCachedUser();
-      return cached;
+    } catch (_) {
+      return await getCachedUser();
     }
   }
 
@@ -580,7 +569,7 @@ Future<String> createAppointment(Map<String, dynamic> appointment) async {
     _requireAuth();
     return _db!
         .collection('appointments')
-        .where('userId', isEqualTo: _userId)
+        .where('patientId', isEqualTo: _userId)
         .orderBy('createdAt', descending: true)
         .snapshots();
   }
