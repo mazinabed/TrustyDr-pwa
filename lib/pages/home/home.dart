@@ -3539,7 +3539,7 @@ DropdownButtonFormField2<String>(
             ],
           );
 
-          // if (kIsWeb) page = WebScaffoldContainer(child: page);
+          if (constraints.maxWidth >= 768) page = WebScaffoldContainer(child: page);
 
           return Stack(
             children: [

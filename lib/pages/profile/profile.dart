@@ -11,6 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -236,7 +237,9 @@ class _ProfileState extends State<Profile> {
 
         return Scaffold(
           backgroundColor: Colors.grey[50],
-          body: SafeArea(
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              Widget content = SafeArea(
             child: RefreshIndicator(
               color: primaryColor,
               onRefresh: _loadProfile,
@@ -468,6 +471,10 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
             ),
+          );
+            if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+            return content;
+          },
           ),
         );
       },

@@ -1429,6 +1429,7 @@ import 'package:trustydr/core/providers/doctor_streams_provider.dart';
 import 'package:trustydr/pages/screens.dart';
 import 'package:trustydr/pages/speciality/google_clinic_details_page.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
+import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class SpecialityScreen extends ConsumerStatefulWidget {
   final bool showBack;
@@ -1463,8 +1464,10 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Column(
-        children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          Widget content = Column(
+            children: [
            TrustyDrCurvedHeader(
   title: 'specialties.title'.tr(),
    showBack: widget.showBack, height: 160,
@@ -1505,6 +1508,10 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                   ),
           ),
         ],
+          );
+          if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+          return content;
+        },
       ),
     );
   }

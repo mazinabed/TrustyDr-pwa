@@ -350,6 +350,22 @@ Profile(
 
     ];
 
+    final isDesktop = MediaQuery.of(context).size.width >= 768;
+
+    if (isDesktop) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF2F5F9),
+        appBar: _DesktopNavBar(
+          selectedIndex: _selectedIndex,
+          onTap: (i) => setState(() => _selectedIndex = i),
+        ),
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: pages,
+        ),
+      );
+    }
+
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFF2F5F9),
@@ -410,6 +426,93 @@ Profile(
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopNavBar extends StatelessWidget implements PreferredSizeWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTap;
+
+  const _DesktopNavBar({required this.selectedIndex, required this.onTap});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(56);
+
+  static const _icons = [
+    Icons.home_rounded,
+    Icons.local_hospital_rounded,
+    Icons.calendar_today_rounded,
+    Icons.person_rounded,
+  ];
+
+  static const _labelKeys = [
+    'nav_home',
+    'nav_speciality',
+    'nav_appointments',
+    'nav_profile',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 24),
+          for (int i = 0; i < _icons.length; i++)
+            _NavTab(
+              icon: _icons[i],
+              label: tr(_labelKeys[i]),
+              selected: selectedIndex == i,
+              onTap: () => onTap(i),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? const Color(0xFF2563EB) : const Color(0xFF6B7280);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -518,6 +518,7 @@ import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
+import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class MyAppointmentsPage extends StatefulWidget {
   final bool showBack;
@@ -593,8 +594,10 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
    if (user == null) {
   return Scaffold(
     backgroundColor: const Color(0xFFF6F8FB),
-    body: Column(
-      children: [
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        Widget content = Column(
+          children: [
         TrustyDrCurvedHeader(
           title: 'my_appointments'.tr(),
           showBack: widget.showBack, height: 100,
@@ -645,6 +648,10 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
           ),
         ),
       ],
+        );
+        if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+        return content;
+      },
     ),
   );
 }
@@ -652,8 +659,10 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
-      body: Column(
-        children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          Widget content = Column(
+            children: [
           // 🌈 Gradient Header with Title
       TrustyDrCurvedHeader(
   title: 'my_appointments'.tr(),
@@ -711,6 +720,10 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
             ),
           ),
         ],
+          );
+          if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+          return content;
+        },
       ),
     );
   }
