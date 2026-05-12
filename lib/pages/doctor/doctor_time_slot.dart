@@ -245,8 +245,9 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column(
-        children: [
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
                 fixPadding * 2, fixPadding, fixPadding * 2, fixPadding),
@@ -329,19 +330,28 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
             ),
           ),
           const SizedBox(height: 10),
-          Expanded(
-            child: _loadingSchedule
-                ? const Center(child: CircularProgressIndicator())
-                : _scheduleForDay == null
-                    ? Center(
-                        child: Text(
-                          'no_clinic_hours_day'.tr(),
-                          style: greyNormalTextStyle,
-                        ),
-                      )
-                    : _buildSlotGrid(),
+          if (_loadingSchedule)
+            const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_scheduleForDay == null)
+            SizedBox(
+              height: 220,
+              child: Center(
+                child: Text(
+                  'no_clinic_hours_day'.tr(),
+                  style: greyNormalTextStyle,
+                ),
+              ),
+            )
+          else
+            _buildSlotGrid(),
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom + 24,
           ),
         ],
+        ),
       ),
     );
   }
