@@ -188,6 +188,8 @@
   "status.confirmed": "Confirmed",
   "status.completed": "Completed",
   "status.canceled": "Canceled",
+  "status.cancelled": "Cancelled",
+  "status.approved": "Confirmed",
   "status.label": "Status",
 
   "upcoming": "Upcoming",

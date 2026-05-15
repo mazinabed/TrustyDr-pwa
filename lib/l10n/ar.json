@@ -183,6 +183,8 @@
   "status.confirmed": "مؤكد",
   "status.completed": "مكتمل",
   "status.canceled": "ملغي",
+  "status.cancelled": "ملغي",
+  "status.approved": "مؤكد",
   "status.label": "الحالة",
 
   "upcoming": "القادمة",

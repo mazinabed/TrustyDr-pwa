@@ -179,8 +179,10 @@
 
   "status.pending": "چاوەڕوان",
   "status.confirmed": "پشتڕاستکراو",
-  "status.completed": "تەواوکراو",
+  "status.completed": "تەواو",
   "status.canceled": "هەڵوەشاو",
+  "status.cancelled": "هەڵوەشاوە",
+  "status.approved": "پشتڕاستکراو",
   "status.label": "دۆخ",
 
   "upcoming": "داهاتوو",

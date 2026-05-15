@@ -1085,7 +1085,7 @@ class _AppointmentCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        status,
+                        'status.${status.toLowerCase()}'.tr(),
                         style: TextStyle(
                           color: _statusColor,
                           fontWeight: FontWeight.w600,
