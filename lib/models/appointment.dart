@@ -40,7 +40,7 @@ class Appointment {
       date: data['date'] as String? ?? 'N/A',
       time: data['time'] as String? ?? 'N/A',
       appointmentType: data['appointmentType'] as String? ?? 'Consultation',
-      status: data['status'] as String? ?? 'Pending',
+      status: data['status'] as String? ?? 'pending',
       notes: data['notes'] as String?,
       doctorAvatarUrl: data['doctorAvatarUrl'] as String?,
     );

@@ -718,9 +718,9 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                 child: TabBarView(
                   controller: _tab,
                   children: [
-                    _buildList(user.uid, ['pending', 'confirmed']),
+                    _buildList(user.uid, ['pending', 'confirmed', 'approved']),
                     _buildList(user.uid, ['completed']),
-                    _buildList(user.uid, ['canceled']),
+                    _buildList(user.uid, ['cancelled']),
                   ],
                 ),
               ),
@@ -882,7 +882,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
     try {
       await _fs.collection('appointments').doc(appointmentId).update({
-        'status': 'canceled',
+        'status': 'cancelled',
         'updatedAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
@@ -970,6 +970,7 @@ class _AppointmentCard extends StatelessWidget {
       case 'completed':
         return Colors.blue;
       case 'canceled':
+      case 'cancelled':
         return Colors.red;
       default:
         return Colors.grey;
@@ -1124,7 +1125,9 @@ class _AppointmentCard extends StatelessWidget {
                       ),
 
                     /// RESCHEDULE
-                    if (statusLc != 'completed' && statusLc != 'canceled')
+                    if (statusLc != 'completed' &&
+                        statusLc != 'canceled' &&
+                        statusLc != 'cancelled')
                       TextButton.icon(
                         onPressed: onReschedule,
                         icon: const Icon(Icons.edit_calendar, size: 18),
@@ -1132,7 +1135,9 @@ class _AppointmentCard extends StatelessWidget {
                       ),
 
                     /// CANCEL
-                    if (statusLc != 'canceled' && statusLc != 'completed')
+                    if (statusLc != 'canceled' &&
+                        statusLc != 'cancelled' &&
+                        statusLc != 'completed')
                       TextButton.icon(
                         onPressed: onCancel,
                         icon: const Icon(Icons.cancel,
