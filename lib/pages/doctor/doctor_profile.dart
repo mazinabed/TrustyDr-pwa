@@ -884,9 +884,6 @@
 //   State<DoctorProfile> createState() => _DoctorProfileState();
 // }
 
-
-
-
 // class _DoctorProfileState extends State<DoctorProfile> {
 //   final _auth = FirebaseAuth.instance;
 
@@ -1256,7 +1253,6 @@
 //   }
 // }
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/pages/doctor/doctor_time_slot.dart';
@@ -1284,11 +1280,11 @@ class _DoctorProfileState extends State<DoctorProfile> {
   Widget build(BuildContext context) {
     final doctorRef =
         FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId);
-final centersQuery = FirebaseFirestore.instance
-    .collection('schedules')
-    .where('doctorId', isEqualTo: widget.doctorId)
-    .where('status', isEqualTo: 'published')
-    .where('isActive', isEqualTo: true);
+    final centersQuery = FirebaseFirestore.instance
+        .collection('schedules')
+        .where('doctorId', isEqualTo: widget.doctorId)
+        .where('status', isEqualTo: 'published')
+        .where('isActive', isEqualTo: true);
 
     final scheduleQuery = FirebaseFirestore.instance
         .collection('schedules')
@@ -1361,9 +1357,8 @@ final centersQuery = FirebaseFirestore.instance
           final lat = data['latitude'];
           final lng = data['longitude'];
           final centerId = data['centerId'] ?? '';
-final provinceKey = data['provinceKey'] ?? '';
-final cityKey = data['cityKey'] ?? '';
-
+          final provinceKey = data['provinceKey'] ?? '';
+          final cityKey = data['cityKey'] ?? '';
 
           final isVerified =
               data['verified'] == true || data['isVerified'] == true;
@@ -1531,32 +1526,28 @@ final cityKey = data['cityKey'] ?? '';
                                     Navigator.push(
                                       context,
                                       PageTransition(
-                                        type: PageTransitionType.rightToLeft,
-                                    child: DoctorTimeSlot(
-  doctorId: widget.doctorId,
-  doctorName: name,
-  doctorImage: imageUrl,
+                                          type: PageTransitionType.rightToLeft,
+                                          child: DoctorTimeSlot(
+                                            doctorId: widget.doctorId,
+                                            doctorName: name,
+                                            doctorImage: imageUrl,
 
-  specialtyKey: specialtyKey,
-  specialtyEn: specialtyEn,
-  specialtyAr: specialtyAr,
-  specialtyKu: specialtyKu,
+                                            specialtyKey: specialtyKey,
+                                            specialtyEn: specialtyEn,
+                                            specialtyAr: specialtyAr,
+                                            specialtyKu: specialtyKu,
 
-  experience: exp,
-  clinicName: clinic,
-  province: province,
-  city: city,
+                                            experience: exp,
+                                            clinicName: clinic,
+                                            province: province,
+                                            city: city,
 
-  // ⭐ ADD THESE
-  centerId: centerId,
-  provinceKey: provinceKey,
-  cityKey: cityKey,
-)
-
-                                      
-                                      ),
+                                            // ⭐ ADD THESE
+                                            centerId: centerId,
+                                            provinceKey: provinceKey,
+                                            cityKey: cityKey,
+                                          )),
                                     );
-                                  
                                   },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
@@ -1578,147 +1569,154 @@ final cityKey = data['cityKey'] ?? '';
                   },
                 ),
               ),
-             //work at
-               SliverToBoxAdapter(
-  child: StreamBuilder<QuerySnapshot>(
-    stream: centersQuery.snapshots(),
-    builder: (context, snap) {
-      if (!snap.hasData || snap.data!.docs.isEmpty) {
-        return const SizedBox();
-      }
+              //work at
+              SliverToBoxAdapter(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: centersQuery.snapshots(),
+                  builder: (context, snap) {
+                    if (!snap.hasData || snap.data!.docs.isEmpty) {
+                      return const SizedBox();
+                    }
 
-      final centers = snap.data!.docs;
+                    final centers = snap.data!.docs;
 
-      return _modernCard(
-        title: 'available_at'.tr(),
-        icon: Icons.local_hospital,
-        child: Column(
-          children: centers.map((doc) {
-            final c = doc.data() as Map<String, dynamic>;
+                    return _modernCard(
+                      title: 'available_at'.tr(),
+                      icon: Icons.local_hospital,
+                      child: Column(
+                        children: centers.map((doc) {
+                          final c = doc.data() as Map<String, dynamic>;
 
-          String clinicName;
+                          String clinicName;
 
-if (lang == 'ar') {
-  clinicName = (c['clinicName_ar'] ?? c['clinicName'] ?? '').toString();
-} else if (lang == 'ku') {
-  clinicName = (c['clinicName_ku'] ?? c['clinicName'] ?? '').toString();
-} else {
-  clinicName = (c['clinicName_en'] ?? c['clinicName'] ?? '').toString();
-}
+                          if (lang == 'ar') {
+                            clinicName =
+                                (c['clinicName_ar'] ?? c['clinicName'] ?? '')
+                                    .toString();
+                          } else if (lang == 'ku') {
+                            clinicName =
+                                (c['clinicName_ku'] ?? c['clinicName'] ?? '')
+                                    .toString();
+                          } else {
+                            clinicName =
+                                (c['clinicName_en'] ?? c['clinicName'] ?? '')
+                                    .toString();
+                          }
 
-           String city;
-String province;
+                          String city;
+                          String province;
 
-if (lang == 'ar') {
-  city = (c['city_ar'] ?? c['city_en'] ?? '').toString();
-  province = (c['province_ar'] ?? c['province_en'] ?? '').toString();
-} else if (lang == 'ku') {
-  city = (c['city_ku'] ?? c['city_en'] ?? '').toString();
-  province = (c['province_ku'] ?? c['province_en'] ?? '').toString();
-} else {
-  city = (c['city_en'] ?? '').toString();
-  province = (c['province_en'] ?? '').toString();
-}
+                          if (lang == 'ar') {
+                            city =
+                                (c['city_ar'] ?? c['city_en'] ?? '').toString();
+                            province =
+                                (c['province_ar'] ?? c['province_en'] ?? '')
+                                    .toString();
+                          } else if (lang == 'ku') {
+                            city =
+                                (c['city_ku'] ?? c['city_en'] ?? '').toString();
+                            province =
+                                (c['province_ku'] ?? c['province_en'] ?? '')
+                                    .toString();
+                          } else {
+                            city = (c['city_en'] ?? '').toString();
+                            province = (c['province_en'] ?? '').toString();
+                          }
 
-String address;
+                          String address;
 
-if (lang == 'ar') {
-  address = (c['clinicAddress_ar'] ?? '').toString();
-} else if (lang == 'ku') {
-  address = (c['clinicAddress_ku'] ?? '').toString();
-} else {
-  address = (c['clinicAddress_en'] ?? '').toString();
-}
-            final centerId =
-                (c['centerId'] ?? '').toString();
+                          if (lang == 'ar') {
+                            address = (c['clinicAddress_ar'] ?? '').toString();
+                          } else if (lang == 'ku') {
+                            address = (c['clinicAddress_ku'] ?? '').toString();
+                          } else {
+                            address = (c['clinicAddress_en'] ?? '').toString();
+                          }
+                          final centerId = (c['centerId'] ?? '').toString();
 
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: DoctorTimeSlot(
-                      doctorId: widget.doctorId,
-                      doctorName: name,
-                      doctorImage: imageUrl,
-
-                      specialtyKey: specialtyKey,
-                      specialtyEn: specialtyEn,
-                      specialtyAr: specialtyAr,
-                      specialtyKu: specialtyKu,
-
-                      experience: exp,
-                      clinicName: clinicName,
-                      province: province,
-                      city: city,
-
-                      centerId: centerId,
-                      provinceKey: c['provinceKey'],
-                      cityKey: c['cityKey'],
-                    ),
-                  ),
-                );
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.withOpacity(.12),
-                        borderRadius: BorderRadius.circular(10),
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                PageTransition(
+                                  type: PageTransitionType.rightToLeft,
+                                  child: DoctorTimeSlot(
+                                    doctorId: widget.doctorId,
+                                    doctorName: name,
+                                    doctorImage: imageUrl,
+                                    specialtyKey: specialtyKey,
+                                    specialtyEn: specialtyEn,
+                                    specialtyAr: specialtyAr,
+                                    specialtyKu: specialtyKu,
+                                    experience: exp,
+                                    clinicName: clinicName,
+                                    province: province,
+                                    city: city,
+                                    centerId: centerId,
+                                    provinceKey: c['provinceKey'],
+                                    cityKey: c['cityKey'],
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.teal.withOpacity(.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.local_hospital,
+                                        color: Colors.teal),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          clinicName,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        if (address.isNotEmpty)
+                                          Text(
+                                            address,
+                                            style: greyNormalTextStyle,
+                                          ),
+                                        Text(
+                                          "$city${city.isNotEmpty && province.isNotEmpty ? ', ' : ''}$province",
+                                          style: greyNormalTextStyle,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_forward_ios, size: 16),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                      child: const Icon(Icons.local_hospital,
-                          color: Colors.teal),
-                    ),
-                    const SizedBox(width: 12),
-                 Expanded(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        clinicName,
-        style: const TextStyle(fontWeight: FontWeight.bold),
-      ),
-
-      if (address.isNotEmpty)
-        Text(
-          address,
-          style: greyNormalTextStyle,
-        ),
-
-      Text(
-        "$city${city.isNotEmpty && province.isNotEmpty ? ', ' : ''}$province",
-        style: greyNormalTextStyle,
-      ),
-    ],
-  ),
-),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
-                  ],
+                    );
+                  },
                 ),
               ),
-            );
-          }).toList(),
-        ),
-      );
-    
-    },
-  ),
-),
 
               // ================= ABOUT =================
               SliverToBoxAdapter(
                 child: _modernCard(
                   title: 'about_doctor'.tr(),
-                   icon: Icons.person,
+                  icon: Icons.person,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1754,9 +1752,9 @@ if (lang == 'ar') {
 // ================= REVIEWS =================
               SliverToBoxAdapter(
                 child: _modernCard(
-                  title: 'reviews'
-                      .tr(), 
-                      icon: Icons.star,// or 'Patient Reviews' if you don't have a key yet
+                  title: 'reviews'.tr(),
+                  icon: Icons
+                      .star, // or 'Patient Reviews' if you don't have a key yet
                   child: DoctorReviewsSection(doctorId: widget.doctorId),
                 ),
               ),
@@ -1798,59 +1796,55 @@ if (lang == 'ar') {
     );
   }
 
- Widget _modernCard({
-  required String title,
-  required Widget child,
-  IconData? icon,
-}) {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(.04),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (icon != null)
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(.12),
-                  borderRadius: BorderRadius.circular(10),
+  Widget _modernCard({
+    required String title,
+    required Widget child,
+    IconData? icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.04),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (icon != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.withOpacity(.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: Colors.teal, size: 18),
                 ),
-                child: Icon(icon, color: Colors.teal, size: 18),
+              if (icon != null) const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-
-            if (icon != null) const SizedBox(width: 10),
-
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        child,
-      ],
-    ),
-  );
-}
+            ],
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
 
   Widget _info(String title, String value) {
     if (value.trim().isEmpty) return const SizedBox.shrink();

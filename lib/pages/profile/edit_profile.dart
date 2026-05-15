@@ -357,7 +357,6 @@
 //   }
 // }
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/pages/profile/ChangePhoneNumberScreen.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -368,7 +367,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
-import 'dart:io' show File; // ✅ allowed ONLY because we will guard it with !kIsWeb
+import 'dart:io'
+    show File; // ✅ allowed ONLY because we will guard it with !kIsWeb
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -470,7 +470,8 @@ class _EditProfileState extends State<EditProfile> {
       final updates = <String, dynamic>{};
 
       final newName = nameController.text.trim();
-      final newEmail = emailController.text.trim(); // readOnly but keep for diff
+      final newEmail =
+          emailController.text.trim(); // readOnly but keep for diff
       final newPhone = phoneController.text.trim();
 
       // ✅ Optional fields: update only if user provided non-empty value AND changed.
@@ -493,27 +494,27 @@ class _EditProfileState extends State<EditProfile> {
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('profile_images/${currentUser!.uid}.jpg');
-if (pickedImage != null) {
-  final storageRef = FirebaseStorage.instance
-      .ref()
-      .child('profile_images/${currentUser!.uid}.jpg');
+        if (pickedImage != null) {
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('profile_images/${currentUser!.uid}.jpg');
 
-  if (kIsWeb) {
-    final Uint8List bytes = await pickedImage!.readAsBytes();
-    await storageRef.putData(
-      bytes,
-      SettableMetadata(contentType: 'image/jpeg'),
-    );
-  } else {
-    await storageRef.putFile(File(pickedImage!.path));
-  }
+          if (kIsWeb) {
+            final Uint8List bytes = await pickedImage!.readAsBytes();
+            await storageRef.putData(
+              bytes,
+              SettableMetadata(contentType: 'image/jpeg'),
+            );
+          } else {
+            await storageRef.putFile(File(pickedImage!.path));
+          }
 
-  uploadedUrl = await storageRef.getDownloadURL();
+          uploadedUrl = await storageRef.getDownloadURL();
 
-  if (uploadedUrl != _initialProfileImage) {
-    updates['profileImage'] = uploadedUrl;
-  }
-}
+          if (uploadedUrl != _initialProfileImage) {
+            updates['profileImage'] = uploadedUrl;
+          }
+        }
 
         if (uploadedUrl != _initialProfileImage) {
           updates['profileImage'] = uploadedUrl;
@@ -736,10 +737,10 @@ if (pickedImage != null) {
             decoration: const InputDecoration(
               isDense: true,
               border: OutlineInputBorder(),
-              enabledBorder:
-                  OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-              focusedBorder:
-                  OutlineInputBorder(borderSide: BorderSide(color: Colors.teal)),
+              enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey)),
+              focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal)),
             ),
           ),
         ],
@@ -747,23 +748,24 @@ if (pickedImage != null) {
     );
   }
 
- ImageProvider _resolveProfileImageProvider() {
-  if (pickedImage != null) {
-    if (kIsWeb) {
-      // Web preview: requires bytes
-      // We'll render using Image.memory in the widget instead (recommended),
-      // because ImageProvider needs bytes which are async.
-      return NetworkImage(profileImage.trim().isEmpty
-          ? 'https://via.placeholder.com/150'
-          : profileImage);
-    } else {
-      return FileImage(File(pickedImage!.path));
+  ImageProvider _resolveProfileImageProvider() {
+    if (pickedImage != null) {
+      if (kIsWeb) {
+        // Web preview: requires bytes
+        // We'll render using Image.memory in the widget instead (recommended),
+        // because ImageProvider needs bytes which are async.
+        return NetworkImage(profileImage.trim().isEmpty
+            ? 'https://via.placeholder.com/150'
+            : profileImage);
+      } else {
+        return FileImage(File(pickedImage!.path));
+      }
     }
+
+    final url = profileImage.trim();
+    return NetworkImage(url.isEmpty ? 'https://via.placeholder.com/150' : url);
   }
 
-  final url = profileImage.trim();
-  return NetworkImage(url.isEmpty ? 'https://via.placeholder.com/150' : url);
-}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

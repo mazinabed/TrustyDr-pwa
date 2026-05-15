@@ -130,11 +130,7 @@
 
 //   }
 
-
 // }
-
-
-
 
 // import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -260,10 +256,7 @@
 //   return payload;
 // }
 
-
 // }
-
-
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -318,14 +311,13 @@ class AppointmentBuilder {
 
     final schedule = scheduleDoc.data()!;
 
-if (schedule['slotDurationMinutes'] == null) {
-  throw Exception('Schedule missing slotDurationMinutes');
-}
+    if (schedule['slotDurationMinutes'] == null) {
+      throw Exception('Schedule missing slotDurationMinutes');
+    }
 
-final duration = schedule['slotDurationMinutes'] as int;
+    final duration = schedule['slotDurationMinutes'] as int;
 
-final computedSlotEnd =
-    slotStartAt.add(Duration(minutes: duration));
+    final computedSlotEnd = slotStartAt.add(Duration(minutes: duration));
 
     if (!schedule.containsKey('province_en') ||
         !schedule.containsKey('city_en') ||
@@ -373,11 +365,11 @@ final computedSlotEnd =
         // CENTER SNAPSHOT
         //------------------------------------------------
         'centerId': schedule['centerId'],
-       'centerName': schedule['clinicName'], // future architecture
-'clinicName': schedule['clinicName'], // current UI expects this
-'clinicName_en': schedule['clinicName_en'],
-'clinicName_ar': schedule['clinicName_ar'],
-'clinicName_ku': schedule['clinicName_ku'],
+        'centerName': schedule['clinicName'], // future architecture
+        'clinicName': schedule['clinicName'], // current UI expects this
+        'clinicName_en': schedule['clinicName_en'],
+        'clinicName_ar': schedule['clinicName_ar'],
+        'clinicName_ku': schedule['clinicName_ku'],
         'provinceKey': schedule['provinceKey'],
         'cityKey': schedule['cityKey'],
 
@@ -395,7 +387,6 @@ final computedSlotEnd =
         'clinicAddress_ar': center['clinicAddress_ar'],
         'clinicAddress_ku': center['clinicAddress_ku'],
 
-       
         'visitType': schedule['visitType'],
 
         //------------------------------------------------
@@ -421,8 +412,8 @@ final computedSlotEnd =
         // SLOT SNAPSHOT
         //------------------------------------------------
         'slotStartAt': Timestamp.fromDate(slotStartAt),
-'slotEndAt': Timestamp.fromDate(computedSlotEnd),
-'slotDurationMinutes': duration,
+        'slotEndAt': Timestamp.fromDate(computedSlotEnd),
+        'slotDurationMinutes': duration,
 
         //------------------------------------------------
         // BOOKING META

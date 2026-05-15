@@ -58,11 +58,10 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
     await _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       timeout: const Duration(seconds: 60),
-     verificationCompleted: (PhoneAuthCredential credential) async {
-  await currentUser!.updatePhoneNumber(credential);
-  await _updatePhoneNumber();
-},
-
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await currentUser!.updatePhoneNumber(credential);
+        await _updatePhoneNumber();
+      },
       verificationFailed: (FirebaseAuthException e) {
         setState(() => _isLoading = false);
         Fluttertoast.showToast(
@@ -117,9 +116,8 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
         smsCode: otp,
       );
 
-   await currentUser!.updatePhoneNumber(credential);
-await _updatePhoneNumber();
-
+      await currentUser!.updatePhoneNumber(credential);
+      await _updatePhoneNumber();
     } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
       Fluttertoast.showToast(
@@ -130,45 +128,44 @@ await _updatePhoneNumber();
     }
   }
 
- Future<void> _updatePhoneNumber() async {
-  if (userRef == null) return;
+  Future<void> _updatePhoneNumber() async {
+    if (userRef == null) return;
 
-  try {
-    await userRef!.update({'phoneNumber': phoneNumber});
+    try {
+      await userRef!.update({'phoneNumber': phoneNumber});
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    // ✅ Reset OTP state
-    for (final c in otpControllers) {
-      c.clear();
+      // ✅ Reset OTP state
+      for (final c in otpControllers) {
+        c.clear();
+      }
+
+      setState(() {
+        _isLoading = false;
+        _otpSent = false;
+        _verificationId = null;
+      });
+
+      Fluttertoast.showToast(
+        msg: tr('auth.phoneUpdatedSuccessfully'),
+        backgroundColor: Colors.black,
+        textColor: whiteColor,
+      );
+
+      // ✅ Close screen cleanly
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      Fluttertoast.showToast(
+        msg: '${tr('auth.errorUpdatingPhone')}: $e',
+        backgroundColor: Colors.black,
+        textColor: whiteColor,
+      );
     }
-
-    setState(() {
-      _isLoading = false;
-      _otpSent = false;
-      _verificationId = null;
-    });
-
-    Fluttertoast.showToast(
-      msg: tr('auth.phoneUpdatedSuccessfully'),
-      backgroundColor: Colors.black,
-      textColor: whiteColor,
-    );
-
-    // ✅ Close screen cleanly
-    Navigator.of(context).pop(true);
-
-  } catch (e) {
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    Fluttertoast.showToast(
-      msg: '${tr('auth.errorUpdatingPhone')}: $e',
-      backgroundColor: Colors.black,
-      textColor: whiteColor,
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -226,33 +223,33 @@ await _updatePhoneNumber();
                       Text(tr('auth.enterNewPhoneNumber'),
                           style: loginBigTextStyle),
                       const SizedBox(height: 20),
-                  Directionality(
-  textDirection: ui.TextDirection.ltr,
-  child: InternationalPhoneNumberInput(
-    textStyle: inputLoginTextStyle,
-    autoValidateMode: AutovalidateMode.disabled,
-    selectorTextStyle: const TextStyle(color: Colors.white, fontSize: 16.0),
-    initialValue: number,
-    textFieldController: phoneController,
-    inputBorder: InputBorder.none,
-    inputDecoration: InputDecoration(
-      contentPadding: const EdgeInsets.only(left: 0.0, bottom: 15.0),
-      hintText: tr('auth.phoneNumber'),
-      hintStyle: inputLoginTextStyle,
-      border: InputBorder.none,
-      filled: true,
-      fillColor: Colors.grey[200]!.withValues(alpha: 0.3),
-    ),
-    selectorConfig: const SelectorConfig(
-      selectorType: PhoneInputSelectorType.DIALOG,
-    ),
-    onInputChanged: (PhoneNumber num) {
-      phoneNumber = num.phoneNumber ?? '';
-    },
-  ),
-),
-
-                     
+                      Directionality(
+                        textDirection: ui.TextDirection.ltr,
+                        child: InternationalPhoneNumberInput(
+                          textStyle: inputLoginTextStyle,
+                          autoValidateMode: AutovalidateMode.disabled,
+                          selectorTextStyle: const TextStyle(
+                              color: Colors.white, fontSize: 16.0),
+                          initialValue: number,
+                          textFieldController: phoneController,
+                          inputBorder: InputBorder.none,
+                          inputDecoration: InputDecoration(
+                            contentPadding:
+                                const EdgeInsets.only(left: 0.0, bottom: 15.0),
+                            hintText: tr('auth.phoneNumber'),
+                            hintStyle: inputLoginTextStyle,
+                            border: InputBorder.none,
+                            filled: true,
+                            fillColor: Colors.grey[200]!.withValues(alpha: 0.3),
+                          ),
+                          selectorConfig: const SelectorConfig(
+                            selectorType: PhoneInputSelectorType.DIALOG,
+                          ),
+                          onInputChanged: (PhoneNumber num) {
+                            phoneNumber = num.phoneNumber ?? '';
+                          },
+                        ),
+                      ),
                       const SizedBox(height: 30),
                       InkWell(
                         onTap: _sendOTP,
@@ -284,44 +281,45 @@ await _updatePhoneNumber();
                       Text('${tr('auth.enterOtpSentTo')} $phoneNumber',
                           style: loginBigTextStyle),
                       const SizedBox(height: 50),
-                    Directionality(
-  textDirection: ui.TextDirection.ltr,
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: List.generate(6, (index) {
-      return Container(
-        width: 50,
-        height: 50,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.grey[200]!.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: TextField(
-          controller: otpControllers[index],
-          focusNode: focusNodes[index],
-          style: inputOtpTextStyle,
-          keyboardType: TextInputType.number,
-          cursorColor: whiteColor,
-          textAlign: TextAlign.center,
-          maxLength: 1,
-          decoration: const InputDecoration(
-            counterText: '',
-            border: InputBorder.none,
-          ),
-          onChanged: (v) {
-            if (v.isNotEmpty && index < 5) {
-              FocusScope.of(context).requestFocus(focusNodes[index + 1]);
-            } else if (v.isEmpty && index > 0) {
-              FocusScope.of(context).requestFocus(focusNodes[index - 1]);
-            }
-          },
-        ),
-      );
-    }),
-  ),
-),
-
+                      Directionality(
+                        textDirection: ui.TextDirection.ltr,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(6, (index) {
+                            return Container(
+                              width: 50,
+                              height: 50,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200]!.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: TextField(
+                                controller: otpControllers[index],
+                                focusNode: focusNodes[index],
+                                style: inputOtpTextStyle,
+                                keyboardType: TextInputType.number,
+                                cursorColor: whiteColor,
+                                textAlign: TextAlign.center,
+                                maxLength: 1,
+                                decoration: const InputDecoration(
+                                  counterText: '',
+                                  border: InputBorder.none,
+                                ),
+                                onChanged: (v) {
+                                  if (v.isNotEmpty && index < 5) {
+                                    FocusScope.of(context)
+                                        .requestFocus(focusNodes[index + 1]);
+                                  } else if (v.isEmpty && index > 0) {
+                                    FocusScope.of(context)
+                                        .requestFocus(focusNodes[index - 1]);
+                                  }
+                                },
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
                       const SizedBox(height: 30),
                       InkWell(
                         onTap: _verifyOTP,

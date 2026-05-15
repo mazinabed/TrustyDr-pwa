@@ -336,7 +336,7 @@
 //   }
 // }
 
-import 'dart:async';// 👈 Add this for PWA refresh
+import 'dart:async'; // 👈 Add this for PWA refresh
 
 import 'package:trustydr/utils/web_location.dart';
 
@@ -352,71 +352,66 @@ import 'package:trustydr/services/database_service.dart';
 import 'package:trustydr/utils/web_reload_stub.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-
   const SplashScreen({super.key});
 
   @override
   @override
-ConsumerState<SplashScreen> createState() => _SplashScreenState();
-
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
- with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   bool _navigated = false;
   bool _isUpdateAvailable = false; // 👈 Track if update found
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  _ctrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1400),
-  )..forward();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..forward();
 
-  // ✅ Handle Google/Apple redirect result (WEB ONLY internally)
-   // ✅ Firebase web redirect handler
+    // ✅ Handle Google/Apple redirect result (WEB ONLY internally)
+    // ✅ Firebase web redirect handler
     Future.microtask(() {
       ref.read(authControllerProvider.notifier).handleWebRedirectResult();
     });
 
-  listenForPwaUpdate(() {
-    if (mounted) {
-      setState(() => _isUpdateAvailable = true);
-    }
-  });
+    listenForPwaUpdate(() {
+      if (mounted) {
+        setState(() => _isUpdateAvailable = true);
+      }
+    });
 
-  _start();
-}
-
-bool _handlePublicDoctorDeepLink() {
-  try {
-    final path = getCurrentPath();
-
-    if (path.startsWith('/p/doctor/')) {
-      final doctorId = path.split('/').last;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => PublicDoctorProfilePage(doctorId: doctorId),
-          ),
-        );
-      });
-
-      return true;
-    }
-  } catch (_) {
-    return false;
+    _start();
   }
 
-  return false;
-}
+  bool _handlePublicDoctorDeepLink() {
+    try {
+      final path = getCurrentPath();
 
+      if (path.startsWith('/p/doctor/')) {
+        final doctorId = path.split('/').last;
 
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => PublicDoctorProfilePage(doctorId: doctorId),
+            ),
+          );
+        });
 
+        return true;
+      }
+    } catch (_) {
+      return false;
+    }
+
+    return false;
+  }
 
   Future<void> _start() async {
     try {
@@ -432,18 +427,18 @@ bool _handlePublicDoctorDeepLink() {
     } catch (e) {
       rethrow;
     }
-if (!_isUpdateAvailable) {
-  final handled = _handlePublicDoctorDeepLink();
-  if (!handled) {
-    _route();
-  }
-}
+    if (!_isUpdateAvailable) {
+      final handled = _handlePublicDoctorDeepLink();
+      if (!handled) {
+        _route();
+      }
+    }
 
     // Keep your splash animation timing
     await Future.delayed(const Duration(milliseconds: 1200));
 
     if (!mounted) return;
-    
+
     // 👈 Only route to app if no update is waiting
     if (!_isUpdateAvailable) {
       _route();
@@ -475,52 +470,51 @@ if (!_isUpdateAvailable) {
       textDirection: TextDirection.ltr, // 🔒 FORCE LTR FOR SPLASH
       child: Scaffold(
         backgroundColor: Colors.transparent,
-      body: Stack(
-  children: [
-    Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-    ),
-
-    Center(
-  child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(20),
-      color: Colors.white.withOpacity(0.04),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        body: Stack(
           children: [
-            _letter('T', 68, 0.0, 0.25),
-            _letter('D', 48, 0.25, 0.5),
-            _letter('r', 44, 0.5, 0.75),
-            _letter('.', 56, 0.75, 1.0),
-          ],
-        ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
 
-        const SizedBox(height: 12),
-
-        const Text(
-          "Patient App",
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    ),
-  ),
-),
+            Center(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.04),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _letter('T', 68, 0.0, 0.25),
+                        _letter('D', 48, 0.25, 0.5),
+                        _letter('r', 44, 0.5, 0.75),
+                        _letter('.', 56, 0.75, 1.0),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Patient App",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
             // 👈 The Update UI Overlay
             if (_isUpdateAvailable)
@@ -529,10 +523,10 @@ if (!_isUpdateAvailable) {
                 left: 20,
                 right: 20,
                 child: Card(
-  color: Colors.white,
-  elevation: 24,
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-
+                  color: Colors.white,
+                  elevation: 24,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -540,20 +534,21 @@ if (!_isUpdateAvailable) {
                       children: [
                         const Text(
                           "Update Available",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                         const SizedBox(height: 8),
                         const Text("A new version of the app is ready."),
                         const SizedBox(height: 16),
                         ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: const Color(0xFF4A90E2),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-  ),
-
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4A90E2),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 12),
+                          ),
                           onPressed: () => reloadPage(),
-
                           child: const Text("REFRESH NOW"),
                         ),
                       ],
@@ -591,21 +586,20 @@ if (!_isUpdateAvailable) {
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: Text(
               text,
-           style: TextStyle(
-  fontSize: size,
-  fontWeight: FontWeight.w800,
-  color: Colors.white,
-  height: 1,
-  letterSpacing: 1.2,
-  shadows: const [
-    Shadow(
-      blurRadius: 12,
-      color: Color(0x66000000),
-      offset: Offset(0, 6),
-    ),
-  ],
-),
-
+              style: TextStyle(
+                fontSize: size,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1,
+                letterSpacing: 1.2,
+                shadows: const [
+                  Shadow(
+                    blurRadius: 12,
+                    color: Color(0x66000000),
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -45,29 +45,22 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
             showBack: widget.showBack,
             height: 160,
           ),
-
           const SizedBox(height: 12),
-
           _buildSearchBar(),
-
           const SizedBox(height: 8),
-
           Expanded(
             child: location == null || location.cityEn == null
                 ? _buildSelectCityFirst()
                 : centersAsync.when(
                     loading: () => const Center(
-                        child:
-                            CircularProgressIndicator(color: Colors.teal)),
-                    error: (e, _) =>
-                        Center(child: Text(e.toString())),
+                        child: CircularProgressIndicator(color: Colors.teal)),
+                    error: (e, _) => Center(child: Text(e.toString())),
                     data: (snapshot) {
                       final filtered = snapshot.docs.where((doc) {
                         if (_searchQuery.isEmpty) return true;
 
                         final data = doc.data();
-                        final name = _localizedCenterName(
-                            context, data);
+                        final name = _localizedCenterName(context, data);
 
                         return name
                             .toLowerCase()
@@ -78,8 +71,7 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
                         return Center(
                           child: Text(
                             'centers.empty'.tr(),
-                            style: const TextStyle(
-                                color: Colors.grey),
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         );
                       }
@@ -88,8 +80,7 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
                         padding: const EdgeInsets.all(16),
                         itemCount: filtered.length,
                         itemBuilder: (_, i) =>
-                            _buildCenterCard(
-                                context, filtered[i]),
+                            _buildCenterCard(context, filtered[i]),
                       );
                     },
                   ),
@@ -150,8 +141,7 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
             hintText: 'search_center'.tr(),
             prefixIcon: const Icon(Icons.search),
             border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
           ),
         ),
       ),
@@ -162,98 +152,87 @@ class _CentersScreenState extends ConsumerState<CentersScreen> {
   // Center Card
   // --------------------------------------------------
   Widget _buildCenterCard(
-  BuildContext context,
-  QueryDocumentSnapshot<Map<String, dynamic>> doc,
-) {
-  final data = doc.data();
-  final name = _localizedCenterName(context, data);
-  final doctorCount = data['doctorCount'] ?? 0;
+    BuildContext context,
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    final name = _localizedCenterName(context, data);
+    final doctorCount = data['doctorCount'] ?? 0;
 
-  return Material(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
-    child: InkWell(
+    return Material(
+      color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => CenterProfilePage(
-              centerId: doc.id,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            )
-          ],
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.local_hospital,
-                size: 36, color: Colors.teal),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "$doctorCount ${'centers.doctors'.tr()}",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => CenterProfilePage(
+                centerId: doc.id,
               ),
             ),
-          ],
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.local_hospital, size: 36, color: Colors.teal),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "$doctorCount ${'centers.doctors'.tr()}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   // --------------------------------------------------
   // Localized Name
   // --------------------------------------------------
-  String _localizedCenterName(
-      BuildContext context,
-      Map<String, dynamic> data) {
+  String _localizedCenterName(BuildContext context, Map<String, dynamic> data) {
     final lang = context.locale.languageCode;
 
     if (lang == 'ar') {
-      return (data['clinicName_ar'] ??
-              data['clinicName'] ??
-              '')
-          .toString();
+      return (data['clinicName_ar'] ?? data['clinicName'] ?? '').toString();
     }
 
     if (lang == 'ku') {
-      return (data['clinicName_ku'] ??
-              data['clinicName'] ??
-              '')
-          .toString();
+      return (data['clinicName_ku'] ?? data['clinicName'] ?? '').toString();
     }
 
-    return (data['clinicName_en'] ??
-            data['clinicName'] ??
-            '')
-        .toString();
+    return (data['clinicName_en'] ?? data['clinicName'] ?? '').toString();
   }
 }

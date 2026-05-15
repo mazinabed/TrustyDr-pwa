@@ -38,14 +38,16 @@ class HomeTutorialVideos extends StatelessWidget {
     return InkWell(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => VideoPlayerPage(title: title, videoId: id)),
+        MaterialPageRoute(
+            builder: (_) => VideoPlayerPage(title: title, videoId: id)),
       ),
       child: Container(
         width: 240, // Makes them look wide and professional like YouTube
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           image: DecorationImage(
-            image: NetworkImage('https://img.youtube.com/vi/$id/maxresdefault.jpg'),
+            image: NetworkImage(
+                'https://img.youtube.com/vi/$id/maxresdefault.jpg'),
             fit: BoxFit.cover,
           ),
         ),
@@ -67,7 +69,8 @@ class HomeTutorialVideos extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

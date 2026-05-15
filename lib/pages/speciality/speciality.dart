@@ -1468,48 +1468,49 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
         builder: (context, constraints) {
           Widget content = Column(
             children: [
-           TrustyDrCurvedHeader(
-  title: 'specialties.title'.tr(),
-   showBack: widget.showBack, height: 160,
-),
-
-          const SizedBox(height: 12),
-          _searchBar(),
-          const SizedBox(height: 10),
-          _specialtyBar(),
-          const SizedBox(height: 8),
-          Expanded(
-            child: location == null ||
-                    location.cityEn == null ||
-                    location.cityEn!.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        tr('select_city_first'),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black54,
+              TrustyDrCurvedHeader(
+                title: 'specialties.title'.tr(),
+                showBack: widget.showBack,
+                height: 160,
+              ),
+              const SizedBox(height: 12),
+              _searchBar(),
+              const SizedBox(height: 10),
+              _specialtyBar(),
+              const SizedBox(height: 8),
+              Expanded(
+                child: location == null ||
+                        location.cityEn == null ||
+                        location.cityEn!.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            tr('select_city_first'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
+                      )
+                    : CustomScrollView(
+                        key: const PageStorageKey('speciality_scroll'),
+                        slivers: [
+                          SliverToBoxAdapter(child: _doctorList()),
+                          if (_selectedSpecialty == 'all')
+                            SliverToBoxAdapter(
+                              child: _googleClinicsSection(),
+                            ),
+                        ],
                       ),
-                    ),
-                  )
-                : CustomScrollView(
-                    key: const PageStorageKey('speciality_scroll'),
-                    slivers: [
-                      SliverToBoxAdapter(child: _doctorList()),
-                      if (_selectedSpecialty == 'all')
-                        SliverToBoxAdapter(
-                          child: _googleClinicsSection(),
-                        ),
-                    ],
-                  ),
-          ),
-        ],
+              ),
+            ],
           );
-          if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+          if (constraints.maxWidth >= 768)
+            content = WebScaffoldContainer(child: content);
           return content;
         },
       ),
@@ -1552,7 +1553,6 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-          
           ),
         ],
       ),
@@ -1701,31 +1701,30 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
 
     return doctorsAsync.when(
       data: (docs) {
-   final filtered = docs.where((doc) {
-  final d = doc.data();
+        final filtered = docs.where((doc) {
+          final d = doc.data();
 
-  // 1️⃣ Specialty filter
-  if (_selectedSpecialty != 'all') {
-    final doctorSpecialty =
-        (d['specialty'] ?? '').toString().toLowerCase();
+          // 1️⃣ Specialty filter
+          if (_selectedSpecialty != 'all') {
+            final doctorSpecialty =
+                (d['specialty'] ?? '').toString().toLowerCase();
 
-    if (doctorSpecialty != _selectedSpecialty) {
-      return false;
-    }
-  }
+            if (doctorSpecialty != _selectedSpecialty) {
+              return false;
+            }
+          }
 
-  // 2️⃣ Search filter
-  if (_searchQuery.isNotEmpty) {
-    final q = _searchQuery.toLowerCase();
+          // 2️⃣ Search filter
+          if (_searchQuery.isNotEmpty) {
+            final q = _searchQuery.toLowerCase();
 
-    return (d['name'] ?? '').toString().toLowerCase().contains(q) ||
-        (d['specialty'] ?? '').toString().toLowerCase().contains(q) ||
-        (d['clinicName'] ?? '').toString().toLowerCase().contains(q);
-  }
+            return (d['name'] ?? '').toString().toLowerCase().contains(q) ||
+                (d['specialty'] ?? '').toString().toLowerCase().contains(q) ||
+                (d['clinicName'] ?? '').toString().toLowerCase().contains(q);
+          }
 
-  return true;
-}).toList();
-
+          return true;
+        }).toList();
 
         if (filtered.isEmpty) {
           return Padding(
@@ -1745,46 +1744,43 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
             final data = doc.data();
 
             final id = doc.id;
-          
-          final lang = context.locale.languageCode;
+
+            final lang = context.locale.languageCode;
 
 // ---------- NAME ----------
-final nameEn = (data['name_en'] ?? '').toString();
-final nameAr = (data['name_ar'] ?? nameEn).toString();
-final nameKu = (data['name_ku'] ?? nameEn).toString();
+            final nameEn = (data['name_en'] ?? '').toString();
+            final nameAr = (data['name_ar'] ?? nameEn).toString();
+            final nameKu = (data['name_ku'] ?? nameEn).toString();
 
-final name = lang == 'ar'
-    ? nameAr
-    : lang == 'ku'
-        ? nameKu
-        : nameEn;
+            final name = lang == 'ar'
+                ? nameAr
+                : lang == 'ku'
+                    ? nameKu
+                    : nameEn;
 
 // ---------- SPECIALTY ----------
-final specialtyEn =
-    (data['specialty_en'] ??
-     data['specialtyName_en'] ??
-     '').toString();
+            final specialtyEn =
+                (data['specialty_en'] ?? data['specialtyName_en'] ?? '')
+                    .toString();
 
-final specialtyAr =
-    (data['specialty_ar'] ??
-     data['specialtyName_ar'] ??
-     specialtyEn).toString();
+            final specialtyAr = (data['specialty_ar'] ??
+                    data['specialtyName_ar'] ??
+                    specialtyEn)
+                .toString();
 
-final specialtyKu =
-    (data['specialty_ku'] ??
-     data['specialtyName_ku'] ??
-     specialtyEn).toString();
+            final specialtyKu = (data['specialty_ku'] ??
+                    data['specialtyName_ku'] ??
+                    specialtyEn)
+                .toString();
 
-final specialty = lang == 'ar'
-    ? specialtyAr
-    : lang == 'ku'
-        ? specialtyKu
-        : specialtyEn;
+            final specialty = lang == 'ar'
+                ? specialtyAr
+                : lang == 'ku'
+                    ? specialtyKu
+                    : specialtyEn;
 
 // ---------- EXPERIENCE ----------
-final exp = (data['yearsOfExperience'] ?? 0).toString();
-
-
+            final exp = (data['yearsOfExperience'] ?? 0).toString();
 
             final rating = (data['ratingAverage'] is num)
                 ? (data['ratingAverage'] as num).toDouble()
@@ -1848,12 +1844,12 @@ final exp = (data['yearsOfExperience'] ?? 0).toString();
                               children: [
                                 Expanded(
                                   child: Text(
-  'doctor_prefix_name'.tr(args: [name]),
-  style: const TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.bold,
-  ),
-),
+                                    'doctor_prefix_name'.tr(args: [name]),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1946,82 +1942,81 @@ final exp = (data['yearsOfExperience'] ?? 0).toString();
   // --------------------------------------------------
   // Google Clinics (PROVIDER ONLY)
   // --------------------------------------------------
-Widget _googleClinicsSection() {
-  final clinicsAsync = ref.watch(googleClinicsStreamProvider);
+  Widget _googleClinicsSection() {
+    final clinicsAsync = ref.watch(googleClinicsStreamProvider);
 
-  return clinicsAsync.when(
-    data: (snap) {
-      if (snap.docs.isEmpty) return const SizedBox.shrink();
+    return clinicsAsync.when(
+      data: (snap) {
+        if (snap.docs.isEmpty) return const SizedBox.shrink();
 
-      final docs = snap.docs;
+        final docs = snap.docs;
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(thickness: 1.2),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Text(
-              tr('google_clinics_title'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(thickness: 1.2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                tr('google_clinics_title'),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          ...docs.map((doc) {
-            final d = doc.data();
+            ...docs.map((doc) {
+              final d = doc.data();
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              color: Colors.orange.shade50,
-              child: ListTile(
-                leading: const Icon(
-                  Icons.local_hospital,
-                  color: Colors.orange,
-                ),
-                title: Text(
-                  (d['name'] ?? '').toString(),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text((d['address'] ?? '').toString()),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      tr('from_google'),
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                color: Colors.orange.shade50,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.local_hospital,
+                    color: Colors.orange,
+                  ),
+                  title: Text(
+                    (d['name'] ?? '').toString(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text((d['address'] ?? '').toString()),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        tr('from_google'),
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Text(
-                      tr('not_registered'),
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontSize: 11,
+                      Text(
+                        tr('not_registered'),
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GoogleClinicDetailsPage(data: d),
+                      ),
+                    );
+                  },
                 ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => GoogleClinicDetailsPage(data: d),
-                    ),
-                  );
-                },
-              ),
-            );
-          }),
-        ],
-      );
-    },
-    loading: () => const SizedBox.shrink(),
-    error: (_, __) => const SizedBox.shrink(),
-  );
-}
-
+              );
+            }),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
 }

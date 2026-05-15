@@ -52,8 +52,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '423685278731',
     projectId: 'doctorapp-7e8b3',
     storageBucket: 'doctorapp-7e8b3.firebasestorage.app',
-    androidClientId: '423685278731-qjq4g1bqgkb5trb6i19ld06d9l10o9g7.apps.googleusercontent.com',
-    iosClientId: '423685278731-vcat1s4k2a1o5sjq5o8r4ukev8d90s9f.apps.googleusercontent.com',
+    androidClientId:
+        '423685278731-qjq4g1bqgkb5trb6i19ld06d9l10o9g7.apps.googleusercontent.com',
+    iosClientId:
+        '423685278731-vcat1s4k2a1o5sjq5o8r4ukev8d90s9f.apps.googleusercontent.com',
     iosBundleId: 'com.trustydr.app',
   );
 
@@ -63,8 +65,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '423685278731',
     projectId: 'doctorapp-7e8b3',
     storageBucket: 'doctorapp-7e8b3.firebasestorage.app',
-    androidClientId: '423685278731-qjq4g1bqgkb5trb6i19ld06d9l10o9g7.apps.googleusercontent.com',
-    iosClientId: '423685278731-c0itpa3ei1udv4qe8iprr281v0qj6af6.apps.googleusercontent.com',
+    androidClientId:
+        '423685278731-qjq4g1bqgkb5trb6i19ld06d9l10o9g7.apps.googleusercontent.com',
+    iosClientId:
+        '423685278731-c0itpa3ei1udv4qe8iprr281v0qj6af6.apps.googleusercontent.com',
     iosBundleId: 'com.example.doctorAppV2',
   );
 
@@ -77,5 +81,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'doctorapp-7e8b3.firebasestorage.app',
     measurementId: 'G-NS7G29X0GS',
   );
-
 }

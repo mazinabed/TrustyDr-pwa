@@ -23,7 +23,6 @@ import 'app_location_provider.dart';
 //   return q.snapshots().map((s) => s.docs);
 // });
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,8 +42,7 @@ class _SpecialtiesCache {
 
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    final cacheValid =
-        cachedJson != null &&
+    final cacheValid = cachedJson != null &&
         cachedTime != null &&
         (now - cachedTime) < _ttlMinutes * 60 * 1000;
 
@@ -59,14 +57,13 @@ class _SpecialtiesCache {
         .get();
 
     // Save cache (optional: serialize only required fields)
-    prefs.setString(_cacheKey, snap.docs.map((e) => e.data()).toList().toString());
+    prefs.setString(
+        _cacheKey, snap.docs.map((e) => e.data()).toList().toString());
     prefs.setInt(_cacheTimeKey, now);
 
     yield snap;
   }
 }
-
-
 
 // /// ===============================
 // /// Google Clinics (PLACEHOLDERS)
@@ -99,7 +96,6 @@ final specialtiesStreamProvider =
     StreamProvider<QuerySnapshot<Map<String, dynamic>>>((ref) {
   return _SpecialtiesCache.instance.stream();
 });
-
 
 final doctorsStreamProvider = StreamProvider.autoDispose<
     List<QueryDocumentSnapshot<Map<String, dynamic>>>>((ref) {

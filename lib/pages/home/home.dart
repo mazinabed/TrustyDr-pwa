@@ -3094,7 +3094,6 @@
 //   }
 // }
 
-
 import 'package:flutter/foundation.dart';
 import 'package:trustydr/pages/CentersPage.dart';
 import 'package:trustydr/widget/home_notifications_widget.dart';
@@ -3160,80 +3159,71 @@ class _HomeState extends ConsumerState<Home>
     super.dispose();
   }
 
-  
-Future<void> _bootstrap() async {
-  _db = FirebaseFirestore.instance;
-  _auth = FirebaseAuth.instance;
+  Future<void> _bootstrap() async {
+    _db = FirebaseFirestore.instance;
+    _auth = FirebaseAuth.instance;
 
-  _currentUser = _auth.currentUser;
-  _isGuest = _currentUser == null;
+    _currentUser = _auth.currentUser;
+    _isGuest = _currentUser == null;
 
-  // ✅ Keep your existing user name logic
-  await _loadUserName();
+    // ✅ Keep your existing user name logic
+    await _loadUserName();
 
-  // ✅ Cities first (needed for display)
-  await _loadCities();
+    // ✅ Cities first (needed for display)
+    await _loadCities();
 
-  // ✅ Load saved location from SharedPreferences
-  await _loadSavedLocation();
+    // ✅ Load saved location from SharedPreferences
+    await _loadSavedLocation();
 
-  // ✅ Inject into provider if valid saved location exists
-  final hasSavedLocation =
-      _selectedProvinceKey != null &&
-      _selectedProvinceKey!.isNotEmpty &&
-      _selectedCityEn != null &&
-      _selectedCityEn!.isNotEmpty;
+    // ✅ Inject into provider if valid saved location exists
+    final hasSavedLocation = _selectedProvinceKey != null &&
+        _selectedProvinceKey!.isNotEmpty &&
+        _selectedCityEn != null &&
+        _selectedCityEn!.isNotEmpty;
 
-  if (hasSavedLocation) {
-    ref.read(appLocationProvider.notifier).setLocation(
-          provinceKey: _selectedProvinceKey!,
-          cityEn: _selectedCityEn!,
-        );
-  }
-
-  // ✅ First launch behavior: force selector only if no saved location
-  if (!hasSavedLocation && mounted) {
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) _openLocationSelector();
-    });
-  }
-
-  if (mounted) {
-    setState(() => _loadingCities = false);
-  }
-}
-
-
-  Future<void> _loadUserName() async {
-  if (_currentUser == null) return;
-
-  try {
-    final doc = await _db
-        .collection('users')
-        .doc(_currentUser!.uid)
-        .get();
-
-    if (!doc.exists) return;
-
-    final data = doc.data();
-
-    String? name =
-        (data?['name'] ?? data?['fullName'])?.toString();
-
-    if (name != null && name.isNotEmpty) {
-      name = name.split(' ').first;
+    if (hasSavedLocation) {
+      ref.read(appLocationProvider.notifier).setLocation(
+            provinceKey: _selectedProvinceKey!,
+            cityEn: _selectedCityEn!,
+          );
     }
 
-    if (!mounted) return;
+    // ✅ First launch behavior: force selector only if no saved location
+    if (!hasSavedLocation && mounted) {
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted) _openLocationSelector();
+      });
+    }
 
-    setState(() {
-      _displayName = name;
-    });
-
-  } catch (_) {
+    if (mounted) {
+      setState(() => _loadingCities = false);
+    }
   }
-}
- 
+
+  Future<void> _loadUserName() async {
+    if (_currentUser == null) return;
+
+    try {
+      final doc = await _db.collection('users').doc(_currentUser!.uid).get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data();
+
+      String? name = (data?['name'] ?? data?['fullName'])?.toString();
+
+      if (name != null && name.isNotEmpty) {
+        name = name.split(' ').first;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _displayName = name;
+      });
+    } catch (_) {}
+  }
+
   String _greetingText() {
     final h = DateTime.now().hour;
     if (h < 12) return 'greeting_morning'.tr();
@@ -3259,19 +3249,20 @@ Future<void> _bootstrap() async {
     }
   }
 
- Future<void> _loadSavedLocation() async {
-  final prefs = await SharedPreferences.getInstance();
+  Future<void> _loadSavedLocation() async {
+    final prefs = await SharedPreferences.getInstance();
 
-  final p = prefs.getString('selectedProvinceKey');
-  final c = prefs.getString('selectedCityEn');
+    final p = prefs.getString('selectedProvinceKey');
+    final c = prefs.getString('selectedCityEn');
 
-  if (!mounted) return;
+    if (!mounted) return;
 
-  setState(() {
-    _selectedProvinceKey = (p != null && p.isNotEmpty) ? p : null;
-    _selectedCityEn = (c != null && c.isNotEmpty) ? c : null;
-  });
-}
+    setState(() {
+      _selectedProvinceKey = (p != null && p.isNotEmpty) ? p : null;
+      _selectedCityEn = (c != null && c.isNotEmpty) ? c : null;
+    });
+  }
+
   Future<void> _saveLocation(String? provinceKey, String? cityEn) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedProvinceKey', provinceKey ?? '');
@@ -3281,7 +3272,8 @@ Future<void> _bootstrap() async {
   String _displaySelectedCity() {
     if (_selectedProvinceKey == null || _selectedCityEn == null) return '';
     if (_provinceDocs.isEmpty) return _selectedCityEn!;
-    final matches = _provinceDocs.where((d) => d.data()['province_key'] == _selectedProvinceKey);
+    final matches = _provinceDocs
+        .where((d) => d.data()['province_key'] == _selectedProvinceKey);
     if (matches.isEmpty) return _selectedCityEn!;
     final prov = matches.first;
     final subs = (prov.data()['subCities'] as List?) ?? [];
@@ -3311,9 +3303,12 @@ Future<void> _bootstrap() async {
 
   String _localizedSpecialtyFromAppointment(Map<String, dynamic> data) {
     final lang = context.locale.languageCode;
-    if (lang == 'ar' && data['specialtyName_ar'] != null) return data['specialtyName_ar'].toString();
-    if (lang == 'ku' && data['specialtyName_ku'] != null) return data['specialtyName_ku'].toString();
-    if (data['specialtyName_en'] != null) return data['specialtyName_en'].toString();
+    if (lang == 'ar' && data['specialtyName_ar'] != null)
+      return data['specialtyName_ar'].toString();
+    if (lang == 'ku' && data['specialtyName_ku'] != null)
+      return data['specialtyName_ku'].toString();
+    if (data['specialtyName_en'] != null)
+      return data['specialtyName_en'].toString();
     if (data['doctorType'] != null) return data['doctorType'].toString();
     return '';
   }
@@ -3323,84 +3318,102 @@ Future<void> _bootstrap() async {
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
         String? tempProvince = _selectedProvinceKey;
         String? tempCityEn = _selectedCityEn;
         List<Map<String, dynamic>> citiesForProvince() {
-          final matches = _provinceDocs.where((d) => d.data()['province_key'] == tempProvince);
+          final matches = _provinceDocs
+              .where((d) => d.data()['province_key'] == tempProvince);
           if (matches.isEmpty) return [];
           final prov = matches.first;
           final subs = (prov.data()['subCities'] as List?) ?? [];
           return subs.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         }
+
         return Padding(
-          padding: EdgeInsets.only(left: 16, right: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 16, top: 20),
+          padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              top: 20),
           child: StatefulBuilder(
             builder: (_, setModal) {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                  Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2))),
                   const SizedBox(height: 20),
                   Text('select_location'.tr(), style: blackHeadingTextStyle),
                   const SizedBox(height: 20),
-                // PROVINCE DROPDOWN
-DropdownButtonFormField2<String>(
-  isExpanded: true,
-  decoration: InputDecoration(
-    labelText: 'province'.tr(),
-    border: const OutlineInputBorder(),
-  ),
-  value: tempProvince,
-  // Add <String> right here 👇
-  items: _provinceDocs.map((d) {
-    final p = d.data();
-    return DropdownMenuItem<String>(
-      value: p['province_key']?.toString(), // Ensure this is a string
-      child: Text(_displayProvince(p)),
-    );
-  }).toList(),
-  onChanged: (v) => setModal(() {
-    tempProvince = v;
-    tempCityEn = null;
-  }),
-),
+                  // PROVINCE DROPDOWN
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: 'province'.tr(),
+                      border: const OutlineInputBorder(),
+                    ),
+                    value: tempProvince,
+                    // Add <String> right here 👇
+                    items: _provinceDocs.map((d) {
+                      final p = d.data();
+                      return DropdownMenuItem<String>(
+                        value: p['province_key']
+                            ?.toString(), // Ensure this is a string
+                        child: Text(_displayProvince(p)),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setModal(() {
+                      tempProvince = v;
+                      tempCityEn = null;
+                    }),
+                  ),
 
-const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
 // CITY DROPDOWN
-DropdownButtonFormField2<String>(
-  isExpanded: true,
-  decoration: InputDecoration(
-    labelText: 'city'.tr(),
-    border: const OutlineInputBorder(),
-  ),
-  value: tempCityEn,
-  // Add <String> right here 👇
-  items: citiesForProvince().map((c) {
-    return DropdownMenuItem<String>(
-      value: c['en']?.toString(), // Ensure this is a string
-      child: Text(_displayCity(c)),
-    );
-  }).toList(),
-  onChanged: (v) => setModal(() => tempCityEn = v),
-),
+                  DropdownButtonFormField2<String>(
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: 'city'.tr(),
+                      border: const OutlineInputBorder(),
+                    ),
+                    value: tempCityEn,
+                    // Add <String> right here 👇
+                    items: citiesForProvince().map((c) {
+                      return DropdownMenuItem<String>(
+                        value: c['en']?.toString(), // Ensure this is a string
+                        child: Text(_displayCity(c)),
+                      );
+                    }).toList(),
+                    onChanged: (v) => setModal(() => tempCityEn = v),
+                  ),
                   ElevatedButton(
                     onPressed: () async {
                       if (tempProvince == null || tempCityEn == null) return;
                       Navigator.pop(context);
                       setState(() => _isImporting = true);
                       await _saveLocation(tempProvince, tempCityEn);
-                      ref.read(appLocationProvider.notifier).setLocation(provinceKey: tempProvince!, cityEn: tempCityEn!);
+                      ref.read(appLocationProvider.notifier).setLocation(
+                          provinceKey: tempProvince!, cityEn: tempCityEn!);
                       setState(() {
                         _selectedProvinceKey = tempProvince;
                         _selectedCityEn = tempCityEn;
                         _isImporting = false;
                       });
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size.fromHeight(44)),
-                    child: Text('confirm'.tr(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        minimumSize: const Size.fromHeight(44)),
+                    child: Text('confirm'.tr(),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600)),
                   ),
                 ],
               );
@@ -3416,7 +3429,8 @@ DropdownButtonFormField2<String>(
     final provinceName = (_selectedProvinceKey == null || _provinceDocs.isEmpty)
         ? ''
         : (() {
-            final matches = _provinceDocs.where((d) => d.data()['province_key'] == _selectedProvinceKey);
+            final matches = _provinceDocs
+                .where((d) => d.data()['province_key'] == _selectedProvinceKey);
             if (matches.isEmpty) return '';
             return _displayProvince(matches.first.data());
           })();
@@ -3449,13 +3463,11 @@ DropdownButtonFormField2<String>(
             children: [
               Stack(
                 children: [
-   TrustyDrCurvedHeader(
-  title: '',        // no title
-  showBack: false,  // no arrow
-  height: 160,      // tall hero banner
-),
-
-
+                  TrustyDrCurvedHeader(
+                    title: '', // no title
+                    showBack: false, // no arrow
+                    height: 160, // tall hero banner
+                  ),
                   Positioned(
                     bottom: 20,
                     left: 24,
@@ -3463,17 +3475,16 @@ DropdownButtonFormField2<String>(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      Text(
-  (_displayName == null || _displayName!.isEmpty)
-      ? _greetingText()
-      : '${_greetingText()}, $_displayName',
-  style: const TextStyle(
-    color: Colors.white,
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-  ),
-),
-                       
+                        Text(
+                          (_displayName == null || _displayName!.isEmpty)
+                              ? _greetingText()
+                              : '${_greetingText()}, $_displayName',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 14),
                         _searchBar(),
                       ],
@@ -3491,35 +3502,45 @@ DropdownButtonFormField2<String>(
                     ActionItem(
                       icon: Icons.category_outlined,
                       label: 'specialties'.tr(),
-                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const SpecialityScreen())),
+                      onTap: () => Navigator.push(
+                          context,
+                          PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const SpecialityScreen())),
                     ),
                     ActionItem(
                       icon: Icons.calendar_month_outlined,
                       label: 'my_appointments'.tr(),
-                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyAppointmentsPage(showBack: true))),
+                      onTap: () => Navigator.push(
+                          context,
+                          PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const MyAppointmentsPage(showBack: true))),
                     ),
                     ActionItem(
                       icon: Icons.people_outline,
                       label: 'my_doctors'.tr(),
-                      onTap: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyDoctorsPage())),
+                      onTap: () => Navigator.push(
+                          context,
+                          PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const MyDoctorsPage())),
                     ),
-                  ActionItem(
-  icon: Icons.local_hospital,
-  label: 'medical_centers'.tr(),
-  onTap: () => Navigator.push(
-    context,
-    PageTransition(
-      type: PageTransitionType.rightToLeft,
-      child: const CentersScreen(),
-    ),
-  ),
-),
-                
-                
+                    ActionItem(
+                      icon: Icons.local_hospital,
+                      label: 'medical_centers'.tr(),
+                      onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeft,
+                          child: const CentersScreen(),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-             
+
               const SizedBox(height: 20),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
@@ -3530,16 +3551,17 @@ DropdownButtonFormField2<String>(
 // HomeTutorialVideos(
 //   // This key changes whenever the user switches language,
 //   // forcing Flutter to delete the old widget and build a new translated one.
-//   key: ValueKey(context.locale.languageCode), 
+//   key: ValueKey(context.locale.languageCode),
 // ),
 // const SizedBox(height: 24),
 
-               HomeNotificationsWidget(),
+              HomeNotificationsWidget(),
               const SizedBox(height: 80),
             ],
           );
 
-          if (constraints.maxWidth >= 768) page = WebScaffoldContainer(child: page);
+          if (constraints.maxWidth >= 768)
+            page = WebScaffoldContainer(child: page);
 
           return Stack(
             children: [
@@ -3547,7 +3569,8 @@ DropdownButtonFormField2<String>(
               if (_isImporting)
                 Container(
                   color: Colors.black.withOpacity(0.3),
-                  child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+                  child: const Center(
+                      child: CircularProgressIndicator(color: Colors.white)),
                 ),
             ],
           );
@@ -3571,87 +3594,124 @@ DropdownButtonFormField2<String>(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 3))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 3))
+          ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
             const Icon(Icons.search, color: Colors.black54),
             const SizedBox(width: 8),
-            Expanded(child: Text('search_doctor_or_clinic'.tr(), style: const TextStyle(color: Colors.black54, fontSize: 14))),
+            Expanded(
+                child: Text('search_doctor_or_clinic'.tr(),
+                    style:
+                        const TextStyle(color: Colors.black54, fontSize: 14))),
           ],
         ),
       ),
     );
   }
 
+  String localizedField(
+    Map<String, dynamic> data,
+    String base,
+    BuildContext context,
+  ) {
+    final lang = context.locale.languageCode;
 
+    final localized = data['${base}_$lang'];
+    if (localized != null && localized.toString().isNotEmpty) {
+      return localized.toString();
+    }
 
+    final en = data['${base}_en'];
+    if (en != null && en.toString().isNotEmpty) {
+      return en.toString();
+    }
 
-  
-String localizedField(
-  Map<String, dynamic> data,
-  String base,
-  BuildContext context,
-) {
-  final lang = context.locale.languageCode;
-
-  final localized = data['${base}_$lang'];
-  if (localized != null && localized.toString().isNotEmpty) {
-    return localized.toString();
+    return (data[base] ?? '').toString();
   }
 
-  final en = data['${base}_en'];
-  if (en != null && en.toString().isNotEmpty) {
-    return en.toString();
-  }
-
-  return (data[base] ?? '').toString();
-}
   Widget _nextAppointmentCard() {
     final user = _currentUser;
     if (user == null) return _noUpcomingCard();
     return StreamBuilder<QuerySnapshot>(
-      stream: _db.collection('appointments').where('patientId', isEqualTo: user.uid).where('status', whereIn: ['pending', 'confirmed']).orderBy('createdAt', descending: true).limit(1).snapshots(),
+      stream: _db
+          .collection('appointments')
+          .where('patientId', isEqualTo: user.uid)
+          .where('status', whereIn: ['pending', 'confirmed'])
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return _noUpcomingCard(innerOnly: true);
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+          return _noUpcomingCard(innerOnly: true);
         final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-        DateTime appointmentDate = (data['date'] is Timestamp) ? (data['date'] as Timestamp).toDate() : DateTime.tryParse(data['date'] ?? '') ?? DateTime.now();
+        DateTime appointmentDate = (data['date'] is Timestamp)
+            ? (data['date'] as Timestamp).toDate()
+            : DateTime.tryParse(data['date'] ?? '') ?? DateTime.now();
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.05), blurRadius: 8)
+                ]),
             child: Column(
               children: [
                 Row(children: [
                   _dateBadgeCustom(appointmentDate),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-Text(
-  'doctor_prefix_name'.tr(
-    args: [localizedField(data, 'doctorName', context)],
-  ),
-  style: const TextStyle(
-    fontWeight: FontWeight.bold,
-    fontSize: 15,
-  ),
-),                      Text(_localizedSpecialtyFromAppointment(data), style: const TextStyle(color: Colors.black54, fontSize: 13)),
-Text(
-  localizedField(data, 'clinicName', context),
-  style: const TextStyle(
-    color: Colors.black54,
-    fontSize: 12,
-  ),
-),                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'doctor_prefix_name'.tr(
+                              args: [
+                                localizedField(data, 'doctorName', context)
+                              ],
+                            ),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          Text(_localizedSpecialtyFromAppointment(data),
+                              style: const TextStyle(
+                                  color: Colors.black54, fontSize: 13)),
+                          Text(
+                            localizedField(data, 'clinicName', context),
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ]),
                   ),
                 ]),
                 const SizedBox(height: 8),
                 Row(children: [
-                  Text('${'status.label'.tr()}: ${_prettyStatus(data['status'] ?? '')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  Text(
+                      '${'status.label'.tr()}: ${_prettyStatus(data['status'] ?? '')}',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.bold)),
                   const Spacer(),
-                  ElevatedButton(onPressed: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const MyAppointmentsPage(showBack: true))), child: Text('view_details'.tr())),
+                  ElevatedButton(
+                      onPressed: () => Navigator.push(
+                          context,
+                          PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const MyAppointmentsPage(showBack: true))),
+                      child: Text('view_details'.tr())),
                 ]),
               ],
             ),
@@ -3664,35 +3724,57 @@ Text(
   Widget _noUpcomingCard({bool innerOnly = false}) {
     final card = Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
+          ]),
       child: Row(children: [
         _dateBadgeCustom(DateTime.now()),
         const SizedBox(width: 14),
-        Text('home.noUpcomingVisits'.tr(), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black54)),
+        Text('home.noUpcomingVisits'.tr(),
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, color: Colors.black54)),
       ]),
     );
-    return innerOnly ? card : Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: card);
+    return innerOnly
+        ? card
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16), child: card);
   }
 
   String _prettyStatus(String status) {
     switch (status.toLowerCase()) {
-      case 'pending': return 'status.pending'.tr();
-      case 'confirmed': return 'status.confirmed'.tr();
-      default: return status;
+      case 'pending':
+        return 'status.pending'.tr();
+      case 'confirmed':
+        return 'status.confirmed'.tr();
+      default:
+        return status;
     }
   }
 
   Widget _guestBanner(BuildContext context) => Container(
-    margin: const EdgeInsets.all(16),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(color: const Color(0xFFFFF6D6), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFFE8A3))),
-    child: Row(children: [
-      const Icon(Icons.info_outline),
-      const SizedBox(width: 8),
-      Expanded(child: Text('guest_browsing_notice'.tr())),
-      TextButton(onPressed: () => Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: const LoginScreen())), child: Text('login'.tr())),
-    ]),
-  );
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: const Color(0xFFFFF6D6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFFFE8A3))),
+        child: Row(children: [
+          const Icon(Icons.info_outline),
+          const SizedBox(width: 8),
+          Expanded(child: Text('guest_browsing_notice'.tr())),
+          TextButton(
+              onPressed: () => Navigator.push(
+                  context,
+                  PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: const LoginScreen())),
+              child: Text('login'.tr())),
+        ]),
+      );
 
   Widget _dateBadgeCustom(DateTime date) {
     final lang = context.locale.languageCode;
@@ -3700,11 +3782,20 @@ Text(
     return Container(
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(color: const Color(0xFF4A90E2), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+          color: const Color(0xFF4A90E2),
+          borderRadius: BorderRadius.circular(10)),
       child: Column(children: [
-        Text(DateFormat('MMM', intlLocale).format(date), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        Text(DateFormat('dd', intlLocale).format(date), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        Text(DateFormat('EEE', intlLocale).format(date), style: const TextStyle(color: Colors.white70)),
+        Text(DateFormat('MMM', intlLocale).format(date),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+        Text(DateFormat('dd', intlLocale).format(date),
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18)),
+        Text(DateFormat('EEE', intlLocale).format(date),
+            style: const TextStyle(color: Colors.white70)),
       ]),
     );
   }
@@ -3716,12 +3807,22 @@ class _LanguageSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = context.locale.languageCode;
     return PopupMenuButton<Locale>(
-      icon: const Icon(Icons.language, color: Colors.white), // Changed to white to match new blue AppBar
+      icon: const Icon(Icons.language,
+          color: Colors.white), // Changed to white to match new blue AppBar
       onSelected: (l) => context.setLocale(l),
       itemBuilder: (_) => [
-        CheckedPopupMenuItem(checked: current == 'en', value: const Locale('en'), child: const Text('English')),
-        CheckedPopupMenuItem(checked: current == 'ar', value: const Locale('ar'), child: const Text('العربية')),
-        CheckedPopupMenuItem(checked: current == 'ku', value: const Locale('ku', 'IQ'), child: const Text('کوردی')),
+        CheckedPopupMenuItem(
+            checked: current == 'en',
+            value: const Locale('en'),
+            child: const Text('English')),
+        CheckedPopupMenuItem(
+            checked: current == 'ar',
+            value: const Locale('ar'),
+            child: const Text('العربية')),
+        CheckedPopupMenuItem(
+            checked: current == 'ku',
+            value: const Locale('ku', 'IQ'),
+            child: const Text('کوردی')),
       ],
     );
   }

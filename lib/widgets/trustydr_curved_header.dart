@@ -1,6 +1,3 @@
-
-
-
 // import 'package:flutter/material.dart';
 
 // class TrustyDrCurvedHeader extends StatelessWidget {
@@ -71,7 +68,7 @@
 //         ? IconButton(
 //             // Icons.adaptive automatically flips based on locale
 //             icon: const Icon(
-//               Icons.arrow_back_ios_new, 
+//               Icons.arrow_back_ios_new,
 //               color: Colors.white,
 //               size: 20,
 //             ),
@@ -87,7 +84,6 @@
 //     );
 //   }
 // }
-
 
 import 'package:flutter/material.dart';
 
@@ -126,13 +122,13 @@ class TrustyDrCurvedHeader extends StatelessWidget {
             children: [
               // ───────── Logo (Moved to the opposite side of Arrow) ─────────
               Positioned(
-                // Swapped logic: In EN (isRtl=false) it goes to the RIGHT. 
+                // Swapped logic: In EN (isRtl=false) it goes to the RIGHT.
                 // In AR (isRtl=true) it goes to the LEFT.
-                left: isRtl ? 12 : null, 
+                left: isRtl ? 12 : null,
                 right: isRtl ? null : 12,
                 child: Image.asset(
                   'assets/icons/white-logo.png',
-                  height:50, // Adjusted height to look cleaner in the bar
+                  height: 50, // Adjusted height to look cleaner in the bar
                 ),
               ),
 
@@ -159,7 +155,7 @@ class TrustyDrCurvedHeader extends StatelessWidget {
                   child: showBack
                       ? IconButton(
                           icon: const Icon(
-                            Icons.arrow_back_ios_new, 
+                            Icons.arrow_back_ios_new,
                             color: Colors.white,
                             size: 20,
                           ),

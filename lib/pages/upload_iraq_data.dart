@@ -80,8 +80,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
 
         await docRef.set(review);
         count++;
-      } catch (_) {
-      }
+      } catch (_) {}
     }
 
     _showSnack('✅ Uploaded $count reviews successfully.', true);
@@ -121,8 +120,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
         'ratingAverage': double.parse(avg.toStringAsFixed(1)),
         'ratingCount': count,
       });
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   Future<void> uploadAll() async {

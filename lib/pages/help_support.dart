@@ -8,11 +8,11 @@ class HelpSupportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( 
+    return Scaffold(
       backgroundColor: whiteColor,
       body: Column(
         children: [
-          // 🔵 Gradient Header (same as About) 
+          // 🔵 Gradient Header (same as About)
           Container(
             width: double.infinity,
             padding: EdgeInsets.only(

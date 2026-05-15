@@ -22,109 +22,105 @@ class AuthService {
     await _auth.signOut();
   }
 
-String _generateNonce([int length = 32]) {
-  const charset =
-      '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-  final random = Random.secure();
-  return List.generate(length, (_) => charset[random.nextInt(charset.length)])
-      .join();
-}
-
-String _sha256ofString(String input) {
-  final bytes = utf8.encode(input);
-  final digest = sha256.convert(bytes);
-  return digest.toString();
-}
-
-Future<UserCredential> signInWithApple() async {
-  // ---------- WEB / PWA ----------
- // ---------- WEB / PWA ----------
-if (kIsWeb) {
-  final provider = AppleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('name');
-
-  // ✅ Use popup instead of redirect
-  final result = await FirebaseAuth.instance.signInWithPopup(provider);
-
-  if (result.user == null) {
-    throw Exception('Apple sign-in failed on web');
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
   }
 
-  return result;
-}
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
 
-  
+  Future<UserCredential> signInWithApple() async {
+    // ---------- WEB / PWA ----------
+    // ---------- WEB / PWA ----------
+    if (kIsWeb) {
+      final provider = AppleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('name');
 
-  // ---------- NATIVE IOS ----------
-  try {
-    final rawNonce = _generateNonce();
-    final nonce = _sha256ofString(rawNonce);
+      // ✅ Use popup instead of redirect
+      final result = await FirebaseAuth.instance.signInWithPopup(provider);
 
-    final appleCredential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: nonce,
-    );
+      if (result.user == null) {
+        throw Exception('Apple sign-in failed on web');
+      }
 
-    if (appleCredential.identityToken == null ||
-        appleCredential.authorizationCode == null) {
-      throw FirebaseAuthException(
-        code: 'missing-apple-tokens',
-        message: 'Apple did not return the required tokens.',
+      return result;
+    }
+
+    // ---------- NATIVE IOS ----------
+    try {
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
       );
+
+      if (appleCredential.identityToken == null ||
+          appleCredential.authorizationCode == null) {
+        throw FirebaseAuthException(
+          code: 'missing-apple-tokens',
+          message: 'Apple did not return the required tokens.',
+        );
+      }
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+        rawNonce: rawNonce,
+      );
+
+      final result =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+
+      // Save name once (Apple only provides it first time)
+      if (appleCredential.givenName != null) {
+        final fullName =
+            '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+                .trim();
+
+        await result.user?.updateDisplayName(fullName);
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(result.user!.uid)
+            .set({
+          'name': fullName,
+          'email': result.user?.email,
+          'provider': 'apple',
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      return result;
+    } catch (e) {
+      rethrow;
     }
+  }
 
-    final oauthCredential = OAuthProvider("apple.com").credential(
-      idToken: appleCredential.identityToken,
-      accessToken: appleCredential.authorizationCode,
-      rawNonce: rawNonce,
-    );
+  Future<UserCredential> signInWithGoogle() async {
+    final provider = GoogleAuthProvider();
+    provider.setCustomParameters({'prompt': 'select_account'});
 
-    final result =
-        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
-
-    // Save name once (Apple only provides it first time)
-    if (appleCredential.givenName != null) {
-      final fullName =
-          '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
-              .trim();
-
-      await result.user?.updateDisplayName(fullName);
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(result.user!.uid)
-          .set({
-        'name': fullName,
-        'email': result.user?.email,
-        'provider': 'apple',
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+    if (kIsWeb) {
+      // ✅ PWA / Web: use popup (no refresh)
+      return await _auth.signInWithPopup(provider);
+    } else {
+      // ✅ Mobile apps
+      return await _auth.signInWithProvider(provider);
     }
-
-    return result;
-  } catch (e) {
-    rethrow;
   }
-}
-
-
-Future<UserCredential> signInWithGoogle() async {
-  final provider = GoogleAuthProvider();
-  provider.setCustomParameters({'prompt': 'select_account'});
-
-  if (kIsWeb) {
-    // ✅ PWA / Web: use popup (no refresh)
-    return await _auth.signInWithPopup(provider);
-  } else {
-    // ✅ Mobile apps
-    return await _auth.signInWithProvider(provider);
-  }
-}
-
 
   // Future<UserCredential> signInWithFacebook() async {
   //   final LoginResult result = await FacebookAuth.instance.login();

@@ -39,42 +39,41 @@ class ConsultationDetail extends StatefulWidget {
   final String doctorId;
   final String doctorName, doctorImage, doctorType, doctorExp;
   final String? date, time;
-final String scheduleId;
-final DateTime slotStartAt;
-final int slotDurationMinutes;
-final String centerId;
-final String provinceKey;
-final String cityKey;
-final String specialtyKey;
-final String specialtyEn;
-final String specialtyAr;
-final String specialtyKu;
-final String clinicName;
-
+  final String scheduleId;
+  final DateTime slotStartAt;
+  final int slotDurationMinutes;
+  final String centerId;
+  final String provinceKey;
+  final String cityKey;
+  final String specialtyKey;
+  final String specialtyEn;
+  final String specialtyAr;
+  final String specialtyKu;
+  final String clinicName;
 
   const ConsultationDetail({
-  super.key,
-  required this.scheduleId,
-  required this.slotStartAt,
-  required this.slotDurationMinutes,
-  required this.centerId,
-  required this.provinceKey,
-  required this.cityKey,
-  required this.doctorId,
-  required this.doctorName,
-  required this.doctorImage,
-  required this.doctorType,
-  required this.doctorExp,
+    super.key,
+    required this.scheduleId,
+    required this.slotStartAt,
+    required this.slotDurationMinutes,
+    required this.centerId,
+    required this.provinceKey,
+    required this.cityKey,
+    required this.doctorId,
+    required this.doctorName,
+    required this.doctorImage,
+    required this.doctorType,
+    required this.doctorExp,
 
     // ⭐ ADD THESE
-  required this.specialtyKey,
-  required this.specialtyEn,
-  required this.specialtyAr,
-  required this.specialtyKu,
-  required this.clinicName,
-  this.date,
-  this.time,
-});
+    required this.specialtyKey,
+    required this.specialtyEn,
+    required this.specialtyAr,
+    required this.specialtyKu,
+    required this.clinicName,
+    this.date,
+    this.time,
+  });
 
   @override
   State<ConsultationDetail> createState() => _ConsultationDetailState();
@@ -197,81 +196,77 @@ class _ConsultationDetailState extends State<ConsultationDetail> {
     );
   }
 
- Future<void> _createAppointment() async {
-  if (selectedPatient == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please select a patient first.')),
-    );
-    return;
+  Future<void> _createAppointment() async {
+    if (selectedPatient == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a patient first.')),
+      );
+      return;
+    }
+
+    setState(() => _isBooking = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser!;
+
+      //----------------------------------------
+      // 🔥 REQUIRED SLOT DATA
+      // These MUST be passed from DoctorTimeSlot
+      //----------------------------------------
+
+      final scheduleId = widget.scheduleId;
+      final slotStartAt = widget.slotStartAt;
+      final duration = widget.slotDurationMinutes;
+
+      //----------------------------------------
+
+      await AppointmentBuilder.create(
+        scheduleId: scheduleId,
+
+        doctorId: widget.doctorId,
+        doctorName: widget.doctorName,
+        doctorImage: widget.doctorImage,
+
+        patientId: selectedPatient!.id,
+        patientName: selectedPatient!.name,
+
+        // if you have it
+        relationship: selectedPatient!.isSelf ? null : "family",
+
+        slotStartAt: slotStartAt,
+
+        source: "patient_app",
+        bookedByUserId: user.uid,
+        bookedByRole: "patient",
+        bookedByName: selectedPatient!.name,
+      );
+
+      //----------------------------------------
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment booked successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        PageTransition(
+          type: PageTransitionType.fade,
+          child: const BottomBar(),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to book: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
+    }
   }
-
-  setState(() => _isBooking = true);
-
-  try {
-    final user = FirebaseAuth.instance.currentUser!;
-    
-    //----------------------------------------
-    // 🔥 REQUIRED SLOT DATA
-    // These MUST be passed from DoctorTimeSlot
-    //----------------------------------------
-
-    final scheduleId = widget.scheduleId;
-    final slotStartAt = widget.slotStartAt;
-    final duration = widget.slotDurationMinutes;
-
-    //----------------------------------------
-
- await AppointmentBuilder.create(
-  scheduleId: scheduleId,
-
-  doctorId: widget.doctorId,
-  doctorName: widget.doctorName,
-  doctorImage: widget.doctorImage,
-
-  patientId: selectedPatient!.id,
-  patientName: selectedPatient!.name,
-
-  // if you have it
-  relationship: selectedPatient!.isSelf ? null : "family",
-
-  slotStartAt: slotStartAt,
- 
-
-  source: "patient_app",
-  bookedByUserId: user.uid,
-  bookedByRole: "patient",
-  bookedByName: selectedPatient!.name,
-
-
-);
-
-
-    //----------------------------------------
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Appointment booked successfully'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      PageTransition(
-        type: PageTransitionType.fade,
-        child: const BottomBar(),
-      ),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to book: $e')),
-    );
-  } finally {
-    if (mounted) setState(() => _isBooking = false);
-  }
-}
 
   @override
   Widget build(BuildContext context) {

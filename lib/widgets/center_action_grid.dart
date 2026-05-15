@@ -21,7 +21,6 @@
 //   Widget build(BuildContext context) {
 //     return LayoutBuilder(builder: (context, c) {
 //       int count = 3;
-    
 
 //       return GridView.count(
 //         shrinkWrap: true,
@@ -74,16 +73,13 @@
 //   ),
 // ),
 
-       
 //         ],
 //       ),
 //     ),
 //   );
 // }
 
-
 // }
-
 
 import 'package:flutter/material.dart';
 
@@ -108,7 +104,7 @@ class ActionItem {
 //   Widget build(BuildContext context) {
 //     return Container(
 //       // We use a small horizontal padding here to let the boxes breathe
-//       padding: const EdgeInsets.symmetric(horizontal: 8), 
+//       padding: const EdgeInsets.symmetric(horizontal: 8),
 //       child: Row(
 //         children: [
 //           _buildExpandedTile(items[0]),
@@ -124,9 +120,9 @@ class ActionItem {
 //   Widget _buildExpandedTile(ActionItem item) {
 //     return Expanded(
 //       child: AspectRatio(
-//         // 0.75 or 0.8 makes them tall rectangles. 
+//         // 0.75 or 0.8 makes them tall rectangles.
 //         // 1.0 would make them perfect squares.
-//         aspectRatio: 0.9, 
+//         aspectRatio: 0.9,
 //         child: InkWell(
 //           onTap: item.onTap,
 //           borderRadius: BorderRadius.circular(20),
@@ -173,7 +169,6 @@ class ActionItem {
 //     );
 //   }
 // }
-
 
 class CenterActionGrid extends StatelessWidget {
   final List<ActionItem> items;

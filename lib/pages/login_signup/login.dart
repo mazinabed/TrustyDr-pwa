@@ -716,11 +716,7 @@
 //   }
 // }
 
-
-
-
-
-//adding log in with apple. 
+//adding log in with apple.
 import 'dart:ui' as ui;
 
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
@@ -739,7 +735,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 
 // 🔴 IMPORTANT: adjust this import path to where your auth_controller.dart is
-
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -934,9 +929,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       _navigateAfterLogin(needsConsent);
     } catch (e) {
-  Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
-
-  
+      Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

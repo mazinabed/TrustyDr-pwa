@@ -360,13 +360,13 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
       body: Stack(
         children: [
           /// Gradient header
-            TrustyDrCurvedHeader(
-  title: tr('doctors'),
-          // no title
-  showBack: true,  // no arrow
-  height: 160,      // tall hero banner
-),
-        
+          TrustyDrCurvedHeader(
+            title: tr('doctors'),
+            // no title
+            showBack: true, // no arrow
+            height: 160, // tall hero banner
+          ),
+
           /// Content
           Padding(
             padding: const EdgeInsets.only(top: 220),

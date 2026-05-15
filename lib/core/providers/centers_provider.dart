@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/app_location_provider.dart';
 
-
 final centersProvider =
     StreamProvider.autoDispose<QuerySnapshot<Map<String, dynamic>>>((ref) {
   final firestore = FirebaseFirestore.instance;

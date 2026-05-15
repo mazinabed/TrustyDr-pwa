@@ -571,91 +571,95 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
     return '';
   }
-String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) {
-  final lang = ctx.locale.languageCode;
 
-  final localized = data['${base}_$lang'];
-  if (localized != null && localized.toString().isNotEmpty) {
-    return localized.toString();
+  String localizedField(
+      Map<String, dynamic> data, String base, BuildContext ctx) {
+    final lang = ctx.locale.languageCode;
+
+    final localized = data['${base}_$lang'];
+    if (localized != null && localized.toString().isNotEmpty) {
+      return localized.toString();
+    }
+
+    final en = data['${base}_en'];
+    if (en != null && en.toString().isNotEmpty) {
+      return en.toString();
+    }
+
+    return (data[base] ?? '').toString();
   }
-
-  final en = data['${base}_en'];
-  if (en != null && en.toString().isNotEmpty) {
-    return en.toString();
-  }
-
-  return (data[base] ?? '').toString();
-}
 
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
 
-   if (user == null) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFF6F8FB),
-    body: LayoutBuilder(
-      builder: (context, constraints) {
-        Widget content = Column(
-          children: [
-        TrustyDrCurvedHeader(
-          title: 'my_appointments'.tr(),
-          showBack: widget.showBack, height: 100,
-        ),
-
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.lock_outline, size: 48, color: Colors.grey),
-                  const SizedBox(height: 12),
-                  Text('login_required'.tr(), style: blackHeadingTextStyle),
-                  const SizedBox(height: 10),
-                  Text(
-                    'please_login'.tr(),
-                    textAlign: TextAlign.center,
-                    style: greySmallTextStyle,
-                  ),
-                  const SizedBox(height: 18),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: const LoginScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      minimumSize: const Size.fromHeight(44),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF6F8FB),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            Widget content = Column(
+              children: [
+                TrustyDrCurvedHeader(
+                  title: 'my_appointments'.tr(),
+                  showBack: widget.showBack,
+                  height: 100,
+                ),
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_outline,
+                              size: 48, color: Colors.grey),
+                          const SizedBox(height: 12),
+                          Text('login_required'.tr(),
+                              style: blackHeadingTextStyle),
+                          const SizedBox(height: 10),
+                          Text(
+                            'please_login'.tr(),
+                            textAlign: TextAlign.center,
+                            style: greySmallTextStyle,
+                          ),
+                          const SizedBox(height: 18),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                PageTransition(
+                                  type: PageTransitionType.rightToLeft,
+                                  child: const LoginScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              minimumSize: const Size.fromHeight(44),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'login_button'.tr(),
+                              style: whiteColorButtonTextStyle,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Text(
-                      'login_button'.tr(),
-                      style: whiteColorButtonTextStyle,
-                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
+              ],
+            );
+            if (constraints.maxWidth >= 768)
+              content = WebScaffoldContainer(child: content);
+            return content;
+          },
         ),
-      ],
-        );
-        if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
-        return content;
-      },
-    ),
-  );
-}
-
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
@@ -663,65 +667,67 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
         builder: (context, constraints) {
           Widget content = Column(
             children: [
-          // 🌈 Gradient Header with Title
-      TrustyDrCurvedHeader(
-  title: 'my_appointments'.tr(),
-  showBack: widget.showBack, height: 100,
-),
-
-          // White curved divider below gradient
-          Container(
-            height: 16,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF6F8FB),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-          ),
-
-          // 📅 Tabs
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: TabBar(
-              controller: _tab,
-              labelColor: primaryColor,
-              unselectedLabelColor: Colors.black54,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: primaryColor, width: 3),
-                insets: const EdgeInsets.symmetric(horizontal: 24),
+              // 🌈 Gradient Header with Title
+              TrustyDrCurvedHeader(
+                title: 'my_appointments'.tr(),
+                showBack: widget.showBack,
+                height: 100,
               ),
-              tabs: [
-                Tab(text: 'upcoming'.tr()),
-                Tab(text: 'past'.tr()),
-                Tab(text: 'canceled'.tr()),
-              ],
-            ),
-          ),
 
-          // 🔄 Tab Views
-          Expanded(
-            child: TabBarView(
-              controller: _tab,
-              children: [
-                _buildList(user.uid, ['pending', 'confirmed']),
-                _buildList(user.uid, ['completed']),
-                _buildList(user.uid, ['canceled']),
-              ],
-            ),
-          ),
-        ],
+              // White curved divider below gradient
+              Container(
+                height: 16,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF6F8FB),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+              ),
+
+              // 📅 Tabs
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tab,
+                  labelColor: primaryColor,
+                  unselectedLabelColor: Colors.black54,
+                  indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(color: primaryColor, width: 3),
+                    insets: const EdgeInsets.symmetric(horizontal: 24),
+                  ),
+                  tabs: [
+                    Tab(text: 'upcoming'.tr()),
+                    Tab(text: 'past'.tr()),
+                    Tab(text: 'canceled'.tr()),
+                  ],
+                ),
+              ),
+
+              // 🔄 Tab Views
+              Expanded(
+                child: TabBarView(
+                  controller: _tab,
+                  children: [
+                    _buildList(user.uid, ['pending', 'confirmed']),
+                    _buildList(user.uid, ['completed']),
+                    _buildList(user.uid, ['canceled']),
+                  ],
+                ),
+              ),
+            ],
           );
-          if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
+          if (constraints.maxWidth >= 768)
+            content = WebScaffoldContainer(child: content);
           return content;
         },
       ),
@@ -731,11 +737,10 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
 // ⚠️ Firestore whereIn limit = 10 values MAX
   Widget _buildList(String userId, List<String> statuses) {
     assert(statuses.length <= 10);
-    
+
     final q = _fs
         .collection('appointments')
-    .where('patientId', isEqualTo: userId)
-
+        .where('patientId', isEqualTo: userId)
         .where('status', whereIn: statuses)
         .orderBy('createdAt', descending: true);
 
@@ -773,14 +778,15 @@ String localizedField(Map<String, dynamic> data, String base, BuildContext ctx) 
             final dateKey = (data['dateKey'] ?? '').toString();
             final time = (data['time'] ?? data['slotTime'] ?? '').toString();
             final status = (data['status'] ?? 'Pending').toString();
-           final clinicName = localizedField(data, 'clinicName', context);
-final clinicAddress = localizedField(data, 'clinicAddress', context);
+            final clinicName = localizedField(data, 'clinicName', context);
+            final clinicAddress =
+                localizedField(data, 'clinicAddress', context);
 
             final doctorId = (data['doctorId'] ?? '').toString();
             final experience = (data['experience'] ?? '').toString();
-final centerId = data['centerId'] ?? '';
-final provinceKey = data['provinceKey'] ?? '';
-final cityKey = data['cityKey'] ?? '';
+            final centerId = data['centerId'] ?? '';
+            final provinceKey = data['provinceKey'] ?? '';
+            final cityKey = data['cityKey'] ?? '';
 
             final isPastTab =
                 statuses.length == 1 && statuses.first == 'completed';
@@ -793,8 +799,7 @@ final cityKey = data['cityKey'] ?? '';
               doctorType: specialty,
               doctorImage: doctorImage,
               clinicName: clinicName,
-clinicAddress: clinicAddress,
-
+              clinicAddress: clinicAddress,
               experience: experience,
               dateKey: dateKey,
               time: time,
@@ -819,9 +824,9 @@ clinicAddress: clinicAddress,
                       doctorId: doctorId,
                       doctorName: doctorName,
                       doctorImage: doctorImage,
-centerId: centerId,
-provinceKey: provinceKey,
-cityKey: cityKey,
+                      centerId: centerId,
+                      provinceKey: provinceKey,
+                      cityKey: cityKey,
 
                       // ✅ SOURCE OF TRUTH = appointment
                       specialtyKey: data['specialtyKey'] ?? '',
@@ -830,9 +835,8 @@ cityKey: cityKey,
                       specialtyKu: data['specialtyName_ku'] ?? '',
                       experience: experience.isEmpty ? 'N/A' : experience,
                       clinicName: clinicName,
-                   
-clinicAddress: clinicAddress,
 
+                      clinicAddress: clinicAddress,
                     ),
                   ),
                 );
@@ -848,8 +852,6 @@ clinicAddress: clinicAddress,
             );
           },
         );
-      
-      
       },
     );
   }
@@ -928,9 +930,8 @@ class _AppointmentCard extends StatelessWidget {
   final String doctorType;
   final String doctorImage;
   final String clinicName;
-final String clinicAddress;
+  final String clinicAddress;
 
-  
   final String experience;
   final String dateKey;
   final String time;
@@ -958,7 +959,6 @@ final String clinicAddress;
     this.onWriteReview,
     required this.hasReviewed,
     required this.clinicAddress,
-
   });
 
   Color get _statusColor {
@@ -1050,17 +1050,15 @@ final String clinicAddress;
                           if (clinicName.isNotEmpty)
                             Text('🏥 $clinicName', style: greySmallTextStyle),
                           if (clinicAddress.isNotEmpty)
-  Text(
-    '📍 $clinicAddress',
-    style: greySmallTextStyle,
-  ),
-
-                            if (clinicAddress.isNotEmpty)
-  Text(
-    '📍 $clinicAddress',
-    style: greySmallTextStyle,
-  ),
-
+                            Text(
+                              '📍 $clinicAddress',
+                              style: greySmallTextStyle,
+                            ),
+                          if (clinicAddress.isNotEmpty)
+                            Text(
+                              '📍 $clinicAddress',
+                              style: greySmallTextStyle,
+                            ),
                           const SizedBox(height: 6),
                           Row(
                             children: [

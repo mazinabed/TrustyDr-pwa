@@ -20,27 +20,22 @@ class DoctorTimeSlot extends StatefulWidget {
   final String specialtyAr;
   final String specialtyKu;
   final String experience;
-final String centerId;
-final String provinceKey;
-final String cityKey;
-final String? province;
-final String? city;
-final String clinicName;
-final String? clinicAddress;
+  final String centerId;
+  final String provinceKey;
+  final String cityKey;
+  final String? province;
+  final String? city;
+  final String clinicName;
+  final String? clinicAddress;
 // ✅ ADD THIS
-
- 
- 
 
   const DoctorTimeSlot({
     super.key,
-      required this.centerId,
-  required this.provinceKey,
-  required this.cityKey,
-this.province,
-this.city,
-
-
+    required this.centerId,
+    required this.provinceKey,
+    required this.cityKey,
+    this.province,
+    this.city,
     required this.doctorId,
     required this.doctorName,
     required this.doctorImage,
@@ -51,17 +46,12 @@ this.city,
     required this.specialtyKu,
     required this.experience,
     required this.clinicName,
- this.clinicAddress,
-
+    this.clinicAddress,
   });
 
   @override
   State<DoctorTimeSlot> createState() => _DoctorTimeSlotState();
 }
-
-
-
-
 
 class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   final _fs = FirebaseFirestore.instance;
@@ -131,17 +121,17 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         return;
       }
 
-final doc = qs.docs.first;
-final data = doc.data(); // ⭐ DEFINE DATA AGAIN
+      final doc = qs.docs.first;
+      final data = doc.data(); // ⭐ DEFINE DATA AGAIN
 
-_scheduleForDay = {
-  ...data,
-  'scheduleId': doc.id,
-};
+      _scheduleForDay = {
+        ...data,
+        'scheduleId': doc.id,
+      };
 
-_capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
-    ? data['capacityPerSlot'] as int
-    : int.tryParse("${data['capacityPerSlot']}") ?? 1;
+      _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
+          ? data['capacityPerSlot'] as int
+          : int.tryParse("${data['capacityPerSlot']}") ?? 1;
 
       setState(() => _loadingSchedule = false);
 
@@ -220,7 +210,7 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
     try {
       final qs = await _fs
           .collection('appointments')
-.where('patientId', isEqualTo: userId)
+          .where('patientId', isEqualTo: userId)
           .where('doctorId', isEqualTo: doctorId)
           .where('dateKey', isEqualTo: dateKey)
           .where('status', whereIn: ['pending', 'confirmed'])
@@ -248,109 +238,109 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
       body: SingleChildScrollView(
         child: Column(
           children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                fixPadding * 2, fixPadding, fixPadding * 2, fixPadding),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundImage: widget.doctorImage.startsWith('http')
-                      ? NetworkImage(widget.doctorImage)
-                      : const AssetImage('assets/user/placeholder_user.png')
-                          as ImageProvider,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Dr. ${widget.doctorName}',
-                          style: blackNormalBoldTextStyle),
-                      const SizedBox(height: 2),
-                      Text(
-                        _localizedSpecialty,
-                        style: greySmallTextStyle,
-                      ),
-                      const SizedBox(height: 2),
-                      Text('${widget.experience} yrs • ${widget.clinicName}',
-                          style: primaryColorsmallBoldTextStyle),
-                      Text('${widget.city}, ${widget.province}',
-                          style: greySmallTextStyle),
-                    ],
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  fixPadding * 2, fixPadding, fixPadding * 2, fixPadding),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundImage: widget.doctorImage.startsWith('http')
+                        ? NetworkImage(widget.doctorImage)
+                        : const AssetImage('assets/user/placeholder_user.png')
+                            as ImageProvider,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Dr. ${widget.doctorName}',
+                            style: blackNormalBoldTextStyle),
+                        const SizedBox(height: 2),
+                        Text(
+                          _localizedSpecialty,
+                          style: greySmallTextStyle,
+                        ),
+                        const SizedBox(height: 2),
+                        Text('${widget.experience} yrs • ${widget.clinicName}',
+                            style: primaryColorsmallBoldTextStyle),
+                        Text('${widget.city}, ${widget.province}',
+                            style: greySmallTextStyle),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: fixPadding * 1.5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ],
+              ),
+              child: TableCalendar(
+                firstDay: DateTime.now(),
+                lastDay: DateTime.now().add(const Duration(days: 60)),
+                focusedDay: _focusedDay,
+                currentDay: DateTime.now(),
+                selectedDayPredicate: (d) =>
+                    d.year == _selectedDay.year &&
+                    d.month == _selectedDay.month &&
+                    d.day == _selectedDay.day,
+                calendarStyle: CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: primaryColor,
+                    shape: BoxShape.circle,
                   ),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: fixPadding * 1.5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: TableCalendar(
-              firstDay: DateTime.now(),
-              lastDay: DateTime.now().add(const Duration(days: 60)),
-              focusedDay: _focusedDay,
-              currentDay: DateTime.now(),
-              selectedDayPredicate: (d) =>
-                  d.year == _selectedDay.year &&
-                  d.month == _selectedDay.month &&
-                  d.day == _selectedDay.day,
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
+                headerStyle: const HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
                 ),
-                selectedDecoration: BoxDecoration(
-                  color: primaryColor,
-                  shape: BoxShape.circle,
-                ),
+                onDaySelected: (sel, foc) async {
+                  setState(() {
+                    _selectedDay = sel;
+                    _focusedDay = foc;
+                  });
+                  await _loadScheduleForSelectedDay();
+                },
+                onPageChanged: (foc) => _focusedDay = foc,
               ),
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-              ),
-              onDaySelected: (sel, foc) async {
-                setState(() {
-                  _selectedDay = sel;
-                  _focusedDay = foc;
-                });
-                await _loadScheduleForSelectedDay();
-              },
-              onPageChanged: (foc) => _focusedDay = foc,
             ),
-          ),
-          const SizedBox(height: 10),
-          if (_loadingSchedule)
-            const SizedBox(
-              height: 220,
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_scheduleForDay == null)
+            const SizedBox(height: 10),
+            if (_loadingSchedule)
+              const SizedBox(
+                height: 220,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_scheduleForDay == null)
+              SizedBox(
+                height: 220,
+                child: Center(
+                  child: Text(
+                    'no_clinic_hours_day'.tr(),
+                    style: greyNormalTextStyle,
+                  ),
+                ),
+              )
+            else
+              _buildSlotGrid(),
             SizedBox(
-              height: 220,
-              child: Center(
-                child: Text(
-                  'no_clinic_hours_day'.tr(),
-                  style: greyNormalTextStyle,
-                ),
-              ),
-            )
-          else
-            _buildSlotGrid(),
-          SizedBox(
-            height: MediaQuery.of(context).padding.bottom + 24,
-          ),
-        ],
+              height: MediaQuery.of(context).padding.bottom + 24,
+            ),
+          ],
         ),
       ),
     );
@@ -436,12 +426,10 @@ _capacityPerSlot = (data['capacityPerSlot'] ?? 1) is int
     );
   }
 
-String _to24Hour(String label) {
-  final parsed = DateFormat('h:mm a').parse(label);
-  return DateFormat('HH:mm').format(parsed);
-}
-
-
+  String _to24Hour(String label) {
+    final parsed = DateFormat('h:mm a').parse(label);
+    return DateFormat('HH:mm').format(parsed);
+  }
 
   Future<void> _onPickSlot(String slotLabel) async {
     final user = _auth.currentUser;
@@ -479,12 +467,12 @@ String _to24Hour(String label) {
       );
       return;
     }
-final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
+    final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
 
-final slotStart = _parseHm(
-  _to24Hour(slotLabel), // helper below
-  _selectedDay,
-);
+    final slotStart = _parseHm(
+      _to24Hour(slotLabel), // helper below
+      _selectedDay,
+    );
 
     final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
     final sure = await showDialog<bool>(
@@ -515,26 +503,27 @@ final slotStart = _parseHm(
       ),
     );
 
+    final schedule = _scheduleForDay!;
 
-final schedule = _scheduleForDay!;
+    final centerId = (schedule['centerId'] ?? '').toString();
+    final lang = context.locale.languageCode;
 
-final centerId = (schedule['centerId'] ?? '').toString();
-final lang = context.locale.languageCode;
+    String clinicName;
 
-String clinicName;
-
-if (lang == 'ar') {
-  clinicName =
-      (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '').toString();
-} else if (lang == 'ku') {
-  clinicName =
-      (schedule['clinicName_ku'] ?? schedule['clinicName_en'] ?? '').toString();
-} else {
-  clinicName =
-      (schedule['clinicName_en'] ?? schedule['clinicName'] ?? '').toString();
-}
-final provinceKey = (schedule['provinceKey'] ?? '').toString();
-final cityKey = (schedule['cityKey'] ?? '').toString();
+    if (lang == 'ar') {
+      clinicName =
+          (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '')
+              .toString();
+    } else if (lang == 'ku') {
+      clinicName =
+          (schedule['clinicName_ku'] ?? schedule['clinicName_en'] ?? '')
+              .toString();
+    } else {
+      clinicName = (schedule['clinicName_en'] ?? schedule['clinicName'] ?? '')
+          .toString();
+    }
+    final provinceKey = (schedule['provinceKey'] ?? '').toString();
+    final cityKey = (schedule['cityKey'] ?? '').toString();
 
 // 🔥 HARD GUARD (VERY IMPORTANT)
 // if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
@@ -546,37 +535,34 @@ final cityKey = (schedule['cityKey'] ?? '').toString();
 
     if (sure != true) return;
     final wasBooked = await showModalBottomSheet<bool>(
-      
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      
-    builder: (_) => ConfirmBookingModal(
-  scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
+      builder: (_) => ConfirmBookingModal(
+        scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
 
-  slotStartAt: slotStart,
-  slotDurationMinutes: dur,
+        slotStartAt: slotStart,
+        slotDurationMinutes: dur,
 
-  doctorId: widget.doctorId,
-  doctorName: widget.doctorName,
-  doctorImage: widget.doctorImage,
+        doctorId: widget.doctorId,
+        doctorName: widget.doctorName,
+        doctorImage: widget.doctorImage,
 
-  specialtyKey: widget.specialtyKey,
-  specialtyEn: widget.specialtyEn,
-  specialtyAr: widget.specialtyAr,
-  specialtyKu: widget.specialtyKu,
+        specialtyKey: widget.specialtyKey,
+        specialtyEn: widget.specialtyEn,
+        specialtyAr: widget.specialtyAr,
+        specialtyKu: widget.specialtyKu,
 
-  clinicName: clinicName,   // ✅ FROM SCHEDULE
+        clinicName: clinicName, // ✅ FROM SCHEDULE
 
-  date: _selectedDay,
-  slotLabel: slotLabel,
-  capacityPerSlot: _capacityPerSlot,
+        date: _selectedDay,
+        slotLabel: slotLabel,
+        capacityPerSlot: _capacityPerSlot,
 
-  centerId: centerId,        // ✅ FROM SCHEDULE
-  provinceKey: provinceKey,  // ✅ FROM SCHEDULE
-  cityKey: cityKey,          // ✅ FROM SCHEDULE
-),
-
+        centerId: centerId, // ✅ FROM SCHEDULE
+        provinceKey: provinceKey, // ✅ FROM SCHEDULE
+        cityKey: cityKey, // ✅ FROM SCHEDULE
+      ),
     );
 
     if (wasBooked == true && mounted) {

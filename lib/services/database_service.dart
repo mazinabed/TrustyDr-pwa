@@ -342,7 +342,6 @@ class DatabaseService {
 
       _initialized = true;
       _initLock!.complete();
-
     } catch (e, s) {
       _initLock!.completeError(e, s);
       rethrow;
@@ -520,47 +519,44 @@ class DatabaseService {
   //   return doc.id;
   // }
 
+  Future<String> createAppointment(Map<String, dynamic> appointment) async {
+    if (!_initialized) await initialize();
+    _requireAuth();
 
+    //-----------------------------------------
+    // 🔥 CRITICAL — deterministic slotId
+    //-----------------------------------------
 
-Future<String> createAppointment(Map<String, dynamic> appointment) async {
-  if (!_initialized) await initialize();
-  _requireAuth();
+    final scheduleId = appointment['scheduleId'];
+    final slotStart = appointment['slotStartAt'] as Timestamp;
 
-  //-----------------------------------------
-  // 🔥 CRITICAL — deterministic slotId
-  //-----------------------------------------
-
-  final scheduleId = appointment['scheduleId'];
-  final slotStart = appointment['slotStartAt'] as Timestamp;
-
-  if (scheduleId == null || slotStart == null) {
-    throw Exception('Missing scheduleId or slotStartAt');
-  }
-
-  final slotId =
-      '${scheduleId}_${slotStart.millisecondsSinceEpoch}';
-
-  final ref = _db!.collection('appointments').doc(slotId);
-
-  //-----------------------------------------
-  // 🔥 TRANSACTION = DOUBLE BOOK PROTECTION
-  //-----------------------------------------
-
-  await _db!.runTransaction((tx) async {
-    final existing = await tx.get(ref);
-
-    if (existing.exists) {
-      throw Exception('SLOT_ALREADY_BOOKED');
+    if (scheduleId == null || slotStart == null) {
+      throw Exception('Missing scheduleId or slotStartAt');
     }
 
-    tx.set(ref, {
-      ...appointment,
-      'slotId': slotId, // keep parity with doctor portal
-    });
-  });
+    final slotId = '${scheduleId}_${slotStart.millisecondsSinceEpoch}';
 
-  return slotId;
-}
+    final ref = _db!.collection('appointments').doc(slotId);
+
+    //-----------------------------------------
+    // 🔥 TRANSACTION = DOUBLE BOOK PROTECTION
+    //-----------------------------------------
+
+    await _db!.runTransaction((tx) async {
+      final existing = await tx.get(ref);
+
+      if (existing.exists) {
+        throw Exception('SLOT_ALREADY_BOOKED');
+      }
+
+      tx.set(ref, {
+        ...appointment,
+        'slotId': slotId, // keep parity with doctor portal
+      });
+    });
+
+    return slotId;
+  }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> streamAppointments() {
     if (!_initialized) {

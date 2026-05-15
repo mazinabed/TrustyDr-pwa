@@ -219,8 +219,7 @@ class _TrustyDrInfoCardsState extends State<TrustyDrInfoCards> {
         uri,
         mode: LaunchMode.externalApplication,
       );
-    } catch (_) {
-    }
+    } catch (_) {}
   }
 
   @override

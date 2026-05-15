@@ -127,7 +127,7 @@
 
 import 'dart:async';
 import 'dart:html' as html;
-import 'dart:js_interop'; 
+import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -148,19 +148,21 @@ class TrustyInstallBanner extends StatefulWidget {
 
 class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   bool _isDismissed = false;
-  
+
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
-  bool get _isAndroidWeb => kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-  bool get _isStandalone => html.window.matchMedia('(display-mode: standalone)').matches;
+  bool get _isAndroidWeb =>
+      kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  bool get _isStandalone =>
+      html.window.matchMedia('(display-mode: standalone)').matches;
 
   @override
   void initState() {
     super.initState();
     _checkStatus();
-    
+
     // Listen for the 'available' event from your pwa.js
     html.window.addEventListener('pwa-install-available', (_) {
-      if (mounted) setState(() {}); 
+      if (mounted) setState(() {});
     });
   }
 
@@ -191,7 +193,8 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   @override
   Widget build(BuildContext context) {
     // Don't show if: Not web, already installed, or user dismissed it.
-    if (!kIsWeb || _isStandalone || _isDismissed) return const SizedBox.shrink();
+    if (!kIsWeb || _isStandalone || _isDismissed)
+      return const SizedBox.shrink();
     // Only show on Mobile (Big companies rarely show banners on Desktop)
     if (!_isIOS && !_isAndroidWeb) return const SizedBox.shrink();
 
@@ -199,23 +202,32 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _isIOS ? const Color(0xFFFFF9E6) : Colors.white, // iOS gets a subtle hint color
+        color: _isIOS
+            ? const Color(0xFFFFF9E6)
+            : Colors.white, // iOS gets a subtle hint color
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.black.withOpacity(0.05)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black12, blurRadius: 8, offset: const Offset(0, 4))
+        ],
       ),
       child: Row(
         children: [
-          Icon(_isIOS ? Icons.apple : Icons.install_mobile, color: const Color(0xFF4B96DF)),
+          Icon(_isIOS ? Icons.apple : Icons.install_mobile,
+              color: const Color(0xFF4B96DF)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Install TrustyDr', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Install TrustyDr',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(
-                  _isIOS ? 'Tap Share then "Add to Home Screen"' : 'Get the app for a faster experience.',
+                  _isIOS
+                      ? 'Tap Share then "Add to Home Screen"'
+                      : 'Get the app for a faster experience.',
                   style: const TextStyle(fontSize: 12, color: Colors.black87),
                 ),
               ],
@@ -237,19 +249,25 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   void _showIosInstructions() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Add to Home Screen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Add to Home Screen',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
-            _step(1, 'Tap the Share icon in the browser tools', Icons.ios_share),
+            _step(
+                1, 'Tap the Share icon in the browser tools', Icons.ios_share),
             const SizedBox(height: 15),
-            _step(2, 'Scroll down and tap "Add to Home Screen"', Icons.add_box_outlined),
+            _step(2, 'Scroll down and tap "Add to Home Screen"',
+                Icons.add_box_outlined),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Got it')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Got it')),
           ],
         ),
       ),
@@ -259,7 +277,9 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   Widget _step(int n, String text, IconData icon) {
     return Row(
       children: [
-        CircleAvatar(radius: 12, child: Text('$n', style: const TextStyle(fontSize: 12))),
+        CircleAvatar(
+            radius: 12,
+            child: Text('$n', style: const TextStyle(fontSize: 12))),
         const SizedBox(width: 12),
         Expanded(child: Text(text)),
         Icon(icon, color: Colors.blue),
@@ -267,5 +287,6 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
     );
   }
 
-  void _showToast(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showToast(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }

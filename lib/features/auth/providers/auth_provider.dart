@@ -28,36 +28,33 @@ class AuthController extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-Future<void> handleWebRedirectResult() async {
-  if (!kIsWeb) return;
+  Future<void> handleWebRedirectResult() async {
+    if (!kIsWeb) return;
 
-  try {
-    final result = await FirebaseAuth.instance.getRedirectResult();
+    try {
+      final result = await FirebaseAuth.instance.getRedirectResult();
 
-    if (result.user != null) {
-      state = AsyncValue.data(result.user);
+      if (result.user != null) {
+        state = AsyncValue.data(result.user);
+      }
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
     }
-  } catch (e, st) {
-    state = AsyncValue.error(e, st);
   }
-}
 
-
-Future<void> signInWithApple() async {
-  state = const AsyncValue.loading();
-  try {
-    final cred = await ref.read(authServiceProvider).signInWithApple();
-    state = AsyncValue.data(cred.user);
-  } catch (e, st) {
-    state = AsyncValue.error(e, st);
+  Future<void> signInWithApple() async {
+    state = const AsyncValue.loading();
+    try {
+      final cred = await ref.read(authServiceProvider).signInWithApple();
+      state = AsyncValue.data(cred.user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
-}
 
-
-
-Future<bool> checkNeedsConsent(User user) async {
-  return await DatabaseService.instance.needsLegalAcceptanceFor(user);
-}
+  Future<bool> checkNeedsConsent(User user) async {
+    return await DatabaseService.instance.needsLegalAcceptanceFor(user);
+  }
 
   // Future<void> signInWithFacebook() async {
   //   state = const AsyncValue.loading();

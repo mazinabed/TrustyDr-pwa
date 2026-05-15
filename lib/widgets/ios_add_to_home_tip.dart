@@ -1,8 +1,4 @@
-
-
 import 'dart:js_interop';
-
-
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -22,23 +18,19 @@ class _IosAddToHomeTipState extends State<IosAddToHomeTip> {
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
   bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 
+  @JS('trustyDrCanInstall')
+  external bool _trustyDrCanInstall();
 
-@JS('trustyDrCanInstall')
-external bool _trustyDrCanInstall();
+  @JS('trustyDrPromptInstall')
+  external JSPromise _trustyDrPromptInstall();
 
-@JS('trustyDrPromptInstall')
-external JSPromise _trustyDrPromptInstall();
+  bool _isAndroidWeb() {
+    return kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+  }
 
-
-bool _isAndroidWeb() {
-  return kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-}
-
-bool _canInstallAndroid() {
-  return _trustyDrCanInstall();
-}
-
-
+  bool _canInstallAndroid() {
+    return _trustyDrCanInstall();
+  }
 
   @override
   void initState() {
@@ -53,10 +45,9 @@ bool _canInstallAndroid() {
     });
   }
 
-Future<void> _installAndroid() async {
-  await _trustyDrPromptInstall().toDart;
-}
-
+  Future<void> _installAndroid() async {
+    await _trustyDrPromptInstall().toDart;
+  }
 
   Future<void> _hideForever() async {
     final prefs = await SharedPreferences.getInstance();
@@ -81,7 +72,6 @@ Future<void> _installAndroid() async {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-
               if (_isIOS) ...[
                 _stepRow('1', 'Tap the Share button'),
                 const SizedBox(height: 10),
@@ -99,9 +89,7 @@ Future<void> _installAndroid() async {
                 const SizedBox(height: 10),
                 const Icon(Icons.add_to_home_screen, size: 36),
               ],
-
               const SizedBox(height: 24),
-
               ElevatedButton(
                 onPressed: () {
                   _hideForever();
@@ -109,7 +97,6 @@ Future<void> _installAndroid() async {
                 },
                 child: const Text('Got it'),
               ),
-
               const SizedBox(height: 12),
             ],
           ),
@@ -146,7 +133,6 @@ Future<void> _installAndroid() async {
         children: [
           const Text('📲', style: TextStyle(fontSize: 22)),
           const SizedBox(width: 10),
-
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,29 +147,24 @@ Future<void> _installAndroid() async {
               ],
             ),
           ),
-
-        TextButton(
-  onPressed: () async {
-    if (_isAndroidWeb()) {
-      if (_canInstallAndroid()) {
-        await _installAndroid();   // ← this uses the function
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Install not available yet')),
-        );
-      }
-    } else {
-      _showHowToInstall(context); // iOS instructions
-    }
-  },
-  child: Text(_isAndroidWeb() ? 'Install' : 'How to install'),
-),
-
-        
+          TextButton(
+            onPressed: () async {
+              if (_isAndroidWeb()) {
+                if (_canInstallAndroid()) {
+                  await _installAndroid(); // ← this uses the function
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Install not available yet')),
+                  );
+                }
+              } else {
+                _showHowToInstall(context); // iOS instructions
+              }
+            },
+            child: Text(_isAndroidWeb() ? 'Install' : 'How to install'),
+          ),
         ],
       ),
     );
   }
 }
-
-

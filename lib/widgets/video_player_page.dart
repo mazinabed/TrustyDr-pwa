@@ -5,7 +5,8 @@ class VideoPlayerPage extends StatefulWidget {
   final String title;
   final String videoId;
 
-  const VideoPlayerPage({super.key, required this.title, required this.videoId});
+  const VideoPlayerPage(
+      {super.key, required this.title, required this.videoId});
 
   @override
   State<VideoPlayerPage> createState() => _VideoPlayerPageState();
@@ -24,7 +25,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
         showFullscreenButton: true,
         showControls: true,
         // This is the most important parameter for PWAs
-        pointerEvents: PointerEvents.auto, 
+        pointerEvents: PointerEvents.auto,
       ),
     );
   }

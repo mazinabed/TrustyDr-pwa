@@ -11,4 +11,3 @@ class PublicDoctorProfilePage extends StatelessWidget {
     return DoctorProfile(doctorId: doctorId);
   }
 }
-

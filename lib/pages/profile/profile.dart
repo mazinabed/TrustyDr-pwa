@@ -40,7 +40,6 @@ class _ProfileState extends State<Profile> {
       _loadProfile();
       _hasLoadedOnce = true;
     }
-
   }
 
   String _resolveLocalizedName(dynamic value) {
@@ -98,8 +97,7 @@ class _ProfileState extends State<Profile> {
         await user.updateDisplayName(userName);
         await user.reload();
       }
-    } catch (_) {
-    }
+    } catch (_) {}
 
     if (mounted) setState(() => _isLoadingProfile = false);
   }
@@ -240,241 +238,246 @@ class _ProfileState extends State<Profile> {
           body: LayoutBuilder(
             builder: (context, constraints) {
               Widget content = SafeArea(
-            child: RefreshIndicator(
-              color: primaryColor,
-              onRefresh: _loadProfile,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius:
-                            BorderRadius.vertical(bottom: Radius.circular(36)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: RefreshIndicator(
+                  color: primaryColor,
+                  onRefresh: _loadProfile,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.vertical(
+                                bottom: Radius.circular(36)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                tr('my_profile'),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              TextButton.icon(
-                                onPressed: () =>
-                                    _guardedPush(const EditProfile()),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.18),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                ),
-                                icon: const Icon(Icons.edit, size: 18),
-                                label: Text(
-                                  tr('edit'),
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    tr('my_profile'),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
+                                  TextButton.icon(
+                                    onPressed: () =>
+                                        _guardedPush(const EditProfile()),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      backgroundColor:
+                                          Colors.white.withOpacity(0.18),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                    ),
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    label: Text(
+                                      tr('edit'),
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  _avatar(size: 72),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _isLoadingProfile
+                                              ? tr('loading')
+                                              : (userName.isEmpty
+                                                  ? tr('user')
+                                                  : userName),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          user.phoneNumber ??
+                                              user.email ??
+                                              tr('signed_in'),
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              _avatar(size: 72),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _isLoadingProfile
-                                          ? tr('loading')
-                                          : (userName.isEmpty
-                                              ? tr('user')
-                                              : userName),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                        ),
+                        Transform.translate(
+                          offset: const Offset(0, -60),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              children: [
+                                _sectionCard(
+                                  title: tr('my_account'),
+                                  items: [
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.local_hospital,
+                                      label: tr('my_doctors'),
+                                      onTap: () =>
+                                          _guardedPush(const MyDoctorsPage()),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      user.phoneNumber ??
-                                          user.email ??
-                                          tr('signed_in'),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                                    _ActionItem(
+                                      color: Colors.teal,
+                                      icon: Icons.calendar_today,
+                                      label: tr('my_appointments'),
+                                      onTap: () => _guardedPush(
+                                          const MyAppointmentsPage(
+                                              showBack: true)),
+                                    ),
+                                    _ActionItem(
+                                      color: Colors.purple,
+                                      icon: Icons.thumb_up,
+                                      label: tr('recommendations'),
+                                      onTap: () => _guardedPush(
+                                          const RecommendationsPage()),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                _sectionCard(
+                                  title: tr('about_app'),
+                                  items: [
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.info_outline,
+                                      label: tr('about_us'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const AboutUs(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.help_outline,
+                                      label: tr('help_support'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const HelpSupportPage(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.quiz_outlined,
+                                      label: tr('faq.title'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const FAQPage(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.contact_mail_outlined,
+                                      label: tr('contact.title'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const ContactUsPage(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.lock_outline,
+                                      label: tr('privacy.title'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const PrivacyPolicyPage(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: primaryColor,
+                                      icon: Icons.description_outlined,
+                                      label: tr('terms.title'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const TermsConditionsPage(),
+                                        ),
+                                      ),
+                                    ),
+                                    _ActionItem(
+                                      color: Colors.redAccent,
+                                      icon: Icons.gavel_outlined,
+                                      label: tr('legal.title'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        PageTransition(
+                                          type: PageTransitionType.rightToLeft,
+                                          child: const LegalDisclaimerPage(),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                _logoutCard(onLogout: _logout),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                    Transform.translate(
-                      offset: const Offset(0, -60),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          children: [
-                            _sectionCard(
-                              title: tr('my_account'),
-                              items: [
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.local_hospital,
-                                  label: tr('my_doctors'),
-                                  onTap: () =>
-                                      _guardedPush(const MyDoctorsPage()),
-                                ),
-                                _ActionItem(
-                                  color: Colors.teal,
-                                  icon: Icons.calendar_today,
-                                  label: tr('my_appointments'),
-                                  onTap: () => _guardedPush(
-                                      const MyAppointmentsPage(showBack: true)),
-                                ),
-                                _ActionItem(
-                                  color: Colors.purple,
-                                  icon: Icons.thumb_up,
-                                  label: tr('recommendations'),
-                                  onTap: () =>
-                                      _guardedPush(const RecommendationsPage()),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            _sectionCard(
-                              title: tr('about_app'),
-                              items: [
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.info_outline,
-                                  label: tr('about_us'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const AboutUs(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.help_outline,
-                                  label: tr('help_support'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const HelpSupportPage(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.quiz_outlined,
-                                  label: tr('faq.title'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const FAQPage(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.contact_mail_outlined,
-                                  label: tr('contact.title'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const ContactUsPage(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.lock_outline,
-                                  label: tr('privacy.title'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const PrivacyPolicyPage(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: primaryColor,
-                                  icon: Icons.description_outlined,
-                                  label: tr('terms.title'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const TermsConditionsPage(),
-                                    ),
-                                  ),
-                                ),
-                                _ActionItem(
-                                  color: Colors.redAccent,
-                                  icon: Icons.gavel_outlined,
-                                  label: tr('legal.title'),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    PageTransition(
-                                      type: PageTransitionType.rightToLeft,
-                                      child: const LegalDisclaimerPage(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            _logoutCard(onLogout: _logout),
-                            const SizedBox(height: 24),
-                          ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-            if (constraints.maxWidth >= 768) content = WebScaffoldContainer(child: content);
-            return content;
-          },
+              );
+              if (constraints.maxWidth >= 768)
+                content = WebScaffoldContainer(child: content);
+              return content;
+            },
           ),
         );
       },
