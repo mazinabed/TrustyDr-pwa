@@ -449,5 +449,7 @@
   "benefit_verified": "توثيق ملف العيادة",
   "benefit_bookings": "استقبال وإدارة الحجوزات",
   "benefit_manage_profile": "تعديل معلومات العيادة في أي وقت",
-  "benefit_trust": "زيادة ثقة المرضى"
+  "benefit_trust": "زيادة ثقة المرضى",
+
+  "select_center_to_book": "اختر عيادة للحجز"
 }

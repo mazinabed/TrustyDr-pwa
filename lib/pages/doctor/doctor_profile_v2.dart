@@ -478,10 +478,94 @@ class _DoctorProfileView extends StatelessWidget {
                             ),
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('select_center_to_book'.tr()),
+                          showModalBottomSheet(
+                            context: context,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20)),
                             ),
+                            builder: (sheetCtx) {
+                              return SafeArea(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          20, 20, 20, 8),
+                                      child: Text(
+                                        'select_center_to_book'.tr(),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    ...centers.map((centerDoc) {
+                                      final c = centerDoc.data()
+                                          as Map<String, dynamic>;
+                                      final matching = schedules
+                                          .where((s) =>
+                                              s['centerId'] == centerDoc.id)
+                                          .toList();
+                                      if (matching.isEmpty) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final schedule = matching.first;
+                                      final String cn = lang == 'ar'
+                                          ? (c['clinicName_ar'] ??
+                                                  c['clinicName_en'] ??
+                                                  '')
+                                              .toString()
+                                          : lang == 'ku'
+                                              ? (c['clinicName_ku'] ??
+                                                      c['clinicName_en'] ??
+                                                      '')
+                                                  .toString()
+                                              : (c['clinicName_en'] ?? '')
+                                                  .toString();
+                                      return ListTile(
+                                        leading: const Icon(
+                                            Icons.local_hospital,
+                                            color: Colors.teal),
+                                        title: Text(cn),
+                                        trailing: const Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 14),
+                                        onTap: () {
+                                          Navigator.pop(sheetCtx);
+                                          Navigator.push(
+                                            context,
+                                            PageTransition(
+                                              type: PageTransitionType
+                                                  .rightToLeft,
+                                              child: DoctorTimeSlot(
+                                                doctorId: doctorId,
+                                                doctorName: doctorName,
+                                                doctorImage: imageUrl,
+                                                specialtyKey: specialtyKey,
+                                                specialtyEn: specialtyEn,
+                                                specialtyAr: specialtyAr,
+                                                specialtyKu: specialtyKu,
+                                                experience: exp,
+                                                centerId: centerDoc.id,
+                                                clinicName: cn,
+                                                provinceKey:
+                                                    schedule['provinceKey'] ??
+                                                        '',
+                                                cityKey:
+                                                    schedule['cityKey'] ?? '',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    }),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ),
+                              );
+                            },
                           );
                         }
                       },

@@ -444,5 +444,7 @@
   "benefit_verified": "Verified clinic profile",
   "benefit_bookings": "Receive and manage appointments",
   "benefit_manage_profile": "Edit clinic information anytime",
-  "benefit_trust": "Build trust with patients"
+  "benefit_trust": "Build trust with patients",
+
+  "select_center_to_book": "Select a clinic to book"
 }
