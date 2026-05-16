@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -30,41 +31,49 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
 
   Future<void> _submitReview() async {
     final user = _auth.currentUser;
-    if (user == null || _rating == 0) return;
+    if (user == null || _rating == 0 || _isSubmitting) return;
 
     setState(() => _isSubmitting = true);
 
     try {
-      // ✅ GET NAME FROM USERS COLLECTION
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
-
       final displayName =
           userDoc.data()?['name'] ?? user.displayName ?? 'Anonymous';
 
-      // 1️⃣ Create review
-      await _firestore
+      // One review per appointment — deterministic doc ID prevents duplicate clicks
+      final reviewRef = _firestore
           .collection('doctors')
           .doc(widget.doctorId)
           .collection('reviews')
-          .add({
+          .doc(widget.appointmentId);
+
+      final existing = await reviewRef.get();
+      if (existing.exists) {
+        if (mounted) Navigator.pop(context, true);
+        return;
+      }
+
+      await reviewRef.set({
         'userId': user.uid,
-        'userName': displayName, // ✅ correct name
+        'userName': displayName,
         'rating': _rating,
         'comment': _commentController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // 2️⃣ Mark appointment as reviewed
-      await _firestore
-          .collection('appointments')
-          .doc(widget.appointmentId)
-          .update({
+      if (mounted) Navigator.pop(context, true);
+
+      // Best-effort: mark appointment reviewed (non-blocking)
+      _firestore.collection('appointments').doc(widget.appointmentId).update({
         'hasReviewed': true,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) Navigator.pop(context);
-    } catch (_) {
+      }).catchError((_) {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('review.submit_failed'.tr())),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -116,7 +125,7 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Rate Dr. ${widget.doctorName}',
+                      'review.rate_doctor'.tr(args: [widget.doctorName]),
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.bold),
                     ),
@@ -144,7 +153,7 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
                 controller: _commentController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  hintText: 'Write your review...',
+                  hintText: 'review.write_hint'.tr(),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -166,9 +175,10 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
                   onPressed: _isSubmitting ? null : _submitReview,
                   child: _isSubmitting
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Submit Review',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
+                      : Text(
+                          'review.submit'.tr(),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 16),
                         ),
                 ),
               ),

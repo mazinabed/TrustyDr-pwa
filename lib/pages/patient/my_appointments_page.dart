@@ -537,6 +537,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
   final _auth = FirebaseAuth.instance;
   final _fs = FirebaseFirestore.instance;
   late final TabController _tab;
+  final Set<String> _sessionReviewedIds = {};
 
   @override
   void initState() {
@@ -804,7 +805,8 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
               dateKey: dateKey,
               time: time,
               status: status,
-              hasReviewed: data['hasReviewed'] == true,
+              hasReviewed: data['hasReviewed'] == true ||
+                  _sessionReviewedIds.contains(id),
               onOpenDetails: () {
                 Navigator.push(
                   context,
@@ -905,7 +907,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     required String doctorName,
     required String doctorImage,
   }) async {
-    await showModalBottomSheet(
+    final reviewed = await showModalBottomSheet<bool>(
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       context: context,
@@ -919,6 +921,9 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
         ),
       ),
     );
+    if (reviewed == true && mounted) {
+      setState(() => _sessionReviewedIds.add(appointmentId));
+    }
   }
 }
 

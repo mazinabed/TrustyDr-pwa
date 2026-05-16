@@ -1480,8 +1480,8 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
               const SizedBox(height: 8),
               Expanded(
                 child: location == null ||
-                        location.cityEn == null ||
-                        location.cityEn!.isEmpty
+                        location.cityEn.isEmpty ||
+                        location.provinceKey.isEmpty
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(24),
@@ -1780,7 +1780,9 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                     : specialtyEn;
 
 // ---------- EXPERIENCE ----------
-            final exp = (data['yearsOfExperience'] ?? 0).toString();
+            final exp =
+                (data['yearsOfExperience'] ?? data['experienceYears'] ?? 0)
+                    .toString();
 
             final rating = (data['ratingAverage'] is num)
                 ? (data['ratingAverage'] as num).toDouble()
@@ -1935,7 +1937,17 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
         padding: EdgeInsets.only(top: 40),
         child: Center(child: CircularProgressIndicator(color: Colors.teal)),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (e, st) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: Center(
+            child: Text(
+              'error_generic'.tr(),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -13,9 +13,10 @@ final centersProvider =
 
   return firestore
       .collection('medical_centers')
+      .where('isActive', isEqualTo: true)
       .where('tenantType', isEqualTo: 'center')
       .where('doctorCount', isGreaterThan: 0)
-      .where('subscriptionStatus', isEqualTo: 'active')
+      .where('subscriptionStatus', whereIn: ['active', 'trial'])
       .where('provinceKey', isEqualTo: location.provinceKey)
       .where('city_en', isEqualTo: location.cityEn)
       .orderBy('doctorCount', descending: true)

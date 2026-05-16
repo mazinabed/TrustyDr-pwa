@@ -17,7 +17,7 @@ class DoctorProfileV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doctorRef =
-        FirebaseFirestore.instance.collection('doctors').doc(doctorId);
+        FirebaseFirestore.instance.collection('public_doctors').doc(doctorId);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -142,21 +142,32 @@ class _DoctorProfileView extends StatelessWidget {
 
     if (lang == 'ar') {
       about = (doctorData['bio_ar'] ??
+              doctorData['about_ar'] ??
               doctorData['bio_en'] ??
+              doctorData['about_en'] ??
               doctorData['about'] ??
               '')
           .toString();
     } else if (lang == 'ku') {
       about = (doctorData['bio_ku'] ??
+              doctorData['about_ku'] ??
               doctorData['bio_en'] ??
+              doctorData['about_en'] ??
               doctorData['about'] ??
               '')
           .toString();
     } else {
-      about = (doctorData['bio_en'] ?? doctorData['about'] ?? '').toString();
+      about = (doctorData['bio_en'] ??
+              doctorData['about_en'] ??
+              doctorData['about'] ??
+              '')
+          .toString();
     }
 
-    final exp = (doctorData['yearsOfExperience']?.toString() ?? 'N/A');
+    final exp =
+        (doctorData['yearsOfExperience'] ?? doctorData['experienceYears'])
+                ?.toString() ??
+            'N/A';
 
     final specialtyLegacy = (doctorData['specialty'] ?? '').toString();
 
@@ -595,8 +606,6 @@ class _DoctorProfileView extends StatelessWidget {
       String imageUrl,
       String exp,
     ) {
-      final lang = context.locale.languageCode;
-
       return SliverToBoxAdapter(
         child: _modernCard(
           title: 'available_at'.tr(),

@@ -25,7 +25,7 @@ final doctorSearchProvider = FutureProvider.autoDispose
 
     // 🔍 search by name
     final nameSnap = await fs
-        .collection('doctors')
+        .collection('public_doctors')
         .where('status', isEqualTo: 'active')
         .where('province_key', isEqualTo: location.provinceKey)
         .where('city_en', isEqualTo: location.cityEn)
@@ -36,7 +36,7 @@ final doctorSearchProvider = FutureProvider.autoDispose
 
     // 🔍 search by specialty
     final specialtySnap = await fs
-        .collection('doctors')
+        .collection('public_doctors')
         .where('status', isEqualTo: 'active')
         .where('province_key', isEqualTo: location.provinceKey)
         .where('city_en', isEqualTo: location.cityEn)

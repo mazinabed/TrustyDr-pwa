@@ -23,7 +23,6 @@ import 'app_location_provider.dart';
 //   return q.snapshots().map((s) => s.docs);
 // });
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _SpecialtiesCache {
@@ -103,19 +102,17 @@ final doctorsStreamProvider = StreamProvider.autoDispose<
 
   // 🔒 HARD GUARD — NO CITY = NO READS
   if (location == null ||
-      location.cityEn == null ||
-      location.cityEn!.isEmpty ||
-      location.provinceKey == null ||
-      location.provinceKey!.isEmpty) {
-    return const Stream.empty();
+      location.cityEn.isEmpty ||
+      location.provinceKey.isEmpty) {
+    return Stream.value(<QueryDocumentSnapshot<Map<String, dynamic>>>[]);
   }
 
   Query<Map<String, dynamic>> q =
-      FirebaseFirestore.instance.collection('doctors');
+      FirebaseFirestore.instance.collection('public_doctors');
 
   q = q.where('status', isEqualTo: 'active');
   q = q.where('province_key', isEqualTo: location.provinceKey);
-  q = q.where('city_en', isEqualTo: location.cityEn!.trim());
+  q = q.where('city_en', isEqualTo: location.cityEn.trim());
 
   // 🔒 COST GUARD
   q = q.limit(50);

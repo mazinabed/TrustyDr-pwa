@@ -446,5 +446,12 @@
   "benefit_manage_profile": "Edit clinic information anytime",
   "benefit_trust": "Build trust with patients",
 
-  "select_center_to_book": "Select a clinic to book"
+  "select_center_to_book": "Select a clinic to book",
+
+  "review.rate_doctor": "Rate Dr. {}",
+  "review.write_hint": "Write your review...",
+  "review.submit": "Submit Review",
+  "review.submit_failed": "Failed to submit review. Please try again.",
+  "review.already_submitted": "You have already reviewed this appointment.",
+  "review.submit_success": "Review submitted successfully."
 }
