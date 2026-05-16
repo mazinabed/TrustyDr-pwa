@@ -10,16 +10,14 @@ final doctorSearchProvider = FutureProvider.autoDispose
 
     // 🔒 HARD GUARDS
     if (location == null ||
-        location.cityEn == null ||
-        location.cityEn!.isEmpty ||
-        location.provinceKey == null ||
-        location.provinceKey!.isEmpty ||
+        location.cityEn.isEmpty ||
+        location.provinceKey.isEmpty ||
         query.trim().length < 3) {
       return [];
     }
 
     final q = query.toLowerCase().trim();
-    final end = '$q\uf8ff';
+    final end = q + String.fromCharCode(0xF8FF);
 
     final fs = FirebaseFirestore.instance;
 

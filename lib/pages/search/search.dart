@@ -441,31 +441,202 @@ class _SearchState extends ConsumerState<Search> {
         }
 
         return ListView.builder(
+          padding: EdgeInsets.symmetric(
+            horizontal: fixPadding * 1.5,
+            vertical: fixPadding,
+          ),
           itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final doc = docs[index].data();
-            final id = docs[index].id;
-
-            final name = doc['name'] ?? 'Doctor';
-            final title = doc['specialty'] ?? '';
-
-            return ListTile(
-              title: Text(name),
-              subtitle: Text(title),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DoctorProfileV2(doctorId: id),
-                  ),
-                );
-              },
-            );
-          },
+          itemBuilder: (context, index) => _buildDoctorCard(
+            context,
+            docs[index].id,
+            docs[index].data(),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => Center(child: Text(tr('search_error'))),
+    );
+  }
+
+  Widget _buildDoctorCard(
+    BuildContext context,
+    String id,
+    Map<String, dynamic> doc,
+  ) {
+    final lang = context.locale.languageCode;
+
+    final name = lang == 'ar'
+        ? (doc['name_ar'] ?? doc['name_en'] ?? doc['name'] ?? '').toString()
+        : lang == 'ku'
+            ? (doc['name_ku'] ?? doc['name_en'] ?? doc['name'] ?? '').toString()
+            : (doc['name_en'] ?? doc['name'] ?? '').toString();
+
+    final specialty = lang == 'ar'
+        ? (doc['specialtyName_ar'] ??
+                doc['specialty_ar'] ??
+                doc['specialtyName_en'] ??
+                doc['specialty'] ??
+                '')
+            .toString()
+        : lang == 'ku'
+            ? (doc['specialtyName_ku'] ??
+                    doc['specialty_ku'] ??
+                    doc['specialtyName_en'] ??
+                    doc['specialty'] ??
+                    '')
+                .toString()
+            : (doc['specialtyName_en'] ??
+                    doc['specialty_en'] ??
+                    doc['specialty'] ??
+                    '')
+                .toString();
+
+    final clinic = lang == 'ar'
+        ? (doc['clinicName_ar'] ??
+                doc['clinicName_en'] ??
+                doc['clinicName'] ??
+                '')
+            .toString()
+        : lang == 'ku'
+            ? (doc['clinicName_ku'] ??
+                    doc['clinicName_en'] ??
+                    doc['clinicName'] ??
+                    '')
+                .toString()
+            : (doc['clinicName_en'] ?? doc['clinicName'] ?? '').toString();
+
+    final city = lang == 'ar'
+        ? (doc['city_ar'] ?? doc['city_en'] ?? '').toString()
+        : lang == 'ku'
+            ? (doc['city_ku'] ?? doc['city_en'] ?? '').toString()
+            : (doc['city_en'] ?? '').toString();
+
+    final imageUrl = (doc['imageUrl'] ?? '').toString();
+    final initials = name.isNotEmpty ? name[0].toUpperCase() : '?';
+
+    final ratingAverage = doc['ratingAverage'] is num
+        ? (doc['ratingAverage'] as num).toDouble()
+        : 0.0;
+    final ratingCount =
+        doc['ratingCount'] is int ? doc['ratingCount'] as int : 0;
+
+    final locationText = [clinic, city].where((s) => s.isNotEmpty).join(' · ');
+
+    return Container(
+      margin: EdgeInsets.only(bottom: fixPadding * 1.2),
+      decoration: BoxDecoration(
+        color: whiteColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorProfileV2(doctorId: id),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                // ── Avatar / image ──────────────────────────
+                CircleAvatar(
+                  radius: 28,
+                  backgroundImage:
+                      imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+                  backgroundColor: primaryColor.withValues(alpha: 0.12),
+                  child: imageUrl.isEmpty
+                      ? Text(
+                          initials,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: primaryColor,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                // ── Info ────────────────────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.isEmpty ? tr('doctor') : name,
+                        style: blackNormalBoldTextStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (specialty.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          specialty,
+                          style: primaryColorsmallTextStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (locationText.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined,
+                                size: 12, color: greyColor),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                locationText,
+                                style: greySmallTextStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (ratingAverage > 0) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                size: 14, color: Colors.amber),
+                            const SizedBox(width: 2),
+                            Text(
+                              ratingAverage.toStringAsFixed(1),
+                              style: greySmallTextStyle,
+                            ),
+                            if (ratingCount > 0)
+                              Text(
+                                ' ($ratingCount)',
+                                style: greySmallTextStyle,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // ── Arrow ───────────────────────────────────
+                const Icon(Icons.chevron_right,
+                    color: Colors.black26, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
