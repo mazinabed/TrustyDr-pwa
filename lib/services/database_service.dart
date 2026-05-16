@@ -571,30 +571,6 @@ class DatabaseService {
   }
 
   // --------------------------
-  // 🔹 Reviews
-  // --------------------------
-  Future<void> submitReview(
-      String doctorId, double rating, String comment) async {
-    if (!_initialized) await initialize();
-    _requireAuth();
-
-    String username = 'Anonymous';
-    try {
-      final userDoc = await _db!.collection('users').doc(_userId!).get();
-      username = userDoc.data()?['username'] ?? username;
-    } catch (_) {}
-
-    await _withRetry(() =>
-        _db!.collection('doctors').doc(doctorId).collection('reviews').add({
-          'userId': _userId,
-          'userName': username,
-          'rating': rating,
-          'comment': comment,
-          'createdAt': FieldValue.serverTimestamp(),
-        }));
-  }
-
-  // --------------------------
   // 🔹 Patients
   // --------------------------
   Future<String> createPatient(Map<String, dynamic> data) async {

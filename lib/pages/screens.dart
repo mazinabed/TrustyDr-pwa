@@ -3,7 +3,6 @@ export 'home/home.dart';
 export 'speciality/speciality.dart';
 export 'doctor/doctor_list.dart';
 export 'doctor/doctor_time_slot.dart';
-export 'doctor/doctor_profile.dart';
 export 'review/review.dart';
 export 'doctor/consultation_detail.dart';
 export 'payment/payment.dart';

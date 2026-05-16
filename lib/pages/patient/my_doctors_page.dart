@@ -284,7 +284,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
-import 'package:trustydr/pages/doctor/doctor_profile.dart';
 import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:easy_localization/easy_localization.dart';
