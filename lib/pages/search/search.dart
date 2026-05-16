@@ -286,7 +286,7 @@
 //                   Navigator.push(
 //                     context,
 //                     MaterialPageRoute(
-//                       builder: (context) => DoctorProfile(doctorId: doctorId),
+//                       builder: (context) => DoctorProfileV2(doctorId: doctorId),
 //                     ),
 //                   );
 //                 },
@@ -313,7 +313,7 @@
 
 import 'dart:async';
 import 'package:trustydr/core/providers/doctorSearchProvider.dart';
-import 'package:trustydr/pages/doctor/doctor_profile.dart';
+import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/constant/constant.dart';
@@ -456,7 +456,7 @@ class _SearchState extends ConsumerState<Search> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => DoctorProfile(doctorId: id),
+                    builder: (_) => DoctorProfileV2(doctorId: id),
                   ),
                 );
               },
@@ -544,7 +544,7 @@ class _SearchState extends ConsumerState<Search> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DoctorProfile(doctorId: doctorId),
+                      builder: (context) => DoctorProfileV2(doctorId: doctorId),
                     ),
                   );
                 },

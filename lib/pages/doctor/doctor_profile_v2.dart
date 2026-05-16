@@ -202,6 +202,30 @@ class _DoctorProfileView extends StatelessWidget {
       imageUrl = doctorData['imageUrl'].toString();
     }
 
+    final clinicName = lang == 'ar'
+        ? (doctorData['clinicName_ar'] ?? doctorData['clinicName_en'] ?? '')
+            .toString()
+        : lang == 'ku'
+            ? (doctorData['clinicName_ku'] ?? doctorData['clinicName_en'] ?? '')
+                .toString()
+            : (doctorData['clinicName_en'] ?? doctorData['clinicName'] ?? '')
+                .toString();
+
+    final cityLoc = lang == 'ar'
+        ? (doctorData['city_ar'] ?? '').toString()
+        : lang == 'ku'
+            ? (doctorData['city_ku'] ?? '').toString()
+            : (doctorData['city_en'] ?? '').toString();
+
+    final provinceLoc = lang == 'ar'
+        ? (doctorData['province_ar'] ?? '').toString()
+        : lang == 'ku'
+            ? (doctorData['province_ku'] ?? '').toString()
+            : (doctorData['province_en'] ?? '').toString();
+
+    final locationLine =
+        [cityLoc, provinceLoc].where((s) => s.isNotEmpty).join(', ');
+
     SliverAppBar _buildHeader(
       BuildContext context,
       String name,
@@ -731,6 +755,8 @@ class _DoctorProfileView extends StatelessWidget {
       String about,
       List<String> languages,
       String exp,
+      String clinicName,
+      String locationLine,
     ) {
       return SliverToBoxAdapter(
         child: _modernCard(
@@ -756,6 +782,8 @@ class _DoctorProfileView extends StatelessWidget {
                     ? 'experience_not_available'.tr()
                     : '$exp ${'years'.tr()}',
               ),
+              _info('clinic'.tr(), clinicName),
+              _info('location'.tr(), locationLine),
             ],
           ),
         ),
@@ -783,7 +811,8 @@ class _DoctorProfileView extends StatelessWidget {
         if (centers.isNotEmpty)
           _buildCentersSection(
               context, centers, schedules, name, imageUrl, exp),
-        _buildAboutSection(context, about, languages, exp),
+        _buildAboutSection(
+            context, about, languages, exp, clinicName, locationLine),
         SliverToBoxAdapter(
           child: _modernCard(
             title: 'reviews'.tr(),

@@ -24,7 +24,7 @@ class CenterProfilePage extends ConsumerWidget {
         .snapshots();
 
     final doctorsStream = FirebaseFirestore.instance
-        .collection('doctors')
+        .collection('public_doctors')
         .where('centerId', isEqualTo: centerId)
         .snapshots();
 
