@@ -265,6 +265,7 @@
   "select_time": "Select a Time",
   "no_available_slots": "No available slots.",
   "slot_full": "FULL",
+  "slot_booked": "Booked",
   "slot_full_pick_another": "That slot just became FULL. Pick another.",
 
   "appointment_conflict_day": "You already have an active appointment for that day.",

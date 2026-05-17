@@ -267,6 +267,7 @@
   "select_time": "اختر الوقت",
   "no_available_slots": "لا توجد أوقات متاحة.",
   "slot_full": "ممتلئ",
+  "slot_booked": "محجوز",
   "slot_full_pick_another": "هذا الوقت أصبح ممتلئًا. اختر وقتًا آخر.",
 
   "appointment_conflict_day": "لديك موعد نشط في هذا اليوم.",

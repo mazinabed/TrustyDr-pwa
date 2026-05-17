@@ -265,6 +265,7 @@
   "select_time": "کات هەڵبژێرە",
   "no_available_slots": "هیچ کاتێکی بەردەست نیە",
   "slot_full": "پڕ",
+  "slot_booked": "حجزکراو",
   "slot_full_pick_another": "ئەم کاتە پڕ بوو. کاتێکی تر هەڵبژێرە.",
 
   "appointment_conflict_day": "لەو ڕۆژەدا نوبەتێکی چالاکت هەیە.",

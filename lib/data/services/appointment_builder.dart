@@ -348,110 +348,116 @@ class AppointmentBuilder {
 
     final docRef = _fs.collection('appointments').doc(slotId);
 
-    await _fs.runTransaction((tx) async {
-      final existing = await tx.get(docRef);
+    try {
+      await _fs.runTransaction((tx) async {
+        final existing = await tx.get(docRef);
 
-      if (existing.exists) {
-        throw Exception('SLOT_ALREADY_BOOKED');
-      }
+        if (existing.exists) {
+          throw Exception('SLOT_ALREADY_BOOKED');
+        }
 
-      tx.set(docRef, {
-        'slotId': slotId,
+        tx.set(docRef, {
+          'slotId': slotId,
 
-        /// 🔥 VERSION
-        'schemaVersion': 2,
+          /// 🔥 VERSION
+          'schemaVersion': 2,
 
-        //------------------------------------------------
-        // CENTER SNAPSHOT
-        //------------------------------------------------
-        'centerId': schedule['centerId'],
-        'centerName': schedule['clinicName'], // future architecture
-        'clinicName': schedule['clinicName'], // current UI expects this
-        'clinicName_en': schedule['clinicName_en'],
-        'clinicName_ar': schedule['clinicName_ar'],
-        'clinicName_ku': schedule['clinicName_ku'],
-        'provinceKey': schedule['provinceKey'],
-        'cityKey': schedule['cityKey'],
+          //------------------------------------------------
+          // CENTER SNAPSHOT
+          //------------------------------------------------
+          'centerId': schedule['centerId'],
+          'centerName': schedule['clinicName'], // future architecture
+          'clinicName': schedule['clinicName'], // current UI expects this
+          'clinicName_en': schedule['clinicName_en'],
+          'clinicName_ar': schedule['clinicName_ar'],
+          'clinicName_ku': schedule['clinicName_ku'],
+          'provinceKey': schedule['provinceKey'],
+          'cityKey': schedule['cityKey'],
 
-        'province_en': schedule['province_en'],
-        'province_ar': schedule['province_ar'],
-        'province_ku': schedule['province_ku'],
+          'province_en': schedule['province_en'],
+          'province_ar': schedule['province_ar'],
+          'province_ku': schedule['province_ku'],
 
-        'city_en': schedule['city_en'],
-        'city_ar': schedule['city_ar'],
-        'city_ku': schedule['city_ku'],
-        'scheduleId': scheduleId,
+          'city_en': schedule['city_en'],
+          'city_ar': schedule['city_ar'],
+          'city_ku': schedule['city_ku'],
+          'scheduleId': scheduleId,
 
-        'clinicAddress': center['clinicAddress'],
-        'clinicAddress_en': center['clinicAddress_en'],
-        'clinicAddress_ar': center['clinicAddress_ar'],
-        'clinicAddress_ku': center['clinicAddress_ku'],
+          'clinicAddress': center['clinicAddress'],
+          'clinicAddress_en': center['clinicAddress_en'],
+          'clinicAddress_ar': center['clinicAddress_ar'],
+          'clinicAddress_ku': center['clinicAddress_ku'],
 
-        'visitType': schedule['visitType'],
+          'visitType': schedule['visitType'],
 
-        //------------------------------------------------
-        // DOCTOR SNAPSHOT
-        //------------------------------------------------
-        'doctorId': doctorId,
-        'doctorName': doctorName,
-        'doctorImage': doctorImage,
-        'specialtyKey': schedule['specialtyKey'],
-        'specialtyName_en': schedule['specialty_en'],
-        'specialtyName_ar': schedule['specialty_ar'],
-        'specialtyName_ku': schedule['specialty_ku'],
+          //------------------------------------------------
+          // DOCTOR SNAPSHOT
+          //------------------------------------------------
+          'doctorId': doctorId,
+          'doctorName': doctorName,
+          'doctorImage': doctorImage,
+          'specialtyKey': schedule['specialtyKey'],
+          'specialtyName_en': schedule['specialty_en'],
+          'specialtyName_ar': schedule['specialty_ar'],
+          'specialtyName_ku': schedule['specialty_ku'],
 
-        //------------------------------------------------
-        // PATIENT SNAPSHOT
-        //------------------------------------------------
-        'patientId': patientId,
-        'patientName': patientName,
-        'phone': phone,
-        'relationship': relationship,
+          //------------------------------------------------
+          // PATIENT SNAPSHOT
+          //------------------------------------------------
+          'patientId': patientId,
+          'patientName': patientName,
+          'phone': phone,
+          'relationship': relationship,
 
-        //------------------------------------------------
-        // SLOT SNAPSHOT
-        //------------------------------------------------
-        'slotStartAt': Timestamp.fromDate(slotStartAt),
-        'slotEndAt': Timestamp.fromDate(computedSlotEnd),
-        'slotDurationMinutes': duration,
+          //------------------------------------------------
+          // SLOT SNAPSHOT
+          //------------------------------------------------
+          'slotStartAt': Timestamp.fromDate(slotStartAt),
+          'slotEndAt': Timestamp.fromDate(computedSlotEnd),
+          'slotDurationMinutes': duration,
 
-        //------------------------------------------------
-        // BOOKING META
-        //------------------------------------------------
-        'source': source,
-        'bookedByUserId': bookedByUserId,
-        'bookedByName': bookedByName,
-        'bookedByRole': bookedByRole,
+          //------------------------------------------------
+          // BOOKING META
+          //------------------------------------------------
+          'source': source,
+          'bookedByUserId': bookedByUserId,
+          'bookedByName': bookedByName,
+          'bookedByRole': bookedByRole,
 
-        //------------------------------------------------
-        // FINANCIAL
-        //------------------------------------------------
-        'priceIQD': priceIQD,
-        'currency': currency,
-        'paymentStatus': 'unpaid',
+          //------------------------------------------------
+          // FINANCIAL
+          //------------------------------------------------
+          'priceIQD': priceIQD,
+          'currency': currency,
+          'paymentStatus': 'unpaid',
 
-        //------------------------------------------------
-        // STATUS
-        //------------------------------------------------
-        'status': status,
-        'visitStatus': visitStatus,
+          //------------------------------------------------
+          // STATUS
+          //------------------------------------------------
+          'status': status,
+          'visitStatus': visitStatus,
 
-        //------------------------------------------------
-        // NOTES
-        //------------------------------------------------
-        'visitReason': visitReason,
-        'notes': notes,
+          //------------------------------------------------
+          // NOTES
+          //------------------------------------------------
+          'visitReason': visitReason,
+          'notes': notes,
 
-        //------------------------------------------------
-        // TIME
-        //------------------------------------------------
-        'appointmentAt': Timestamp.fromDate(slotStartAt),
-        'dateKey':
-            "${slotStartAt.year}-${slotStartAt.month.toString().padLeft(2, '0')}-${slotStartAt.day.toString().padLeft(2, '0')}",
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }); // ✅ CLOSE TRANSACTION
+          //------------------------------------------------
+          // TIME
+          //------------------------------------------------
+          'appointmentAt': Timestamp.fromDate(slotStartAt),
+          'dateKey':
+              "${slotStartAt.year}-${slotStartAt.month.toString().padLeft(2, '0')}-${slotStartAt.day.toString().padLeft(2, '0')}",
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }); // ✅ CLOSE TRANSACTION
+    } catch (_) {
+      final check = await docRef.get();
+      if (check.exists) throw Exception('SLOT_ALREADY_BOOKED');
+      rethrow;
+    }
 
     return slotId; // ✅ RETURN AFTER TRANSACTION
   }

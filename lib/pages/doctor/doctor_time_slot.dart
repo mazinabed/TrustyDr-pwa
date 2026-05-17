@@ -53,6 +53,12 @@ class DoctorTimeSlot extends StatefulWidget {
   State<DoctorTimeSlot> createState() => _DoctorTimeSlotState();
 }
 
+class _SlotEntry {
+  final String label;
+  final String slotId;
+  const _SlotEntry(this.label, this.slotId);
+}
+
 class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   final _fs = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -64,6 +70,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   bool _loadingSchedule = true;
 
   final Map<String, int> _slotUsage = {};
+  Set<String> _takenSlotIds = {};
   bool _loadingUsage = true;
 
   int _capacityPerSlot = 1;
@@ -158,43 +165,57 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     setState(() {
       _loadingUsage = true;
       _slotUsage.clear();
+      _takenSlotIds = {};
     });
     try {
-      final dateKey = _dateKey(_selectedDay);
-      final qs = await _fs
-          .collection('appointments')
-          .where('doctorId', isEqualTo: widget.doctorId)
-          .where('dateKey', isEqualTo: dateKey)
-          .where('status', whereIn: ['pending', 'confirmed', 'completed'])
-          .limit(500)
-          .get();
-
-      for (final d in qs.docs) {
-        final data = d.data();
-        final t = (data['slotTime'] ?? data['time'] ?? '').toString();
-        if (t.isEmpty) continue;
-        _slotUsage[t] = (_slotUsage[t] ?? 0) + 1;
+      // Build slot IDs from the schedule — no list query needed.
+      // Per-slot get() calls work within the read rule:
+      //   • non-existent doc  → resource == null → allowed → exists=false → available
+      //   • booked by me      → patientId matches → allowed → exists=true → taken
+      //   • booked by other   → permission-denied → catch → taken
+      final entries = _buildSlotEntries();
+      if (entries.isEmpty) {
+        if (mounted) setState(() => _loadingUsage = false);
+        return;
       }
-    } catch (_) {
-    } finally {
+
+      final futures = entries.map((entry) async {
+        try {
+          final snap =
+              await _fs.collection('appointments').doc(entry.slotId).get();
+          return snap.exists ? entry.slotId : null;
+        } catch (_) {
+          return entry.slotId;
+        }
+      });
+
+      final results = await Future.wait(futures);
+      final ids = results.whereType<String>().toSet();
+      if (mounted) {
+        setState(() {
+          _takenSlotIds = ids;
+          _loadingUsage = false;
+        });
+      }
+    } catch (e) {
       if (mounted) setState(() => _loadingUsage = false);
     }
   }
 
-  List<String> _buildSlots() {
+  List<_SlotEntry> _buildSlotEntries() {
     if (_scheduleForDay == null) return [];
-
     final start = _parseHm(_scheduleForDay!['startTime'], _selectedDay);
     final end = _parseHm(_scheduleForDay!['endTime'], _selectedDay);
     final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
-
-    final slots = <String>[];
+    final scheduleId = (_scheduleForDay!['scheduleId'] ?? '').toString();
+    final entries = <_SlotEntry>[];
     DateTime cur = start;
     while (cur.isBefore(end)) {
-      slots.add(_formatHm(cur));
+      final slotId = '${scheduleId}_${cur.millisecondsSinceEpoch}';
+      entries.add(_SlotEntry(_formatHm(cur), slotId));
       cur = cur.add(Duration(minutes: dur));
     }
-    return slots;
+    return entries;
   }
 
   bool _isFull(String slotLabel) {
@@ -347,13 +368,13 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   }
 
   Widget _buildSlotGrid() {
-    final slots = _buildSlots();
-
     if (_loadingUsage) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (slots.isEmpty) {
+    final entries = _buildSlotEntries();
+
+    if (entries.isEmpty) {
       return Center(
         child: Text('no_available_slots'.tr(), style: greyNormalTextStyle),
       );
@@ -364,22 +385,58 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       child: Wrap(
         spacing: 10,
         runSpacing: 10,
-        children: slots.map((label) {
-          final isFull = _isFull(label);
+        children: entries.map((entry) {
+          final label = entry.label;
+          final isFull = _isFull(label) || _takenSlotIds.contains(entry.slotId);
+
+          if (isFull) {
+            return Opacity(
+              opacity: 0.55,
+              child: Container(
+                width: 96,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.grey.shade300,
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'slot_booked'.tr(),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
 
           return GestureDetector(
-            onTap: isFull ? null : () => _onPickSlot(label),
+            onTap: () => _onPickSlot(label),
             child: Container(
               width: 96,
               padding: const EdgeInsets.symmetric(vertical: 12),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: isFull ? Colors.grey.shade200 : Colors.white,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isFull ? Colors.grey.shade300 : primaryColor,
-                  width: 1,
-                ),
+                border: Border.all(color: primaryColor, width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
@@ -391,32 +448,12 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(label,
-                      style: isFull
-                          ? greySmallTextStyle
-                          : primaryColorNormalTextStyle),
+                  Text(label, style: primaryColorNormalTextStyle),
                   const SizedBox(height: 4),
-                  if (isFull)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'FULL',
-                        style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11),
-                      ),
-                    )
-                  else
-                    Text(
-                      '${_slotUsage[label] ?? 0}/$_capacityPerSlot',
-                      style: greySmallTextStyle,
-                    ),
+                  Text(
+                    '${_slotUsage[label] ?? 0}/$_capacityPerSlot',
+                    style: greySmallTextStyle,
+                  ),
                 ],
               ),
             ),
@@ -463,18 +500,17 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
     if (!mounted) return;
 
-    if (_isFull(slotLabel)) {
+    final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
+    final slotStart = _parseHm(_to24Hour(slotLabel), _selectedDay);
+    final slotId =
+        '${(_scheduleForDay!['scheduleId'] ?? '')}_${slotStart.millisecondsSinceEpoch}';
+
+    if (_isFull(slotLabel) || _takenSlotIds.contains(slotId)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('slot_full'.tr())),
       );
       return;
     }
-    final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
-
-    final slotStart = _parseHm(
-      _to24Hour(slotLabel), // helper below
-      _selectedDay,
-    );
 
     final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
     final sure = await showDialog<bool>(
