@@ -62,6 +62,7 @@ class _RegisterPageState extends State<RegisterPage> {
         textColor: Colors.white,
       );
 
+      if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         PageTransition(

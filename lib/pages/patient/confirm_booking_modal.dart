@@ -492,6 +492,8 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         userSnap.data()?['username'] ??
         user.displayName;
 
+    if (!mounted) return;
+
     if (_forSelf && (profileName == null || profileName.trim().isEmpty)) {
       final enteredName = await _askForNameOnce(context);
       if (enteredName == null) return;
@@ -553,6 +555,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
       Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('error_generic'.tr())),
       );

@@ -461,6 +461,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       return;
     }
 
+    if (!mounted) return;
+
     if (_isFull(slotLabel)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('slot_full'.tr())),
@@ -534,6 +536,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 // }
 
     if (sure != true) return;
+    if (!mounted) return;
     final wasBooked = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
