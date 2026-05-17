@@ -69,7 +69,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   Map<String, dynamic>? _scheduleForDay;
   bool _loadingSchedule = true;
 
-  final Map<String, int> _slotUsage = {};
   Set<String> _takenSlotIds = {};
   bool _loadingUsage = true;
 
@@ -103,7 +102,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       _loadingSchedule = true;
       _loadingUsage = true;
       _scheduleForDay = null;
-      _slotUsage.clear();
     });
 
     try {
@@ -164,7 +162,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   Future<void> _loadUsageForSelectedDate() async {
     setState(() {
       _loadingUsage = true;
-      _slotUsage.clear();
       _takenSlotIds = {};
     });
     try {
@@ -216,11 +213,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       cur = cur.add(Duration(minutes: dur));
     }
     return entries;
-  }
-
-  bool _isFull(String slotLabel) {
-    final used = _slotUsage[slotLabel] ?? 0;
-    return used >= _capacityPerSlot;
   }
 
   Future<bool> _hasActiveSameDayBooking({
@@ -387,7 +379,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         runSpacing: 10,
         children: entries.map((entry) {
           final label = entry.label;
-          final isFull = _isFull(label) || _takenSlotIds.contains(entry.slotId);
+          final isFull = _takenSlotIds.contains(entry.slotId);
 
           if (isFull) {
             return Opacity(
@@ -445,17 +437,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(label, style: primaryColorNormalTextStyle),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${_slotUsage[label] ?? 0}/$_capacityPerSlot',
-                    style: greySmallTextStyle,
-                  ),
-                ],
-              ),
+              child: Text(label, style: primaryColorNormalTextStyle),
             ),
           );
         }).toList(),
@@ -505,7 +487,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     final slotId =
         '${(_scheduleForDay!['scheduleId'] ?? '')}_${slotStart.millisecondsSinceEpoch}';
 
-    if (_isFull(slotLabel) || _takenSlotIds.contains(slotId)) {
+    if (_takenSlotIds.contains(slotId)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('slot_full'.tr())),
       );
