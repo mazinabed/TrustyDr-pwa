@@ -9,6 +9,22 @@ import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Returns true when the center has at least one valid date window open.
+/// Mirrors centerAccessProvider date-only logic from the doctor portal.
+/// Does NOT read subscriptionStatus — dates are the sole source of truth.
+bool _isCenterOperational(Map<String, dynamic> data) {
+  final now = DateTime.now();
+  final te  = data['trialEnds'];
+  final se  = data['subscriptionEnd'];
+  final gpe = data['gracePeriodEnds'];
+  final trialEnds       = te  is Timestamp ? te.toDate()  : null;
+  final subscriptionEnd = se  is Timestamp ? se.toDate()  : null;
+  final gracePeriodEnds = gpe is Timestamp ? gpe.toDate() : null;
+  return (trialEnds       != null && now.isBefore(trialEnds))       ||
+         (subscriptionEnd != null && now.isBefore(subscriptionEnd)) ||
+         (gracePeriodEnds != null && now.isBefore(gracePeriodEnds));
+}
+
 class DoctorProfileV2 extends StatelessWidget {
   final String doctorId;
 
@@ -432,6 +448,24 @@ class _DoctorProfileView extends StatelessWidget {
       List<QueryDocumentSnapshot> schedules,
       List<QueryDocumentSnapshot> centers,
     ) {
+      // ── Operational filtering ──────────────────────────────────────
+      // Only show centers/schedules whose date window is still open.
+      // Expired centers are silently excluded; if ALL centers are expired
+      // a neutral "not accepting bookings" message is shown instead of
+      // the booking button. No billing or payment language is exposed.
+      final operationalCenters = centers.where((cd) {
+        final data = cd.data() as Map<String, dynamic>? ?? {};
+        return _isCenterOperational(data);
+      }).toList();
+      final operationalCenterIds =
+          operationalCenters.map((cd) => cd.id).toSet();
+      final operationalSchedules = schedules
+          .where((s) =>
+              operationalCenterIds.contains(s['centerId']?.toString() ?? ''))
+          .toList();
+      final allCentersExpired =
+          centers.isNotEmpty && operationalCenters.isEmpty;
+
       return SliverToBoxAdapter(
         child: _modernCard(
           title: 'book_appointment'.tr(),
@@ -444,6 +478,16 @@ class _DoctorProfileView extends StatelessWidget {
                 style: greyNormalTextStyle,
               ),
               const SizedBox(height: 16),
+              if (allCentersExpired)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'doctor_not_accepting_bookings'.tr(),
+                    style: greyNormalTextStyle,
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
               ElevatedButton(
                 onPressed: user == null
                     ? () {
@@ -456,15 +500,15 @@ class _DoctorProfileView extends StatelessWidget {
                         );
                       }
                     : () {
-                        if (schedules.isEmpty) return;
+                        if (operationalSchedules.isEmpty) return;
 
-                        if (centers.length == 1) {
-                          final centerDoc = centers.first;
+                        if (operationalCenters.length == 1) {
+                          final centerDoc = operationalCenters.first;
                           final center =
                               centerDoc.data() as Map<String, dynamic>;
 
                           // SAFE schedule match
-                          final matchingSchedules = schedules
+                          final matchingSchedules = operationalSchedules
                               .where((s) => s['centerId'] == centerDoc.id)
                               .toList();
 
@@ -536,10 +580,10 @@ class _DoctorProfileView extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    ...centers.map((centerDoc) {
+                                    ...operationalCenters.map((centerDoc) {
                                       final c = centerDoc.data()
                                           as Map<String, dynamic>;
-                                      final matching = schedules
+                                      final matching = operationalSchedules
                                           .where((s) =>
                                               s['centerId'] == centerDoc.id)
                                           .toList();

@@ -266,6 +266,7 @@
   "no_available_slots": "هیچ کاتێکی بەردەست نیە",
   "slot_full": "پڕ",
   "slot_booked": "حجزکراو",
+  "doctor_not_accepting_bookings": "ئەم پزیشکە لە ئێستادا حجزی ئۆنلاین قبوڵ ناکات.",
   "slot_full_pick_another": "ئەم کاتە پڕ بوو. کاتێکی تر هەڵبژێرە.",
 
   "appointment_conflict_day": "لەو ڕۆژەدا نوبەتێکی چالاکت هەیە.",

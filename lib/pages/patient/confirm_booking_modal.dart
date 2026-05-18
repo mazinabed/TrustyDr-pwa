@@ -556,9 +556,12 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString().contains('SLOT_ALREADY_BOOKED')
+      final err = e.toString();
+      final msg = err.contains('SLOT_ALREADY_BOOKED')
           ? 'slot_full_pick_another'.tr()
-          : 'error_generic'.tr();
+          : err.contains('CENTER_NOT_OPERATIONAL')
+              ? 'doctor_not_accepting_bookings'.tr()
+              : 'error_generic'.tr();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
       );

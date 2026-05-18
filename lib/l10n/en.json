@@ -266,7 +266,8 @@
   "no_available_slots": "No available slots.",
   "slot_full": "FULL",
   "slot_booked": "Booked",
-  "slot_full_pick_another": "That slot just became FULL. Pick another.",
+  "doctor_not_accepting_bookings": "This doctor is not currently accepting online bookings.",
+  "slot_full_pick_another":"That slot just became FULL. Pick another.",
 
   "appointment_conflict_day": "You already have an active appointment for that day.",
   "appointment_conflict_doctor_day": "You already have an active appointment with this doctor on this day.",

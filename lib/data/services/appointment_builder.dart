@@ -340,6 +340,27 @@ class AppointmentBuilder {
     }
 
     final center = centerDoc.data()!;
+
+    //-----------------------------------------
+    // CENTER OPERATIONAL CHECK
+    // Mirrors centerAccessProvider date logic.
+    // Throws before the transaction so the UI can show a specific message.
+    //-----------------------------------------
+    final checkNow = DateTime.now();
+    final te  = center['trialEnds'];
+    final se  = center['subscriptionEnd'];
+    final gpe = center['gracePeriodEnds'];
+    final centerTrialEnds       = te  is Timestamp ? te.toDate()  : null;
+    final centerSubscriptionEnd = se  is Timestamp ? se.toDate()  : null;
+    final centerGracePeriodEnds = gpe is Timestamp ? gpe.toDate() : null;
+    final isOperational =
+        (centerTrialEnds       != null && checkNow.isBefore(centerTrialEnds))       ||
+        (centerSubscriptionEnd != null && checkNow.isBefore(centerSubscriptionEnd)) ||
+        (centerGracePeriodEnds != null && checkNow.isBefore(centerGracePeriodEnds));
+    if (!isOperational) {
+      throw Exception('CENTER_NOT_OPERATIONAL');
+    }
+
     //-----------------------------------------
 // 🔥 PREVENT DOUBLE BOOKING
 //-----------------------------------------
