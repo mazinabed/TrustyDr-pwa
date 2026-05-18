@@ -14,15 +14,15 @@ import 'package:url_launcher/url_launcher.dart';
 /// Does NOT read subscriptionStatus — dates are the sole source of truth.
 bool _isCenterOperational(Map<String, dynamic> data) {
   final now = DateTime.now();
-  final te  = data['trialEnds'];
-  final se  = data['subscriptionEnd'];
+  final te = data['trialEnds'];
+  final se = data['subscriptionEnd'];
   final gpe = data['gracePeriodEnds'];
-  final trialEnds       = te  is Timestamp ? te.toDate()  : null;
-  final subscriptionEnd = se  is Timestamp ? se.toDate()  : null;
+  final trialEnds = te is Timestamp ? te.toDate() : null;
+  final subscriptionEnd = se is Timestamp ? se.toDate() : null;
   final gracePeriodEnds = gpe is Timestamp ? gpe.toDate() : null;
-  return (trialEnds       != null && now.isBefore(trialEnds))       ||
-         (subscriptionEnd != null && now.isBefore(subscriptionEnd)) ||
-         (gracePeriodEnds != null && now.isBefore(gracePeriodEnds));
+  return (trialEnds != null && now.isBefore(trialEnds)) ||
+      (subscriptionEnd != null && now.isBefore(subscriptionEnd)) ||
+      (gracePeriodEnds != null && now.isBefore(gracePeriodEnds));
 }
 
 class DoctorProfileV2 extends StatelessWidget {
@@ -488,178 +488,179 @@ class _DoctorProfileView extends StatelessWidget {
                   ),
                 )
               else
-              ElevatedButton(
-                onPressed: user == null
-                    ? () {
-                        Navigator.push(
-                          context,
-                          PageTransition(
-                            type: PageTransitionType.rightToLeft,
-                            child: const LoginScreen(),
-                          ),
-                        );
-                      }
-                    : () {
-                        if (operationalSchedules.isEmpty) return;
-
-                        if (operationalCenters.length == 1) {
-                          final centerDoc = operationalCenters.first;
-                          final center =
-                              centerDoc.data() as Map<String, dynamic>;
-
-                          // SAFE schedule match
-                          final matchingSchedules = operationalSchedules
-                              .where((s) => s['centerId'] == centerDoc.id)
-                              .toList();
-
-                          if (matchingSchedules.isEmpty) {
-                            return; // no schedule for this center
-                          }
-
-                          final schedule = matchingSchedules.first;
-
-                          final lang = context.locale.languageCode;
-
-                          String clinicName;
-                          if (lang == 'ar') {
-                            clinicName = (center['clinicName_ar'] ??
-                                    center['clinicName_en'] ??
-                                    '')
-                                .toString();
-                          } else if (lang == 'ku') {
-                            clinicName = (center['clinicName_ku'] ??
-                                    center['clinicName_en'] ??
-                                    '')
-                                .toString();
-                          } else {
-                            clinicName =
-                                (center['clinicName_en'] ?? '').toString();
-                          }
-
+                ElevatedButton(
+                  onPressed: user == null
+                      ? () {
                           Navigator.push(
                             context,
                             PageTransition(
                               type: PageTransitionType.rightToLeft,
-                              child: DoctorTimeSlot(
-                                doctorId: doctorId,
-                                doctorName: doctorName,
-                                doctorImage: imageUrl,
-                                specialtyKey: specialtyKey,
-                                specialtyEn: specialtyEn,
-                                specialtyAr: specialtyAr,
-                                specialtyKu: specialtyKu,
-                                experience: exp,
-                                centerId: centerDoc.id,
-                                provinceKey: schedule['provinceKey'] ?? '',
-                                cityKey: schedule['cityKey'] ?? '',
-                                clinicName: clinicName,
-                              ),
+                              child: const LoginScreen(),
                             ),
-                          );
-                        } else {
-                          showModalBottomSheet(
-                            context: context,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20)),
-                            ),
-                            builder: (sheetCtx) {
-                              return SafeArea(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          20, 20, 20, 8),
-                                      child: Text(
-                                        'select_center_to_book'.tr(),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    ...operationalCenters.map((centerDoc) {
-                                      final c = centerDoc.data()
-                                          as Map<String, dynamic>;
-                                      final matching = operationalSchedules
-                                          .where((s) =>
-                                              s['centerId'] == centerDoc.id)
-                                          .toList();
-                                      if (matching.isEmpty) {
-                                        return const SizedBox.shrink();
-                                      }
-                                      final schedule = matching.first;
-                                      final String cn = lang == 'ar'
-                                          ? (c['clinicName_ar'] ??
-                                                  c['clinicName_en'] ??
-                                                  '')
-                                              .toString()
-                                          : lang == 'ku'
-                                              ? (c['clinicName_ku'] ??
-                                                      c['clinicName_en'] ??
-                                                      '')
-                                                  .toString()
-                                              : (c['clinicName_en'] ?? '')
-                                                  .toString();
-                                      return ListTile(
-                                        leading: const Icon(
-                                            Icons.local_hospital,
-                                            color: Colors.teal),
-                                        title: Text(cn),
-                                        trailing: const Icon(
-                                            Icons.arrow_forward_ios,
-                                            size: 14),
-                                        onTap: () {
-                                          Navigator.pop(sheetCtx);
-                                          Navigator.push(
-                                            context,
-                                            PageTransition(
-                                              type: PageTransitionType
-                                                  .rightToLeft,
-                                              child: DoctorTimeSlot(
-                                                doctorId: doctorId,
-                                                doctorName: doctorName,
-                                                doctorImage: imageUrl,
-                                                specialtyKey: specialtyKey,
-                                                specialtyEn: specialtyEn,
-                                                specialtyAr: specialtyAr,
-                                                specialtyKu: specialtyKu,
-                                                experience: exp,
-                                                centerId: centerDoc.id,
-                                                clinicName: cn,
-                                                provinceKey:
-                                                    schedule['provinceKey'] ??
-                                                        '',
-                                                cityKey:
-                                                    schedule['cityKey'] ?? '',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    }),
-                                    const SizedBox(height: 12),
-                                  ],
-                                ),
-                              );
-                            },
                           );
                         }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                      : () {
+                          if (operationalSchedules.isEmpty) return;
+
+                          if (operationalCenters.length == 1) {
+                            final centerDoc = operationalCenters.first;
+                            final center =
+                                centerDoc.data() as Map<String, dynamic>;
+
+                            // SAFE schedule match
+                            final matchingSchedules = operationalSchedules
+                                .where((s) => s['centerId'] == centerDoc.id)
+                                .toList();
+
+                            if (matchingSchedules.isEmpty) {
+                              return; // no schedule for this center
+                            }
+
+                            final schedule = matchingSchedules.first;
+
+                            final lang = context.locale.languageCode;
+
+                            String clinicName;
+                            if (lang == 'ar') {
+                              clinicName = (center['clinicName_ar'] ??
+                                      center['clinicName_en'] ??
+                                      '')
+                                  .toString();
+                            } else if (lang == 'ku') {
+                              clinicName = (center['clinicName_ku'] ??
+                                      center['clinicName_en'] ??
+                                      '')
+                                  .toString();
+                            } else {
+                              clinicName =
+                                  (center['clinicName_en'] ?? '').toString();
+                            }
+
+                            Navigator.push(
+                              context,
+                              PageTransition(
+                                type: PageTransitionType.rightToLeft,
+                                child: DoctorTimeSlot(
+                                  doctorId: doctorId,
+                                  doctorName: doctorName,
+                                  doctorImage: imageUrl,
+                                  specialtyKey: specialtyKey,
+                                  specialtyEn: specialtyEn,
+                                  specialtyAr: specialtyAr,
+                                  specialtyKu: specialtyKu,
+                                  experience: exp,
+                                  centerId: centerDoc.id,
+                                  provinceKey: schedule['provinceKey'] ?? '',
+                                  cityKey: schedule['cityKey'] ?? '',
+                                  clinicName: clinicName,
+                                ),
+                              ),
+                            );
+                          } else {
+                            showModalBottomSheet(
+                              context: context,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(20)),
+                              ),
+                              builder: (sheetCtx) {
+                                return SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            20, 20, 20, 8),
+                                        child: Text(
+                                          'select_center_to_book'.tr(),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      ...operationalCenters.map((centerDoc) {
+                                        final c = centerDoc.data()
+                                            as Map<String, dynamic>;
+                                        final matching = operationalSchedules
+                                            .where((s) =>
+                                                s['centerId'] == centerDoc.id)
+                                            .toList();
+                                        if (matching.isEmpty) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        final schedule = matching.first;
+                                        final String cn = lang == 'ar'
+                                            ? (c['clinicName_ar'] ??
+                                                    c['clinicName_en'] ??
+                                                    '')
+                                                .toString()
+                                            : lang == 'ku'
+                                                ? (c['clinicName_ku'] ??
+                                                        c['clinicName_en'] ??
+                                                        '')
+                                                    .toString()
+                                                : (c['clinicName_en'] ?? '')
+                                                    .toString();
+                                        return ListTile(
+                                          leading: const Icon(
+                                              Icons.local_hospital,
+                                              color: Colors.teal),
+                                          title: Text(cn),
+                                          trailing: const Icon(
+                                              Icons.arrow_forward_ios,
+                                              size: 14),
+                                          onTap: () {
+                                            Navigator.pop(sheetCtx);
+                                            Navigator.push(
+                                              context,
+                                              PageTransition(
+                                                type: PageTransitionType
+                                                    .rightToLeft,
+                                                child: DoctorTimeSlot(
+                                                  doctorId: doctorId,
+                                                  doctorName: doctorName,
+                                                  doctorImage: imageUrl,
+                                                  specialtyKey: specialtyKey,
+                                                  specialtyEn: specialtyEn,
+                                                  specialtyAr: specialtyAr,
+                                                  specialtyKu: specialtyKu,
+                                                  experience: exp,
+                                                  centerId: centerDoc.id,
+                                                  clinicName: cn,
+                                                  provinceKey:
+                                                      schedule['provinceKey'] ??
+                                                          '',
+                                                  cityKey:
+                                                      schedule['cityKey'] ?? '',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      }),
+                                      const SizedBox(height: 12),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    user == null ? 'login_to_book'.tr() : 'book_now'.tr(),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
-                child: Text(
-                  user == null ? 'login_to_book'.tr() : 'book_now'.tr(),
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
             ],
           ),
         ),
