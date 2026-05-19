@@ -3096,7 +3096,6 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:trustydr/pages/CentersPage.dart';
-import 'package:trustydr/widget/home_notifications_widget.dart';
 import 'package:trustydr/widget/trustydr_info_cards.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/app_location_provider.dart';
@@ -3110,10 +3109,7 @@ import 'package:flutter/material.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trustydr/widgets/home_tutorial_videos.dart';
 import 'package:trustydr/widgets/pwa_install_banner.dart';
-import 'package:trustydr/widgets/trustydr_curved_header.dart';
-import 'dart:async' show unawaited;
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:trustydr/widgets/center_action_grid.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
@@ -3130,14 +3126,12 @@ class _HomeState extends ConsumerState<Home>
   late FirebaseFirestore _db;
   late FirebaseAuth _auth;
 
-  bool _loadingCities = true;
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _provinceDocs = [];
   String? _selectedProvinceKey;
   String? _selectedCityEn;
 
   String? _displayName;
 
-  bool _isImporting = false;
   bool _isGuest = true;
   User? _currentUser;
 
@@ -3197,7 +3191,7 @@ class _HomeState extends ConsumerState<Home>
     }
 
     if (mounted) {
-      setState(() => _loadingCities = false);
+      setState(() {});
     }
   }
 
@@ -3237,7 +3231,6 @@ class _HomeState extends ConsumerState<Home>
   Future<void> _loadCities() async {
     if (_cachedCities != null) {
       _provinceDocs = _cachedCities!;
-      _loadingCities = false;
       return;
     }
     try {
@@ -3246,7 +3239,7 @@ class _HomeState extends ConsumerState<Home>
       _cachedCities = snap.docs;
     } catch (_) {
     } finally {
-      if (mounted) setState(() => _loadingCities = false);
+      if (mounted) setState(() {});
     }
   }
 
@@ -3304,12 +3297,15 @@ class _HomeState extends ConsumerState<Home>
 
   String _localizedSpecialtyFromAppointment(Map<String, dynamic> data) {
     final lang = context.locale.languageCode;
-    if (lang == 'ar' && data['specialtyName_ar'] != null)
+    if (lang == 'ar' && data['specialtyName_ar'] != null) {
       return data['specialtyName_ar'].toString();
-    if (lang == 'ku' && data['specialtyName_ku'] != null)
+    }
+    if (lang == 'ku' && data['specialtyName_ku'] != null) {
       return data['specialtyName_ku'].toString();
-    if (data['specialtyName_en'] != null)
+    }
+    if (data['specialtyName_en'] != null) {
       return data['specialtyName_en'].toString();
+    }
     if (data['doctorType'] != null) return data['doctorType'].toString();
     return '';
   }
@@ -3399,14 +3395,12 @@ class _HomeState extends ConsumerState<Home>
                     onPressed: () async {
                       if (tempProvince == null || tempCityEn == null) return;
                       Navigator.pop(context);
-                      setState(() => _isImporting = true);
                       await _saveLocation(tempProvince, tempCityEn);
                       ref.read(appLocationProvider.notifier).setLocation(
                           provinceKey: tempProvince!, cityEn: tempCityEn!);
                       setState(() {
                         _selectedProvinceKey = tempProvince;
                         _selectedCityEn = tempCityEn;
-                        _isImporting = false;
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -3437,6 +3431,7 @@ class _HomeState extends ConsumerState<Home>
           })();
 
     return Scaffold(
+      backgroundColor: PatientAppColors.appBackground,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: PatientAppColors.brandBlueAlt, // Seamless with header
@@ -3462,119 +3457,122 @@ class _HomeState extends ConsumerState<Home>
           Widget page = ListView(
             padding: EdgeInsets.zero,
             children: [
-              Stack(
-                children: [
-                  TrustyDrCurvedHeader(
-                    title: '', // no title
-                    showBack: false, // no arrow
-                    height: 160, // tall hero banner
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
+                ),
+                child: Container(
+                  height: 140,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: PatientAppColors.brandGradient,
                   ),
-                  Positioned(
-                    bottom: 20,
-                    left: 24,
-                    right: 24,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (_displayName == null || _displayName!.isEmpty)
-                              ? _greetingText()
-                              : '${_greetingText()}, $_displayName',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
+                  child: Align(
+                    alignment: AlignmentDirectional.bottomStart,
+                    child: Padding(
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(24, 0, 24, 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (_displayName == null || _displayName!.isEmpty)
+                                ? _greetingText()
+                                : '${_greetingText()}, $_displayName',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                        _searchBar(),
-                      ],
+                          if (_selectedCityEn != null &&
+                              _selectedCityEn!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_on,
+                                    size: 12, color: Color(0xCCFFFFFF)),
+                                const SizedBox(width: 3),
+                                Text(
+                                  _displaySelectedCity(),
+                                  style: const TextStyle(
+                                    color: Color(0xCCFFFFFF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          _searchBar(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (_isGuest) _guestBanner(context),
+              const SizedBox(height: 8),
+              CenterActionGrid(
+                items: [
+                  ActionItem(
+                    icon: Icons.category_outlined,
+                    label: 'specialties'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const SpecialityScreen())),
+                  ),
+                  ActionItem(
+                    icon: Icons.calendar_month_outlined,
+                    label: 'my_appointments'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyAppointmentsPage(showBack: true))),
+                  ),
+                  ActionItem(
+                    icon: Icons.people_outline,
+                    label: 'my_doctors'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyDoctorsPage())),
+                  ),
+                  ActionItem(
+                    icon: Icons.local_hospital,
+                    label: 'medical_centers'.tr(),
+                    onTap: () => Navigator.push(
+                      context,
+                      PageTransition(
+                        type: PageTransitionType.rightToLeft,
+                        child: const CentersScreen(),
+                      ),
                     ),
                   ),
                 ],
               ),
-              if (kIsWeb) const TrustyInstallBanner(),
-              if (_isGuest) _guestBanner(context),
               const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: CenterActionGrid(
-                  items: [
-                    ActionItem(
-                      icon: Icons.category_outlined,
-                      label: 'specialties'.tr(),
-                      onTap: () => Navigator.push(
-                          context,
-                          PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: const SpecialityScreen())),
-                    ),
-                    ActionItem(
-                      icon: Icons.calendar_month_outlined,
-                      label: 'my_appointments'.tr(),
-                      onTap: () => Navigator.push(
-                          context,
-                          PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: const MyAppointmentsPage(showBack: true))),
-                    ),
-                    ActionItem(
-                      icon: Icons.people_outline,
-                      label: 'my_doctors'.tr(),
-                      onTap: () => Navigator.push(
-                          context,
-                          PageTransition(
-                              type: PageTransitionType.rightToLeft,
-                              child: const MyDoctorsPage())),
-                    ),
-                    ActionItem(
-                      icon: Icons.local_hospital,
-                      label: 'medical_centers'.tr(),
-                      onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          child: const CentersScreen(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
+              _nextAppointmentCard(),
+              const SizedBox(height: 16),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
-
-              _nextAppointmentCard(),
-              const SizedBox(height: 12),
-              const SizedBox(height: 16),
-// HomeTutorialVideos(
-//   // This key changes whenever the user switches language,
-//   // forcing Flutter to delete the old widget and build a new translated one.
-//   key: ValueKey(context.locale.languageCode),
-// ),
-// const SizedBox(height: 24),
-
-              HomeNotificationsWidget(),
+              if (kIsWeb) const TrustyInstallBanner(),
               const SizedBox(height: 80),
             ],
           );
 
-          if (constraints.maxWidth >= 768)
+          if (constraints.maxWidth >= 768) {
             page = WebScaffoldContainer(child: page);
+          }
 
-          return Stack(
-            children: [
-              page,
-              if (_isImporting)
-                Container(
-                  color: Colors.black.withOpacity(0.3),
-                  child: const Center(
-                      child: CircularProgressIndicator(color: Colors.white)),
-                ),
-            ],
-          );
+          return page;
         },
       ),
     );
@@ -3597,7 +3595,7 @@ class _HomeState extends ConsumerState<Home>
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 3))
           ],
@@ -3649,72 +3647,202 @@ class _HomeState extends ConsumerState<Home>
           .limit(1)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _noUpcomingCard(innerOnly: true);
+        }
         final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
         DateTime appointmentDate = (data['date'] is Timestamp)
             ? (data['date'] as Timestamp).toDate()
             : DateTime.tryParse(data['date'] ?? '') ?? DateTime.now();
+        final lang = context.locale.languageCode;
+        final intlLocale = lang == 'ku' ? 'ar' : lang;
+        final monthLabel =
+            DateFormat('MMM', intlLocale).format(appointmentDate).toUpperCase();
+        final weekdayLabel =
+            DateFormat('EEE', intlLocale).format(appointmentDate);
+        final statusStr = data['status'] ?? '';
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
-            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.05), blurRadius: 8)
-                ]),
-            child: Column(
-              children: [
-                Row(children: [
-                  _dateBadgeCustom(appointmentDate),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'doctor_prefix_name'.tr(
-                              args: [
-                                localizedField(data, 'doctorName', context)
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(PatientAppColors.radiusCard),
+              boxShadow: PatientAppColors.shadowCard,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(PatientAppColors.radiusCard),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Date rail + content row
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Date rail
+                        Container(
+                          width: 70,
+                          color: PatientAppColors.appBackground,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                monthLabel,
+                                style: const TextStyle(
+                                  color: PatientAppColors.brandTeal,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                appointmentDate.day.toString(),
+                                style: const TextStyle(
+                                  color: PatientAppColors.darkNavy,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.1,
+                                ),
+                              ),
+                              Text(
+                                weekdayLabel,
+                                style: const TextStyle(
+                                  color: PatientAppColors.brandTeal,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Separator
+                        Container(width: 1, color: const Color(0xFFEEEEEE)),
+                        // Main content
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'doctor_prefix_name'.tr(args: [
+                                    localizedField(data, 'doctorName', context)
+                                  ]),
+                                  style: const TextStyle(
+                                    color: PatientAppColors.darkNavy,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.medical_services_outlined,
+                                      size: 13,
+                                      color: Colors.black45,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        _localizedSpecialtyFromAppointment(
+                                            data),
+                                        style: const TextStyle(
+                                          color: Colors.black54,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.business_outlined,
+                                      size: 13,
+                                      color: Colors.black45,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        localizedField(
+                                            data, 'clinicName', context),
+                                        style: const TextStyle(
+                                          color: Color(0x73000000),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
                           ),
-                          Text(_localizedSpecialtyFromAppointment(data),
-                              style: const TextStyle(
-                                  color: Colors.black54, fontSize: 13)),
-                          Text(
-                            localizedField(data, 'clinicName', context),
-                            style: const TextStyle(
-                              color: Colors.black54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ]),
+                        ),
+                      ],
+                    ),
                   ),
-                ]),
-                const SizedBox(height: 8),
-                Row(children: [
-                  Text(
-                      '${'status.label'.tr()}: ${_prettyStatus(data['status'] ?? '')}',
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  ElevatedButton(
-                      onPressed: () => Navigator.push(
-                          context,
-                          PageTransition(
+                  // Footer: status + CTA
+                  Container(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFF0F0F0)),
+                      ),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _statusColor(statusStr),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _prettyStatus(statusStr),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _statusColor(statusStr),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            PageTransition(
                               type: PageTransitionType.rightToLeft,
-                              child: const MyAppointmentsPage(showBack: true))),
-                      child: Text('view_details'.tr())),
-                ]),
-              ],
+                              child: const MyAppointmentsPage(showBack: true),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PatientAppColors.brandBlue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'view_details'.tr(),
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -3726,18 +3854,35 @@ class _HomeState extends ConsumerState<Home>
     final card = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
-          ]),
-      child: Row(children: [
-        _dateBadgeCustom(DateTime.now()),
-        const SizedBox(width: 14),
-        Text('home.noUpcomingVisits'.tr(),
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, color: Colors.black54)),
-      ]),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(PatientAppColors.radiusCard),
+        boxShadow: PatientAppColors.shadowCard,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: Color(0x1A5CC6BA), // brandTeal ~10%
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.calendar_today_outlined,
+              size: 20,
+              color: PatientAppColors.brandTeal,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'home.noUpcomingVisits'.tr(),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600, color: Colors.black54),
+            ),
+          ),
+        ],
+      ),
     );
     return innerOnly
         ? card
@@ -3756,50 +3901,53 @@ class _HomeState extends ConsumerState<Home>
     }
   }
 
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'confirmed':
+        return PatientAppColors.statusConfirmed;
+      case 'pending':
+        return PatientAppColors.statusPending;
+      case 'cancelled':
+        return PatientAppColors.statusCancelled;
+      default:
+        return PatientAppColors.statusWarning;
+    }
+  }
+
   Widget _guestBanner(BuildContext context) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
             color: PatientAppColors.guestBannerBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: PatientAppColors.guestBannerBorder)),
         child: Row(children: [
-          const Icon(Icons.info_outline),
-          const SizedBox(width: 8),
-          Expanded(child: Text('guest_browsing_notice'.tr())),
+          const Icon(Icons.info_outline, size: 14, color: Colors.black54),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'guest_browsing_notice'.tr(),
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ),
           TextButton(
-              onPressed: () => Navigator.push(
-                  context,
-                  PageTransition(
-                      type: PageTransitionType.rightToLeft,
-                      child: const LoginScreen())),
-              child: Text('login'.tr())),
+            style: TextButton.styleFrom(
+              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => Navigator.push(
+                context,
+                PageTransition(
+                    type: PageTransitionType.rightToLeft,
+                    child: const LoginScreen())),
+            child: Text(
+              'login'.tr(),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
         ]),
       );
-
-  Widget _dateBadgeCustom(DateTime date) {
-    final lang = context.locale.languageCode;
-    final intlLocale = lang == 'ku' ? 'ar' : lang;
-    return Container(
-      width: 64,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-          color: PatientAppColors.brandBlue,
-          borderRadius: BorderRadius.circular(10)),
-      child: Column(children: [
-        Text(DateFormat('MMM', intlLocale).format(date),
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-        Text(DateFormat('dd', intlLocale).format(date),
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 18)),
-        Text(DateFormat('EEE', intlLocale).format(date),
-            style: const TextStyle(color: Colors.white70)),
-      ]),
-    );
-  }
 }
 
 class _LanguageSelector extends StatelessWidget {

@@ -364,6 +364,23 @@ class AppointmentBuilder {
     }
 
     //-----------------------------------------
+    // FETCH DOCTOR LOCALIZED NAMES
+    // Reads name_en/ar/ku from public_doctors so the appointment
+    // snapshot stores all three regardless of the UI locale at booking time.
+    //-----------------------------------------
+    final doctorDoc =
+        await _fs.collection('public_doctors').doc(doctorId).get();
+    final dd = doctorDoc.exists
+        ? (doctorDoc.data() ?? <String, dynamic>{})
+        : <String, dynamic>{};
+    final rawEn = (dd['name_en'] ?? '').toString();
+    final doctorNameEn = rawEn.isNotEmpty ? rawEn : doctorName;
+    final rawAr = (dd['name_ar'] ?? '').toString();
+    final doctorNameAr = rawAr.isNotEmpty ? rawAr : doctorNameEn;
+    final rawKu = (dd['name_ku'] ?? '').toString();
+    final doctorNameKu = rawKu.isNotEmpty ? rawKu : doctorNameEn;
+
+    //-----------------------------------------
 // 🔥 PREVENT DOUBLE BOOKING
 //-----------------------------------------
 
@@ -418,6 +435,9 @@ class AppointmentBuilder {
           //------------------------------------------------
           'doctorId': doctorId,
           'doctorName': doctorName,
+          'doctorName_en': doctorNameEn,
+          'doctorName_ar': doctorNameAr,
+          'doctorName_ku': doctorNameKu,
           'doctorImage': doctorImage,
           'specialtyKey': schedule['specialtyKey'],
           'specialtyName_en': schedule['specialty_en'],
