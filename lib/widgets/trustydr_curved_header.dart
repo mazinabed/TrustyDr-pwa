@@ -86,6 +86,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class TrustyDrCurvedHeader extends StatelessWidget {
   final String title;
@@ -109,11 +110,7 @@ class TrustyDrCurvedHeader extends StatelessWidget {
       child: Container(
         height: 72,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: PatientAppColors.brandGradient,
         ),
         child: SafeArea(
           bottom: false,

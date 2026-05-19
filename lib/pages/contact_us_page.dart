@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/static_info_page.dart';
 import 'package:trustydr/constant/constant.dart';
 
@@ -33,20 +34,9 @@ class ContactUsPage extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(fixPadding * 1.6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFEFF),
+        color: PatientAppColors.cardSurface,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: PatientAppColors.shadowCard,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,12 +44,12 @@ class ContactUsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF4B96DF).withOpacity(0.12),
+              color: PatientAppColors.brandBlueAlt.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF4B96DF),
+              color: PatientAppColors.brandBlueAlt,
               size: 22,
             ),
           ),

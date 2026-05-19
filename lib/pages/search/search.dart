@@ -142,7 +142,7 @@
 //       appBar: AppBar(
 //         elevation: 1.0,
 //         automaticallyImplyLeading: true,
-//         backgroundColor: whiteColor,
+//         backgroundColor: Colors.white,
 //         title: Container(
 //           height: 40.0,
 //           alignment: Alignment.center,
@@ -241,7 +241,7 @@
 //           itemBuilder: (context, index) {
 //             final item = recentList[index];
 //             return Container(
-//               color: whiteColor,
+//               color: Colors.white,
 //               padding: EdgeInsets.symmetric(
 //                   horizontal: fixPadding * 2.0, vertical: fixPadding),
 //               child: InkWell(
@@ -253,7 +253,7 @@
 //                 },
 //                 child: Row(
 //                   children: [
-//                     Icon(Icons.history, color: greyColor, size: 22.0),
+//                     Icon(Icons.history, color: Colors.grey, size: 22.0),
 //                     SizedBox(width: fixPadding),
 //                     Text(item['title'] ?? '', style: blackSmallTextStyle),
 //                   ],
@@ -275,7 +275,7 @@
 //           itemBuilder: (context, index) {
 //             final item = trendingList[index];
 //             return Container(
-//               color: whiteColor,
+//               color: Colors.white,
 //               padding: EdgeInsets.symmetric(
 //                   horizontal: fixPadding * 2.0, vertical: fixPadding),
 //               child: InkWell(
@@ -317,6 +317,7 @@ import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widget/column_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -390,7 +391,7 @@ class _SearchState extends ConsumerState<Search> {
       appBar: AppBar(
         elevation: 1.0,
         automaticallyImplyLeading: true,
-        backgroundColor: whiteColor,
+        backgroundColor: Colors.white,
         title: Container(
           height: 40.0,
           alignment: Alignment.center,
@@ -453,7 +454,9 @@ class _SearchState extends ConsumerState<Search> {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: PatientAppColors.brandIndigo),
+      ),
       error: (_, __) => Center(child: Text(tr('search_error'))),
     );
   }
@@ -525,7 +528,7 @@ class _SearchState extends ConsumerState<Search> {
     return Container(
       margin: EdgeInsets.only(bottom: fixPadding * 1.2),
       decoration: BoxDecoration(
-        color: whiteColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -555,14 +558,15 @@ class _SearchState extends ConsumerState<Search> {
                   radius: 28,
                   backgroundImage:
                       imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-                  backgroundColor: primaryColor.withValues(alpha: 0.12),
+                  backgroundColor:
+                      PatientAppColors.brandIndigo.withValues(alpha: 0.12),
                   child: imageUrl.isEmpty
                       ? Text(
                           initials,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: primaryColor,
+                            color: PatientAppColors.brandIndigo,
                           ),
                         )
                       : null,
@@ -593,7 +597,7 @@ class _SearchState extends ConsumerState<Search> {
                         Row(
                           children: [
                             Icon(Icons.location_on_outlined,
-                                size: 12, color: greyColor),
+                                size: 12, color: Colors.grey),
                             const SizedBox(width: 2),
                             Expanded(
                               child: Text(
@@ -667,7 +671,7 @@ class _SearchState extends ConsumerState<Search> {
           itemBuilder: (context, index) {
             final item = recentList[index];
             return Container(
-              color: whiteColor,
+              color: Colors.white,
               padding: EdgeInsets.symmetric(
                   horizontal: fixPadding * 2.0, vertical: fixPadding),
               child: InkWell(
@@ -679,7 +683,7 @@ class _SearchState extends ConsumerState<Search> {
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.history, color: greyColor, size: 22.0),
+                    Icon(Icons.history, color: Colors.grey, size: 22.0),
                     SizedBox(width: fixPadding),
                     Text(item['title'] ?? '', style: blackSmallTextStyle),
                   ],
@@ -704,7 +708,7 @@ class _SearchState extends ConsumerState<Search> {
             final bool isVerified = item['isVerified'] ?? true;
 
             return Container(
-              color: whiteColor,
+              color: Colors.white,
               padding: EdgeInsets.symmetric(
                   horizontal: fixPadding * 2.0, vertical: fixPadding),
               child: InkWell(
@@ -722,7 +726,9 @@ class _SearchState extends ConsumerState<Search> {
                 child: Row(
                   children: [
                     Icon(Icons.trending_up,
-                        color: isVerified ? Colors.blue : Colors.orange,
+                        color: isVerified
+                            ? PatientAppColors.brandBlue
+                            : Colors.orange,
                         size: 22.0),
                     SizedBox(width: fixPadding),
                     Text(item['name'] ?? '', style: blackSmallTextStyle),

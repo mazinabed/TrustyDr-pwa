@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widget/column_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,19 +20,21 @@ class _PatientDirectoryState extends State<PatientDirectory> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: whiteColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: whiteColor,
+        backgroundColor: Colors.white,
         titleSpacing: 0.0,
-        elevation: 1.0,
+        elevation: 0,
         title: Text(
           'Patient Directory',
-          style: appBarTitleTextStyle,
+          style: appBarTitleTextStyle.copyWith(
+            color: PatientAppColors.brandIndigo,
+          ),
         ),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: blackColor,
+            color: PatientAppColors.brandIndigo,
           ),
           onPressed: () {
             Navigator.pop(context);
@@ -46,7 +49,11 @@ class _PatientDirectoryState extends State<PatientDirectory> {
         stream: usersRef.where('role', isEqualTo: 'patient').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                color: PatientAppColors.brandIndigo,
+              ),
+            );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -90,7 +97,7 @@ class _PatientDirectoryState extends State<PatientDirectory> {
                                   width: 70.0,
                                   height: 70.0,
                                   decoration: BoxDecoration(
-                                    color: whiteColor,
+                                    color: Colors.white,
                                     borderRadius: BorderRadius.circular(35.0),
                                     boxShadow: <BoxShadow>[
                                       BoxShadow(

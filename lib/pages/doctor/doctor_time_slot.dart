@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class DoctorTimeSlot extends StatefulWidget {
@@ -241,10 +242,16 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       backgroundColor: whiteColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: whiteColor,
-        title: Text('select_time'.tr(), style: appBarTitleTextStyle),
+        backgroundColor: Colors.white,
+        title: Text(
+          'select_time'.tr(),
+          style: appBarTitleTextStyle.copyWith(
+            color: PatientAppColors.brandIndigo,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon:
+              const Icon(Icons.arrow_back, color: PatientAppColors.brandIndigo),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -310,11 +317,11 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                     d.day == _selectedDay.day,
                 calendarStyle: CalendarStyle(
                   todayDecoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.15),
+                    color: PatientAppColors.brandIndigo.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   selectedDecoration: BoxDecoration(
-                    color: primaryColor,
+                    color: PatientAppColors.brandIndigo,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -336,7 +343,11 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
             if (_loadingSchedule)
               const SizedBox(
                 height: 220,
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: PatientAppColors.brandIndigo,
+                  ),
+                ),
               )
             else if (_scheduleForDay == null)
               SizedBox(
@@ -361,7 +372,11 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   Widget _buildSlotGrid() {
     if (_loadingUsage) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          color: PatientAppColors.brandIndigo,
+        ),
+      );
     }
 
     final entries = _buildSlotEntries();
@@ -428,7 +443,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: primaryColor, width: 1),
+                border:
+                    Border.all(color: PatientAppColors.brandIndigo, width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
@@ -513,7 +529,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: PatientAppColors.brandIndigo),
             child: Text(
               'confirm'.tr(),
               style: const TextStyle(color: Colors.white),
@@ -591,7 +608,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: primaryColor,
+          backgroundColor: PatientAppColors.brandIndigo,
           content: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

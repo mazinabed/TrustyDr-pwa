@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class WriteReviewModal extends StatefulWidget {
   final String doctorId;
@@ -88,11 +89,7 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
       builder: (_, controller) => Container(
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-          ),
+          gradient: PatientAppColors.brandGradient,
         ),
         child: Container(
           padding: const EdgeInsets.all(20),
@@ -167,7 +164,7 @@ class _WriteReviewModalState extends State<WriteReviewModal> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF5CC6BA),
+                    backgroundColor: PatientAppColors.brandTeal,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     elevation: 2,

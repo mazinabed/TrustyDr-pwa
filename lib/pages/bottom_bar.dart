@@ -304,6 +304,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 import 'package:trustydr/pages/screens.dart'
     show Home, SpecialityScreen, MyAppointmentsPage, Profile;
@@ -353,7 +354,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
 
     if (isDesktop) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF2F5F9),
+        backgroundColor: PatientAppColors.navBarBackground,
         appBar: _DesktopNavBar(
           selectedIndex: _selectedIndex,
           onTap: (i) => setState(() => _selectedIndex = i),
@@ -367,7 +368,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
 
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFFF2F5F9),
+      backgroundColor: PatientAppColors.navBarBackground,
 
       /// ✅ IndexedStack = smooth tabs, no rebuilds
       body: IndexedStack(
@@ -378,13 +379,7 @@ class _BottomBarState extends ConsumerState<BottomBar> {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, -2),
-            ),
-          ],
+          boxShadow: PatientAppColors.shadowNav,
         ),
         child: SafeArea(
           top: false,
@@ -395,8 +390,8 @@ class _BottomBarState extends ConsumerState<BottomBar> {
             currentIndex: _selectedIndex,
             onTap: (index) => setState(() => _selectedIndex = index),
             iconSize: 26,
-            selectedItemColor: const Color(0xFF2563EB),
-            unselectedItemColor: const Color(0xFF6B7280),
+            selectedItemColor: PatientAppColors.navSelected,
+            unselectedItemColor: PatientAppColors.navUnselected,
             selectedLabelStyle: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -495,7 +490,9 @@ class _NavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFF2563EB) : const Color(0xFF6B7280);
+    final color = selected
+        ? PatientAppColors.navSelected
+        : PatientAppColors.navUnselected;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

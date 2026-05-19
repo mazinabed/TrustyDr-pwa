@@ -62,10 +62,10 @@
 //         }
 
 //         return Scaffold(
-//           backgroundColor: scaffoldBgColor,
+//           backgroundColor: PatientAppColors.surface,
 //           appBar: AppBar(
 //             elevation: 0,
-//             backgroundColor: scaffoldBgColor,
+//             backgroundColor: PatientAppColors.surface,
 //             title: Text(tr('DetailTitle'), style: appBarTitleTextStyle),
 //             iconTheme: const IconThemeData(color: Colors.black),
 //           ),
@@ -736,6 +736,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class AppointmentDetailPage extends StatelessWidget {
   final String appointmentId;
@@ -769,7 +770,11 @@ class AppointmentDetailPage extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: CircularProgressIndicator(
+                color: PatientAppColors.brandIndigo,
+              ),
+            ),
           );
         }
 
@@ -822,23 +827,28 @@ class AppointmentDetailPage extends StatelessWidget {
         Color statusColor() {
           switch (status.toLowerCase()) {
             case 'confirmed':
-              return Colors.green;
+              return PatientAppColors.statusConfirmed;
             case 'completed':
-              return Colors.blue;
+              return PatientAppColors.statusCompleted;
             case 'cancelled':
-              return Colors.red;
+              return PatientAppColors.statusCancelled;
             default:
-              return Colors.orange;
+              return PatientAppColors.statusWarning;
           }
         }
 
         return Scaffold(
-          backgroundColor: scaffoldBgColor,
+          backgroundColor: PatientAppColors.surface,
           appBar: AppBar(
             elevation: 0,
-            backgroundColor: scaffoldBgColor,
-            iconTheme: const IconThemeData(color: Colors.black),
-            title: Text('DetailTitle'.tr(), style: appBarTitleTextStyle),
+            backgroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: PatientAppColors.brandIndigo),
+            title: Text(
+              'DetailTitle'.tr(),
+              style: appBarTitleTextStyle.copyWith(
+                color: PatientAppColors.brandIndigo,
+              ),
+            ),
           ),
           body: ListView(
             padding: EdgeInsets.fromLTRB(
@@ -890,7 +900,7 @@ class AppointmentDetailPage extends StatelessWidget {
                           Text(
                             localizedField(data, 'specialtyName', context),
                             style: TextStyle(
-                              color: primaryColor,
+                              color: PatientAppColors.brandIndigo,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -926,7 +936,8 @@ class AppointmentDetailPage extends StatelessWidget {
               _card(
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_month, color: primaryColor, size: 26),
+                    Icon(Icons.calendar_month,
+                        color: PatientAppColors.brandIndigo, size: 26),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,7 +966,8 @@ class AppointmentDetailPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.local_hospital, color: primaryColor),
+                        Icon(Icons.local_hospital,
+                            color: PatientAppColors.brandIndigo),
                         const SizedBox(width: 6),
                         Text('clinic'.tr(), style: blackHeadingTextStyle),
                       ],

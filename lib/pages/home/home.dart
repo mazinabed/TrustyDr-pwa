@@ -217,7 +217,7 @@
 //                     Navigator.pop(context);
 //                   },
 //                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: primaryColor,
+//                     backgroundColor: PatientAppColors.brandIndigo,
 //                     minimumSize: const Size.fromHeight(44),
 //                   ),
 //                   child: const Text('Confirm'),
@@ -1566,7 +1566,7 @@
 //                     Navigator.pop(context);
 //                   },
 //                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: primaryColor,
+//                     backgroundColor: PatientAppColors.brandIndigo,
 //                     minimumSize: const Size.fromHeight(44),
 //                   ),
 //                   child: Text(tr('confirm')),
@@ -2456,7 +2456,7 @@
 //                     );
 //                   },
 //                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: primaryColor,
+//                     backgroundColor: PatientAppColors.brandIndigo,
 //                     minimumSize: const Size.fromHeight(44),
 //                   ),
 //                   child: Text('confirm'.tr()),
@@ -3116,6 +3116,7 @@ import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'dart:async' show unawaited;
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:trustydr/widgets/center_action_grid.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
@@ -3409,7 +3410,7 @@ class _HomeState extends ConsumerState<Home>
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
+                        backgroundColor: PatientAppColors.brandIndigo,
                         minimumSize: const Size.fromHeight(44)),
                     child: Text('confirm'.tr(),
                         style: const TextStyle(
@@ -3438,7 +3439,7 @@ class _HomeState extends ConsumerState<Home>
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF4B96DF), // Seamless with header
+        backgroundColor: PatientAppColors.brandBlueAlt, // Seamless with header
         iconTheme: const IconThemeData(color: Colors.white),
         title: InkWell(
           onTap: _openLocationSelector,
@@ -3759,9 +3760,9 @@ class _HomeState extends ConsumerState<Home>
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            color: const Color(0xFFFFF6D6),
+            color: PatientAppColors.guestBannerBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFFE8A3))),
+            border: Border.all(color: PatientAppColors.guestBannerBorder)),
         child: Row(children: [
           const Icon(Icons.info_outline),
           const SizedBox(width: 8),
@@ -3783,7 +3784,7 @@ class _HomeState extends ConsumerState<Home>
       width: 64,
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-          color: const Color(0xFF4A90E2),
+          color: PatientAppColors.brandBlue,
           borderRadius: BorderRadius.circular(10)),
       child: Column(children: [
         Text(DateFormat('MMM', intlLocale).format(date),

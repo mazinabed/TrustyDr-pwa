@@ -731,6 +731,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 import 'package:trustydr/pages/bottom_bar.dart';
 
@@ -871,7 +872,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ElevatedButton(
               onPressed: _isLoading ? null : _loginWithGoogle,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: PatientAppColors.navSelected,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(

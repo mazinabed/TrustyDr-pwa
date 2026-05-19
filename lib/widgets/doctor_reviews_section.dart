@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class DoctorReviewsSection extends StatelessWidget {
   final String doctorId;
@@ -22,7 +23,9 @@ class DoctorReviewsSection extends StatelessWidget {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.all(16),
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(
+              color: PatientAppColors.brandIndigo,
+            ),
           );
         }
 

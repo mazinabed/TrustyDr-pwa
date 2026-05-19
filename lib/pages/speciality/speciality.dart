@@ -99,7 +99,7 @@
 //               builder: (context, snapshot) {
 //                 if (snapshot.connectionState == ConnectionState.waiting) {
 //                   return const Center(
-//                       child: CircularProgressIndicator(color: Colors.teal));
+//                       child: CircularProgressIndicator(color: PatientAppColors.brandTeal));
 //                 }
 
 //                 if (snapshot.hasError) {
@@ -182,12 +182,12 @@
 //                                 fit: BoxFit.contain,
 //                                 errorBuilder: (_, __, ___) => const Icon(
 //                                     Icons.medical_services,
-//                                     color: Colors.teal,
+//                                     color: PatientAppColors.brandTeal,
 //                                     size: 50),
 //                               )
 //                             else
 //                               const Icon(Icons.medical_services,
-//                                   color: Colors.teal, size: 50),
+//                                   color: PatientAppColors.brandTeal, size: 50),
 //                             const SizedBox(height: 12),
 //                             Text(
 //                               displayName,
@@ -502,12 +502,12 @@
 //                 fit: BoxFit.contain,
 //                 errorBuilder: (_, __, ___) => const Icon(
 //                   Icons.medical_services,
-//                   color: Colors.teal,
+//                   color: PatientAppColors.brandTeal,
 //                   size: 40,
 //                 ),
 //               )
 //             else
-//               const Icon(Icons.medical_services, color: Colors.teal, size: 40),
+//               const Icon(Icons.medical_services, color: PatientAppColors.brandTeal, size: 40),
 //             const SizedBox(height: 8),
 //             Text(
 //               name,
@@ -535,7 +535,7 @@
 //       builder: (context, snapshot) {
 //         if (snapshot.connectionState == ConnectionState.waiting) {
 //           return const Center(
-//             child: CircularProgressIndicator(color: Colors.teal),
+//             child: CircularProgressIndicator(color: PatientAppColors.brandTeal),
 //           );
 //         }
 
@@ -665,7 +665,7 @@
 //                                       horizontal: 8, vertical: 4),
 //                                   decoration: BoxDecoration(
 //                                     color: isVerified
-//                                         ? Colors.blue.withOpacity(0.15)
+//                                         ? PatientAppColors.brandBlue.withOpacity(0.15)
 //                                         : Colors.orange.withOpacity(0.15),
 //                                     borderRadius: BorderRadius.circular(8),
 //                                   ),
@@ -688,7 +688,7 @@
 //                             Text(
 //                               specialty,
 //                               style: const TextStyle(
-//                                 color: Colors.teal,
+//                                 color: PatientAppColors.brandTeal,
 //                                 fontSize: 13,
 //                               ),
 //                             ),
@@ -1158,13 +1158,13 @@
 //                     height: 40,
 //                     errorBuilder: (_, __, ___) => const Icon(
 //                       Icons.medical_services,
-//                       color: Colors.teal,
+//                       color: PatientAppColors.brandTeal,
 //                       size: 40,
 //                     ),
 //                   )
 //                 : const Icon(
 //                     Icons.medical_services,
-//                     color: Colors.teal,
+//                     color: PatientAppColors.brandTeal,
 //                     size: 40,
 //                   ),
 //             const SizedBox(height: 8),
@@ -1234,7 +1234,7 @@
 //         if (snapshot.connectionState == ConnectionState.waiting) {
 //           return const Padding(
 //             padding: EdgeInsets.only(top: 40),
-//             child: Center(child: CircularProgressIndicator(color: Colors.teal)),
+//             child: Center(child: CircularProgressIndicator(color: PatientAppColors.brandTeal)),
 //           );
 //         }
 
@@ -1336,7 +1336,7 @@
 //                                       horizontal: 8, vertical: 4),
 //                                   decoration: BoxDecoration(
 //                                     color: isVerified
-//                                         ? Colors.blue.withOpacity(0.15)
+//                                         ? PatientAppColors.brandBlue.withOpacity(0.15)
 //                                         : Colors.orange.withOpacity(0.15),
 //                                     borderRadius: BorderRadius.circular(8),
 //                                   ),
@@ -1359,7 +1359,7 @@
 //                             Text(
 //                               specialty,
 //                               style: const TextStyle(
-//                                 color: Colors.teal,
+//                                 color: PatientAppColors.brandTeal,
 //                                 fontSize: 13,
 //                               ),
 //                             ),
@@ -1421,6 +1421,7 @@ import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/widget/doctor_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:page_transition/page_transition.dart';
 
@@ -1525,11 +1526,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
       width: double.infinity,
       padding: const EdgeInsets.only(top: 55, left: 20, right: 20, bottom: 25),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: PatientAppColors.brandGradient,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
       ),
       child: Row(
@@ -1655,11 +1652,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
         margin: const EdgeInsets.only(right: 16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: active
-              ? const LinearGradient(
-                  colors: [Color(0xFF4A90E2), Color(0xFF5CC6BA)],
-                )
-              : null,
+          gradient: active ? PatientAppColors.reverseBrandGradient : null,
           color: active ? null : Colors.white,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -1858,7 +1851,8 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                                       horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: isVerified
-                                        ? Colors.blue.withOpacity(0.15)
+                                        ? PatientAppColors.brandBlue
+                                            .withOpacity(0.15)
                                         : Colors.orange.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -1870,7 +1864,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: isVerified
-                                          ? Colors.blue
+                                          ? PatientAppColors.brandBlue
                                           : Colors.orange,
                                     ),
                                   ),
@@ -1881,7 +1875,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                             Text(
                               specialty,
                               style: const TextStyle(
-                                color: Colors.teal,
+                                color: PatientAppColors.brandTeal,
                                 fontSize: 13,
                               ),
                             ),
@@ -1935,7 +1929,9 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
       },
       loading: () => const Padding(
         padding: EdgeInsets.only(top: 40),
-        child: Center(child: CircularProgressIndicator(color: Colors.teal)),
+        child: Center(
+            child:
+                CircularProgressIndicator(color: PatientAppColors.brandTeal)),
       ),
       error: (e, st) {
         return Padding(

@@ -83,7 +83,7 @@
 //               child: const Text('No')),
 //           ElevatedButton(
 //             onPressed: () => Navigator.pop(context, true),
-//             style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+//             style: ElevatedButton.styleFrom(backgroundColor: PatientAppColors.brandIndigo),
 //             child: const Text('Yes', style: TextStyle(color: Colors.white)),
 //           ),
 //         ],
@@ -311,7 +311,7 @@
 //               child: ElevatedButton(
 //                 onPressed: _submitting ? null : _book,
 //                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: primaryColor,
+//                   backgroundColor: PatientAppColors.brandIndigo,
 //                   padding: const EdgeInsets.symmetric(vertical: 14),
 //                   shape: RoundedRectangleBorder(
 //                       borderRadius: BorderRadius.circular(10)),
@@ -338,10 +338,10 @@
 
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trustydr/constant/constant.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:trustydr/data/services/appointment_builder.dart';
 import 'package:trustydr/services/database_service.dart';
@@ -624,12 +624,14 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: primaryColor.withOpacity(.1),
+                      backgroundColor:
+                          PatientAppColors.brandIndigo.withOpacity(.1),
                       backgroundImage: widget.doctorImage.isNotEmpty
                           ? NetworkImage(widget.doctorImage)
                           : null,
                       child: widget.doctorImage.isEmpty
-                          ? Icon(Icons.person, color: primaryColor)
+                          ? Icon(Icons.person,
+                              color: PatientAppColors.brandIndigo)
                           : null,
                     ),
                     const SizedBox(width: 16),
@@ -649,7 +651,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                             specialty,
                             style: TextStyle(
                               fontSize: 13.5,
-                              color: primaryColor,
+                              color: PatientAppColors.brandIndigo,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -686,11 +688,12 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: primaryColor.withOpacity(.07),
+                  color: PatientAppColors.brandIndigo.withOpacity(.07),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_month, color: primaryColor),
+                    Icon(Icons.calendar_month,
+                        color: PatientAppColors.brandIndigo),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -813,7 +816,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
               ElevatedButton(
                 onPressed: _submitting ? null : _book,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
+                  backgroundColor: PatientAppColors.brandIndigo,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

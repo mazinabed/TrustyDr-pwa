@@ -7,6 +7,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Returns true when the center has at least one valid date window open.
@@ -42,7 +43,8 @@ class DoctorProfileV2 extends StatelessWidget {
         builder: (context, doctorSnap) {
           if (!doctorSnap.hasData) {
             return const Center(
-              child: CircularProgressIndicator(color: Colors.teal),
+              child:
+                  CircularProgressIndicator(color: PatientAppColors.brandTeal),
             );
           }
 
@@ -261,11 +263,7 @@ class _DoctorProfileView extends StatelessWidget {
         flexibleSpace: FlexibleSpaceBar(
           background: Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: PatientAppColors.brandGradient,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -360,7 +358,7 @@ class _DoctorProfileView extends StatelessWidget {
               _action(
                 icon: Icons.call,
                 label: 'call_now'.tr(),
-                color: Colors.green,
+                color: PatientAppColors.statusConfirmed,
                 onTap: phone.isNotEmpty
                     ? () => launchUrl(Uri.parse('tel:$phone'))
                     : null,
@@ -399,10 +397,11 @@ class _DoctorProfileView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(.12),
+                      color: PatientAppColors.brandTeal.withOpacity(.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: Colors.teal, size: 18),
+                    child:
+                        Icon(icon, color: PatientAppColors.brandTeal, size: 18),
                   ),
                 if (icon != null) const SizedBox(width: 10),
                 Text(
@@ -607,7 +606,8 @@ class _DoctorProfileView extends StatelessWidget {
                                         return ListTile(
                                           leading: const Icon(
                                               Icons.local_hospital,
-                                              color: Colors.teal),
+                                              color:
+                                                  PatientAppColors.brandTeal),
                                           title: Text(cn),
                                           trailing: const Icon(
                                               Icons.arrow_forward_ios,
@@ -650,7 +650,7 @@ class _DoctorProfileView extends StatelessWidget {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: PatientAppColors.brandIndigo,
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -759,11 +759,12 @@ class _DoctorProfileView extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.teal.withOpacity(.12),
+                              color:
+                                  PatientAppColors.brandTeal.withOpacity(.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.local_hospital,
-                                color: Colors.teal),
+                                color: PatientAppColors.brandTeal),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

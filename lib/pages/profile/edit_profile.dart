@@ -129,7 +129,7 @@
 //       context: context,
 //       builder: (BuildContext bc) {
 //         return Container(
-//           color: whiteColor,
+//           color: Colors.white,
 //           child: Wrap(
 //             children: [
 //               Container(
@@ -206,7 +206,7 @@
 //       padding: EdgeInsets.symmetric(
 //           horizontal: fixPadding * 1.5, vertical: fixPadding * 1.2),
 //       decoration: BoxDecoration(
-//         color: whiteColor,
+//         color: Colors.white,
 //         borderRadius: BorderRadius.circular(10),
 //         boxShadow: [
 //           BoxShadow(
@@ -231,7 +231,7 @@
 //               enabledBorder: OutlineInputBorder(
 //                   borderSide: BorderSide(color: Colors.grey)),
 //               focusedBorder: OutlineInputBorder(
-//                   borderSide: BorderSide(color: Colors.teal)),
+//                   borderSide: BorderSide(color: PatientAppColors.brandTeal)),
 //             ),
 //           ),
 //         ],
@@ -242,12 +242,12 @@
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
-//       backgroundColor: scaffoldBgColor,
+//       backgroundColor: PatientAppColors.surface,
 //       appBar: AppBar(
 //         backgroundColor: Colors.transparent,
 //         elevation: 0.0,
 //         leading: IconButton(
-//           icon: Icon(Icons.arrow_back, color: blackColor),
+//           icon: Icon(Icons.arrow_back, color: Colors.black),
 //           onPressed: () => Navigator.pop(context),
 //         ),
 //       ),
@@ -267,7 +267,7 @@
 //                       alignment: Alignment.bottomRight,
 //                       decoration: BoxDecoration(
 //                         borderRadius: BorderRadius.circular(5.0),
-//                         border: Border.all(width: 2.0, color: whiteColor),
+//                         border: Border.all(width: 2.0, color: Colors.white),
 //                         image: DecorationImage(
 //                           image: pickedImage != null
 //                               ? FileImage(pickedImage!) as ImageProvider
@@ -283,10 +283,10 @@
 //                         decoration: BoxDecoration(
 //                           borderRadius: BorderRadius.circular(11.0),
 //                           border: Border.all(
-//                               width: 1.0, color: whiteColor.withOpacity(0.7)),
+//                               width: 1.0, color: Colors.white.withOpacity(0.7)),
 //                           color: Colors.orange,
 //                         ),
-//                         child: Icon(Icons.add, color: whiteColor, size: 15.0),
+//                         child: Icon(Icons.add, color: Colors.white, size: 15.0),
 //                       ),
 //                     ),
 //                   ),
@@ -365,6 +365,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 import 'dart:io'
@@ -616,7 +617,7 @@ class _EditProfileState extends State<EditProfile> {
       context: context,
       builder: (BuildContext bc) {
         return Container(
-          color: whiteColor,
+          color: Colors.white,
           child: Wrap(
             children: [
               Container(
@@ -715,7 +716,7 @@ class _EditProfileState extends State<EditProfile> {
         vertical: fixPadding * 1.2,
       ),
       decoration: BoxDecoration(
-        color: whiteColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
@@ -740,7 +741,7 @@ class _EditProfileState extends State<EditProfile> {
               enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey)),
               focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.teal)),
+                  borderSide: BorderSide(color: PatientAppColors.brandTeal)),
             ),
           ),
         ],
@@ -769,12 +770,12 @@ class _EditProfileState extends State<EditProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: scaffoldBgColor,
+      backgroundColor: PatientAppColors.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0.0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: blackColor),
+          icon: Icon(Icons.arrow_back, color: PatientAppColors.brandIndigo),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -794,7 +795,7 @@ class _EditProfileState extends State<EditProfile> {
                       alignment: Alignment.bottomRight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(5.0),
-                        border: Border.all(width: 2.0, color: whiteColor),
+                        border: Border.all(width: 2.0, color: Colors.white),
                         image: DecorationImage(
                           image: _resolveProfileImageProvider(),
                           fit: BoxFit.cover,
@@ -809,11 +810,11 @@ class _EditProfileState extends State<EditProfile> {
                           borderRadius: BorderRadius.circular(11.0),
                           border: Border.all(
                             width: 1.0,
-                            color: whiteColor.withOpacity(0.7),
+                            color: Colors.white.withOpacity(0.7),
                           ),
                           color: Colors.orange,
                         ),
-                        child: Icon(Icons.add, color: whiteColor, size: 15.0),
+                        child: Icon(Icons.add, color: Colors.white, size: 15.0),
                       ),
                     ),
                   ),
@@ -854,7 +855,7 @@ class _EditProfileState extends State<EditProfile> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _saveProfile,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4A90E2),
+                          backgroundColor: PatientAppColors.brandBlue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),

@@ -2,6 +2,7 @@ import 'dart:js_interop';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class IosAddToHomeTip extends StatefulWidget {
@@ -125,9 +126,9 @@ class _IosAddToHomeTipState extends State<IosAddToHomeTip> {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
+        color: PatientAppColors.amberBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFDE68A)),
+        border: Border.all(color: PatientAppColors.amberBorder),
       ),
       child: Row(
         children: [

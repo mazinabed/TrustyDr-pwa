@@ -197,6 +197,7 @@
 
 import 'package:trustydr/constant/constant.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -286,7 +287,7 @@ class _TrustyDrInfoCardsState extends State<TrustyDrInfoCards> {
           height: 6,
           decoration: BoxDecoration(
             color: isActive
-                ? const Color(0xFF4B96DF)
+                ? PatientAppColors.brandBlueAlt
                 : Colors.grey.withOpacity(0.4),
             borderRadius: BorderRadius.circular(6),
           ),
@@ -302,7 +303,7 @@ class _TrustyDrInfoCardsState extends State<TrustyDrInfoCards> {
     required String subtitle,
     VoidCallback? onTap,
   }) {
-    const trustydrBlue = Color(0xFF4B96DF);
+    const trustydrBlue = PatientAppColors.brandBlueAlt;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 7),

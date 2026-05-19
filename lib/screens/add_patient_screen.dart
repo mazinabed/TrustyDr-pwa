@@ -1,4 +1,5 @@
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/core/services/database_service_contract.dart';
@@ -94,10 +95,16 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Add New Patient', style: appBarTitleTextStyle),
-        backgroundColor: whiteColor,
+        title: Text(
+          'Add New Patient',
+          style: appBarTitleTextStyle.copyWith(
+            color: PatientAppColors.brandIndigo,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: blackColor),
+          icon: Icon(Icons.arrow_back, color: PatientAppColors.brandIndigo),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -154,7 +161,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                         color: _statusMessage!.contains('Failed') ||
                                 _statusMessage!.contains('Error')
                             ? Colors.red
-                            : primaryColor,
+                            : PatientAppColors.brandIndigo,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -163,7 +170,7 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _addPatient,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: PatientAppColors.brandIndigo,
                     padding: const EdgeInsets.symmetric(vertical: 15.0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
@@ -174,11 +181,18 @@ class _AddPatientScreenState extends ConsumerState<AddPatientScreen> {
                           height: 20.0,
                           width: 20.0,
                           child: CircularProgressIndicator(
-                            color: whiteColor,
+                            color: Colors.white,
                             strokeWidth: 2.0,
                           ),
                         )
-                      : Text('Save Patient', style: whiteColorButtonTextStyle),
+                      : const Text(
+                          'Save Patient',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                 ),
               ],
             ),

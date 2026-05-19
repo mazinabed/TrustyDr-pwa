@@ -11,6 +11,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class Profile extends StatefulWidget {
@@ -144,8 +145,9 @@ class _ProfileState extends State<Profile> {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: primaryColor.withOpacity(0.12),
-              child: Icon(Icons.lock_outline, size: 28, color: primaryColor),
+              backgroundColor: PatientAppColors.brandIndigo.withOpacity(0.12),
+              child: Icon(Icons.lock_outline,
+                  size: 28, color: PatientAppColors.brandIndigo),
             ),
             const SizedBox(height: 12),
             Text(tr('login_required'), style: blackHeadingTextStyle),
@@ -158,7 +160,7 @@ class _ProfileState extends State<Profile> {
             const SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
+                backgroundColor: PatientAppColors.brandIndigo,
                 minimumSize: const Size.fromHeight(44),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -239,7 +241,7 @@ class _ProfileState extends State<Profile> {
             builder: (context, constraints) {
               Widget content = SafeArea(
                 child: RefreshIndicator(
-                  color: primaryColor,
+                  color: PatientAppColors.brandIndigo,
                   onRefresh: _loadProfile,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -249,11 +251,7 @@ class _ProfileState extends State<Profile> {
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
                           decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            gradient: PatientAppColors.brandGradient,
                             borderRadius: BorderRadius.vertical(
                                 bottom: Radius.circular(36)),
                           ),
@@ -349,14 +347,14 @@ class _ProfileState extends State<Profile> {
                                   title: tr('my_account'),
                                   items: [
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.local_hospital,
                                       label: tr('my_doctors'),
                                       onTap: () =>
                                           _guardedPush(const MyDoctorsPage()),
                                     ),
                                     _ActionItem(
-                                      color: Colors.teal,
+                                      color: PatientAppColors.brandTeal,
                                       icon: Icons.calendar_today,
                                       label: tr('my_appointments'),
                                       onTap: () => _guardedPush(
@@ -377,7 +375,7 @@ class _ProfileState extends State<Profile> {
                                   title: tr('about_app'),
                                   items: [
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.info_outline,
                                       label: tr('about_us'),
                                       onTap: () => Navigator.push(
@@ -389,7 +387,7 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.help_outline,
                                       label: tr('help_support'),
                                       onTap: () => Navigator.push(
@@ -401,7 +399,7 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.quiz_outlined,
                                       label: tr('faq.title'),
                                       onTap: () => Navigator.push(
@@ -413,7 +411,7 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.contact_mail_outlined,
                                       label: tr('contact.title'),
                                       onTap: () => Navigator.push(
@@ -425,7 +423,7 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.lock_outline,
                                       label: tr('privacy.title'),
                                       onTap: () => Navigator.push(
@@ -437,7 +435,7 @@ class _ProfileState extends State<Profile> {
                                       ),
                                     ),
                                     _ActionItem(
-                                      color: primaryColor,
+                                      color: PatientAppColors.brandIndigo,
                                       icon: Icons.description_outlined,
                                       label: tr('terms.title'),
                                       onTap: () => Navigator.push(
@@ -494,11 +492,7 @@ class _ProfileState extends State<Profile> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: PatientAppColors.brandGradient,
                 borderRadius: BorderRadius.all(Radius.circular(20)),
               ),
               child: Column(
@@ -523,7 +517,7 @@ class _ProfileState extends State<Profile> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: primaryColor,
+                      foregroundColor: PatientAppColors.brandIndigo,
                       minimumSize: const Size.fromHeight(46),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -631,7 +625,7 @@ class _ProfileState extends State<Profile> {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: PatientAppColors.brandIndigo,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(46),
           shape: RoundedRectangleBorder(

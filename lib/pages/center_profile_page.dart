@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -34,7 +35,11 @@ class CenterProfilePage extends ConsumerWidget {
         stream: centerStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                color: PatientAppColors.brandIndigo,
+              ),
+            );
           }
 
           final data = snapshot.data!.data();
@@ -253,7 +258,11 @@ class CenterProfilePage extends ConsumerWidget {
                   stream: doctorsStream,
                   builder: (context, docSnap) {
                     if (!docSnap.hasData) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: PatientAppColors.brandIndigo,
+                        ),
+                      );
                     }
 
                     final docs = docSnap.data!.docs;

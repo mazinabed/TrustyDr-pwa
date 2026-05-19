@@ -1,6 +1,7 @@
 // static_info_header.dart
 import 'package:flutter/material.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class StaticInfoHeader extends StatelessWidget {
   final String title;
@@ -21,14 +22,7 @@ class StaticInfoHeader extends StatelessWidget {
         bottom: fixPadding * 3,
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF4DB6AC),
-            Color(0xFF4B96DF),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: PatientAppColors.infoGradient,
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(28),
         ),

@@ -342,6 +342,7 @@ import 'package:trustydr/utils/web_location.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
 import 'package:trustydr/firebase_options.dart';
@@ -474,11 +475,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           children: [
             Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: PatientAppColors.brandGradient,
               ),
             ),
 
@@ -542,7 +539,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         const SizedBox(height: 16),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4A90E2),
+                            backgroundColor: PatientAppColors.brandBlue,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(

@@ -82,6 +82,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class ActionItem {
   final IconData icon;
@@ -203,11 +204,7 @@ class CenterActionGrid extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: PatientAppColors.brandGradient,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.12),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:flutter/foundation.dart';
@@ -43,12 +44,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: scaffoldBgColor,
+      backgroundColor: PatientAppColors.surface,
       appBar: AppBar(
-        backgroundColor: primaryColor,
+        backgroundColor: PatientAppColors.brandIndigo,
         title: Text('Book Appointment', style: appBarWhiteTitleTextStyle),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: whiteColor),
+          icon: Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -120,21 +121,15 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             padding: EdgeInsets.symmetric(
                 horizontal: fixPadding, vertical: fixPadding * 1.5),
             decoration: BoxDecoration(
-              color: whiteColor,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(fixPadding),
-              boxShadow: [
-                BoxShadow(
-                  color: greyColor.withOpacity(0.1),
-                  blurRadius: 5,
-                  spreadRadius: 2,
-                ),
-              ],
+              boxShadow: PatientAppColors.shadowSubtle,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(value, style: blackNormalTextStyle),
-                Icon(icon, color: primaryColor),
+                Icon(icon, color: PatientAppColors.brandIndigo),
               ],
             ),
           ),
@@ -172,8 +167,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           decoration: InputDecoration(
             hintText: 'Clinic or Hospital name',
             hintStyle: greySearchTextStyle,
-            prefixIcon: Icon(Icons.location_on, color: primaryColor),
-            fillColor: whiteColor,
+            prefixIcon:
+                Icon(Icons.location_on, color: PatientAppColors.brandIndigo),
+            fillColor: Colors.white,
             filled: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(fixPadding),
@@ -198,7 +194,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           decoration: InputDecoration(
             hintText: 'Add any comments or notes...',
             hintStyle: greySearchTextStyle,
-            fillColor: whiteColor,
+            fillColor: Colors.white,
             filled: true,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(fixPadding),
@@ -217,7 +213,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       child: ElevatedButton(
         onPressed: _isSaving ? null : _bookAppointment,
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: PatientAppColors.brandIndigo,
           padding: EdgeInsets.symmetric(vertical: fixPadding * 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -232,7 +228,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   color: Colors.white,
                 ),
               )
-            : Text('Confirm Booking', style: whiteColorButtonTextStyle),
+            : const Text(
+                'Confirm Booking',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
       ),
     );
   }
@@ -246,9 +249,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       builder: (context, child) => Theme(
         data: ThemeData.light().copyWith(
           colorScheme: ColorScheme.light(
-            primary: primaryColor,
-            onPrimary: whiteColor,
-            onSurface: blackColor,
+            primary: PatientAppColors.brandIndigo,
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
           ),
         ),
         child: child!,
@@ -266,9 +269,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       builder: (context, child) => Theme(
         data: ThemeData.light().copyWith(
           colorScheme: ColorScheme.light(
-            primary: primaryColor,
-            onPrimary: whiteColor,
-            onSurface: blackColor,
+            primary: PatientAppColors.brandIndigo,
+            onPrimary: Colors.white,
+            onSurface: Colors.black,
           ),
         ),
         child: child!,
@@ -318,8 +321,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Appointment confirmed successfully!',
-              style: whiteColorNormalTextStyle),
-          backgroundColor: Colors.green,
+              style: const TextStyle(color: Colors.white, fontSize: 15.0)),
+          backgroundColor: PatientAppColors.statusConfirmed,
         ));
         Navigator.pop(context);
       }
@@ -328,7 +331,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Failed to book appointment: $e',
-              style: whiteColorNormalTextStyle),
+              style: const TextStyle(color: Colors.white, fontSize: 15.0)),
           backgroundColor: Colors.red,
         ));
       }

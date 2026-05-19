@@ -1,6 +1,7 @@
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/constant/constant.dart';
@@ -58,7 +59,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       Fluttertoast.showToast(
         msg: 'registration_success'.tr(),
-        backgroundColor: Colors.green[700],
+        backgroundColor: PatientAppColors.statusConfirmed,
         textColor: Colors.white,
       );
 
@@ -106,13 +107,18 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: whiteColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('registration_title'.tr(),
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: whiteColor,
+        title: Text(
+          'registration_title'.tr(),
+          style: TextStyle(
+            color: PatientAppColors.brandIndigo,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: PatientAppColors.brandIndigo),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -127,7 +133,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: primaryColor,
+                    color: PatientAppColors.brandIndigo,
                   )),
               const SizedBox(height: 40),
               _buildTextField(
@@ -197,7 +203,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _registerUser,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
+                  backgroundColor: PatientAppColors.brandIndigo,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -215,7 +221,7 @@ class _RegisterPageState extends State<RegisterPage> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('registration_have_account'.tr(),
-                    style: TextStyle(color: Colors.teal)),
+                    style: TextStyle(color: PatientAppColors.brandTeal)),
               ),
             ],
           ),
@@ -239,14 +245,15 @@ class _RegisterPageState extends State<RegisterPage> {
       keyboardType: keyboardType,
       validator: validator,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: primaryColor),
+        prefixIcon: Icon(icon, color: PatientAppColors.brandIndigo),
         suffixIcon: suffixIcon,
         labelText: label,
         labelStyle: const TextStyle(color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: primaryColor, width: 1.5),
+          borderSide:
+              BorderSide(color: PatientAppColors.brandIndigo, width: 1.5),
         ),
       ),
     );

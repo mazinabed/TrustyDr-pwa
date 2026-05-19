@@ -205,6 +205,7 @@
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GoogleClinicDetailsPage extends StatelessWidget {
@@ -265,7 +266,17 @@ class GoogleClinicDetailsPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(tr('clinic_details')),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: PatientAppColors.brandIndigo),
+        title: Text(
+          tr('clinic_details'),
+          style: TextStyle(
+            color: PatientAppColors.brandIndigo,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

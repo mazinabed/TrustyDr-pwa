@@ -130,6 +130,7 @@ import 'dart:html' as html;
 import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // --- Single Point of Truth for JS ---
@@ -203,7 +204,7 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _isIOS
-            ? const Color(0xFFFFF9E6)
+            ? PatientAppColors.iosInstallBannerBg
             : Colors.white, // iOS gets a subtle hint color
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.black.withOpacity(0.05)),
@@ -215,7 +216,7 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
       child: Row(
         children: [
           Icon(_isIOS ? Icons.apple : Icons.install_mobile,
-              color: const Color(0xFF4B96DF)),
+              color: PatientAppColors.brandBlueAlt),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

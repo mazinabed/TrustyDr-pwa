@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/app_footer.dart';
 
 //This widget will:
@@ -38,14 +39,7 @@ class StaticInfoPage extends StatelessWidget {
               bottom: fixPadding * 3,
             ),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF4DB6AC),
-                  Color(0xFF4B96DF),
-                ],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              gradient: PatientAppColors.infoGradient,
               borderRadius: BorderRadius.vertical(
                 bottom: Radius.circular(28),
               ),

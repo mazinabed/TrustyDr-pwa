@@ -69,7 +69,7 @@
 //                       );
 //                     },
 //                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: primaryColor,
+//                       backgroundColor: PatientAppColors.brandIndigo,
 //                       minimumSize: const Size.fromHeight(44),
 //                       shape: RoundedRectangleBorder(
 //                         borderRadius: BorderRadius.circular(12),
@@ -113,10 +113,10 @@
 //             ),
 //             child: TabBar(
 //               controller: _tab,
-//               labelColor: primaryColor,
+//               labelColor: PatientAppColors.brandIndigo,
 //               unselectedLabelColor: Colors.black54,
 //               indicator: UnderlineTabIndicator(
-//                 borderSide: BorderSide(color: primaryColor, width: 3),
+//                 borderSide: BorderSide(color: PatientAppColors.brandIndigo, width: 3),
 //                 insets: const EdgeInsets.symmetric(horizontal: 24),
 //               ),
 //               tabs: const [
@@ -364,7 +364,7 @@
 //         borderRadius: BorderRadius.circular(16),
 //         gradient: LinearGradient(
 //           colors: [
-//             primaryColor.withOpacity(0.12),
+//             PatientAppColors.brandIndigo.withOpacity(0.12),
 //             Colors.white,
 //           ],
 //           begin: Alignment.topLeft,
@@ -517,6 +517,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
@@ -596,7 +597,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
 
     if (user == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF6F8FB),
+        backgroundColor: PatientAppColors.pageBackground,
         body: LayoutBuilder(
           builder: (context, constraints) {
             Widget content = Column(
@@ -636,7 +637,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
+                              backgroundColor: PatientAppColors.brandIndigo,
                               minimumSize: const Size.fromHeight(44),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -663,7 +664,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: PatientAppColors.pageBackground,
       body: LayoutBuilder(
         builder: (context, constraints) {
           Widget content = Column(
@@ -700,10 +701,11 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                 ),
                 child: TabBar(
                   controller: _tab,
-                  labelColor: primaryColor,
+                  labelColor: PatientAppColors.brandIndigo,
                   unselectedLabelColor: Colors.black54,
                   indicator: UnderlineTabIndicator(
-                    borderSide: BorderSide(color: primaryColor, width: 3),
+                    borderSide: BorderSide(
+                        color: PatientAppColors.brandIndigo, width: 3),
                     insets: const EdgeInsets.symmetric(horizontal: 24),
                   ),
                   tabs: [
@@ -749,7 +751,11 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       stream: q.snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: PatientAppColors.brandIndigo,
+            ),
+          );
         }
         if (snap.hasError) {
           return Center(
@@ -969,14 +975,14 @@ class _AppointmentCard extends StatelessWidget {
   Color get _statusColor {
     switch (status.toLowerCase()) {
       case 'confirmed':
-        return Colors.green;
+        return PatientAppColors.statusConfirmed;
       case 'pending':
-        return Colors.orange;
+        return PatientAppColors.statusWarning;
       case 'completed':
-        return Colors.blue;
+        return PatientAppColors.statusCompleted;
       case 'canceled':
       case 'cancelled':
-        return Colors.red;
+        return PatientAppColors.statusCancelled;
       default:
         return Colors.grey;
     }
@@ -992,7 +998,7 @@ class _AppointmentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            primaryColor.withOpacity(0.12),
+            PatientAppColors.brandIndigo.withOpacity(0.12),
             Colors.white,
           ],
           begin: Alignment.topLeft,
@@ -1055,11 +1061,6 @@ class _AppointmentCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           if (clinicName.isNotEmpty)
                             Text('🏥 $clinicName', style: greySmallTextStyle),
-                          if (clinicAddress.isNotEmpty)
-                            Text(
-                              '📍 $clinicAddress',
-                              style: greySmallTextStyle,
-                            ),
                           if (clinicAddress.isNotEmpty)
                             Text(
                               '📍 $clinicAddress',
@@ -1177,11 +1178,7 @@ class _CurvedGradientHeader extends StatelessWidget {
       child: Container(
         height: height,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: PatientAppColors.brandGradient,
         ),
         child: child,
       ),

@@ -1,4 +1,5 @@
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -31,19 +32,21 @@ class _NotificationsState extends State<Notifications> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: whiteColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: whiteColor,
-        elevation: 1.0,
+        backgroundColor: Colors.white,
+        elevation: 0,
         titleSpacing: 0.0,
         title: Text(
           'Notifications',
-          style: appBarTitleTextStyle,
+          style: appBarTitleTextStyle.copyWith(
+            color: PatientAppColors.brandIndigo,
+          ),
         ),
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back,
-            color: blackColor,
+            color: PatientAppColors.brandIndigo,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -105,7 +108,7 @@ class _NotificationsState extends State<Notifications> {
                           : EdgeInsets.all(fixPadding * 2.0),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10.0),
-                        color: whiteColor,
+                        color: Colors.white,
                         boxShadow: <BoxShadow>[
                           BoxShadow(
                             blurRadius: 1.0,

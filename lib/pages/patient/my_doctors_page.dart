@@ -21,7 +21,7 @@
 //     final user = DatabaseService().currentUser;
 
 //     return Scaffold(
-//       backgroundColor: const Color(0xFFF6F8FB),
+//       backgroundColor: PatientAppColors.pageBackground,
 //       body: Stack(
 //         children: [
 //           /// 🔷 HEADER (FIXED HEIGHT)
@@ -177,13 +177,13 @@
 //             /// Avatar (initials)
 //             CircleAvatar(
 //               radius: 28,
-//               backgroundColor: primaryColor.withOpacity(0.15),
+//               backgroundColor: PatientAppColors.brandIndigo.withOpacity(0.15),
 //               child: Text(
 //                 name.isNotEmpty ? name[0].toUpperCase() : '?',
 //                 style: TextStyle(
 //                   fontSize: 22,
 //                   fontWeight: FontWeight.w700,
-//                   color: primaryColor,
+//                   color: PatientAppColors.brandIndigo,
 //                 ),
 //               ),
 //             ),
@@ -206,7 +206,7 @@
 //                   Text(
 //                     specialty,
 //                     style: TextStyle(
-//                       color: primaryColor,
+//                       color: PatientAppColors.brandIndigo,
 //                       fontSize: 13,
 //                       fontWeight: FontWeight.w600,
 //                     ),
@@ -283,12 +283,12 @@
 // }
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 
 class MyDoctorsPage extends StatefulWidget {
@@ -355,7 +355,7 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
     final user = DatabaseService.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: PatientAppColors.pageBackground,
       body: Stack(
         children: [
           /// Gradient header
@@ -379,7 +379,8 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Center(
-                          child: CircularProgressIndicator(color: primaryColor),
+                          child: CircularProgressIndicator(
+                              color: PatientAppColors.brandIndigo),
                         );
                       }
 
@@ -488,13 +489,13 @@ class _MyDoctorsPageState extends State<MyDoctorsPage>
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: primaryColor.withOpacity(0.15),
+              backgroundColor: PatientAppColors.brandIndigo.withOpacity(0.15),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : '?',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: primaryColor,
+                  color: PatientAppColors.brandIndigo,
                 ),
               ),
             ),
@@ -553,11 +554,7 @@ class _CurvedGradientHeader extends StatelessWidget {
       child: Container(
         height: height,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF5CC6BA), Color(0xFF4A90E2)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          gradient: PatientAppColors.brandGradient,
         ),
         child: child,
       ),

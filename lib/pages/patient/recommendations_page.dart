@@ -8,9 +8,9 @@
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
-//       backgroundColor: whiteColor,
+//       backgroundColor: Colors.white,
 //       appBar: AppBar(
-//         backgroundColor: whiteColor,
+//         backgroundColor: Colors.white,
 //         elevation: 1,
 //         title: Text(
 //           tr('recommendations.title'),
@@ -45,6 +45,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class RecommendationsPage extends StatelessWidget {
@@ -53,7 +54,7 @@ class RecommendationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: whiteColor,
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           // 🔵 Gradient Header (same system as About)
@@ -64,14 +65,7 @@ class RecommendationsPage extends StatelessWidget {
               bottom: fixPadding * 3,
             ),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF4DB6AC),
-                  Color(0xFF4B96DF),
-                ],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
+              gradient: PatientAppColors.infoGradient,
               borderRadius: BorderRadius.vertical(
                 bottom: Radius.circular(28),
               ),
@@ -139,13 +133,13 @@ class RecommendationsPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF4B96DF).withOpacity(0.12),
+              color: PatientAppColors.brandBlueAlt.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.lightbulb_outline,
               size: 36,
-              color: const Color(0xFF4B96DF),
+              color: PatientAppColors.brandBlueAlt,
             ),
           ),
 
