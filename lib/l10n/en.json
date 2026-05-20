@@ -503,5 +503,6 @@
   "health_weather.cat_warm": "Warm",
   "health_weather.cat_hot": "Hot",
   "health_weather.feels_like": "Feels like",
-  "health_weather.updated_today": "Updated today"
+  "health_weather.updated_today": "Updated today",
+  "announcement.label": "Notice"
 }

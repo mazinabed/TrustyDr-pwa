@@ -509,5 +509,6 @@
   "health_weather.cat_warm": "دافئ",
   "health_weather.cat_hot": "حار",
   "health_weather.feels_like": "الإحساس بـ",
-  "health_weather.updated_today": "تم التحديث اليوم"
+  "health_weather.updated_today": "تم التحديث اليوم",
+  "announcement.label": "إشعار"
 }

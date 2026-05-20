@@ -176,7 +176,7 @@ class DailyHealthWeatherCard extends ConsumerWidget {
         children: [
           // Signal pill (left) + stacked temperature (right)
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _signalPill(w.healthSignal),
               const Spacer(),
@@ -321,7 +321,7 @@ class DailyHealthWeatherCard extends ConsumerWidget {
             icon: Icons.wb_sunny_outlined,
             label: 'health_weather.label_uv'.tr(),
             category: _categoryLabel(w.uvCategory),
-            rawValue: w.uvIndex.toStringAsFixed(1),
+            rawValue: w.uvIndex.round().toString(),
             severity: _uvSeverity(w.uvCategory),
           );
 
@@ -445,7 +445,7 @@ class DailyHealthWeatherCard extends ConsumerWidget {
               style: const TextStyle(
                 color: Color(0xFF7C5D00),
                 fontSize: 12,
-                height: 1.5,
+                height: 1.4,
               ),
             ),
           ),

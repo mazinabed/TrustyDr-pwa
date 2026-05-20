@@ -506,5 +506,6 @@
   "health_weather.cat_warm": "گەرم",
   "health_weather.cat_hot": "گەرمای زۆر",
   "health_weather.feels_like": "هەست بە",
-  "health_weather.updated_today": "ئەمڕۆ نوێکراوەتەوە"
+  "health_weather.updated_today": "ئەمڕۆ نوێکراوەتەوە",
+  "announcement.label": "راگەیاندن"
 }
