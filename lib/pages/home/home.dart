@@ -3113,6 +3113,7 @@ import 'package:trustydr/widgets/pwa_install_banner.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:trustydr/widgets/center_action_grid.dart';
 import 'package:trustydr/widgets/health_awareness_card.dart';
+import 'package:trustydr/widgets/daily_health_weather_card.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 class Home extends ConsumerStatefulWidget {
@@ -3563,6 +3564,11 @@ class _HomeState extends ConsumerState<Home>
               _nextAppointmentCard(),
               const SizedBox(height: 16),
               const HealthAwarenessCard(),
+              const SizedBox(height: 16),
+              DailyHealthWeatherCard(
+                provinceKey: _selectedProvinceKey,
+                onSetLocation: _openLocationSelector,
+              ),
               const SizedBox(height: 16),
               const TrustyDrInfoCards(),
               const SizedBox(height: 16),
