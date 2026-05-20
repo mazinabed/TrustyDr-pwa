@@ -259,6 +259,7 @@
 // }
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:trustydr/core/utils/patient_identity_validator.dart';
 
 class AppointmentBuilder {
   static final _fs = FirebaseFirestore.instance;
@@ -299,6 +300,13 @@ class AppointmentBuilder {
     String? visitReason,
     String? notes,
   }) async {
+    //-----------------------------------------
+    // GUARD: reject invalid patient names before any Firestore work
+    //-----------------------------------------
+    if (!PatientIdentityValidator.isValidName(patientName)) {
+      throw ArgumentError('INVALID_PATIENT_NAME');
+    }
+
     //-----------------------------------------
     // 🔥 FETCH SCHEDULE (SOURCE OF TRUTH)
     //-----------------------------------------

@@ -343,6 +343,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:trustydr/core/utils/patient_identity_validator.dart';
 import 'package:trustydr/data/services/appointment_builder.dart';
 import 'package:trustydr/services/database_service.dart';
 
@@ -462,7 +463,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         actions: [
           ElevatedButton(
             onPressed: () {
-              if (ctrl.text.trim().isNotEmpty) {
+              if (PatientIdentityValidator.isValidName(ctrl.text)) {
                 Navigator.pop(context, ctrl.text.trim());
               }
             },
@@ -494,23 +495,34 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
     if (!mounted) return;
 
-    if (_forSelf && (profileName == null || profileName.trim().isEmpty)) {
-      final enteredName = await _askForNameOnce(context);
-      if (enteredName == null) return;
-
-      profileName = enteredName;
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'name': enteredName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+    // Validate main user identity — required for both self and family bookings
+    // (booker/responsible contact must have a real name, not a placeholder)
+    if (!PatientIdentityValidator.isValidName(profileName)) {
+      if (_forSelf) {
+        final enteredName = await _askForNameOnce(context);
+        if (enteredName == null || !mounted) return;
+        profileName = enteredName;
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set({
+          'name': enteredName,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        if (!mounted) return;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('full_name_required'.tr())),
+        );
+        return;
+      }
     }
 
     //---------------------------------------
-    // Validate dependent
+    // Validate family patient name + relationship
     //---------------------------------------
     if (!_forSelf &&
-        (_patientNameCtrl.text.trim().isEmpty ||
+        (!PatientIdentityValidator.isValidName(_patientNameCtrl.text) ||
             _relationshipCtrl.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('patient_info_required'.tr())),
@@ -518,15 +530,17 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
       return;
     }
 
+    // Resolve phone from already-fetched user snapshot; fallback to Auth phone
+    final rawPhone = (userSnap.data()?['phoneNumber'] as String?)?.trim();
+    final resolvedPhone =
+        (rawPhone != null && rawPhone.isNotEmpty) ? rawPhone : user.phoneNumber;
+
     setState(() => _submitting = true);
 
     try {
       //---------------------------------------
       // 🔥 BUILD APPOINTMENT (ONLY WAY)
       //---------------------------------------
-// 🔥 HARD GUARD — profileName can NEVER be null past this point
-      profileName ??= user.displayName ?? 'Patient';
-
       final slotId = await AppointmentBuilder.create(
         scheduleId: widget.scheduleId,
 
@@ -537,7 +551,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         patientId: user.uid,
         patientName: _forSelf ? profileName! : _patientNameCtrl.text.trim(),
 
-        phone: null, // add later when patient model finalized
+        phone: resolvedPhone,
         relationship: _forSelf ? null : _relationshipCtrl.text.trim(),
 
         slotStartAt: widget.slotStartAt,
@@ -545,7 +559,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         source: "patient_app",
         bookedByUserId: user.uid,
         bookedByRole: "patient",
-        bookedByName: profileName,
+        bookedByName: profileName!,
 
         visitReason: _visitReason,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
