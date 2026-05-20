@@ -502,10 +502,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         final enteredName = await _askForNameOnce(context);
         if (enteredName == null || !mounted) return;
         profileName = enteredName;
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .set({
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'name': enteredName,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -543,24 +540,18 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
       //---------------------------------------
       final slotId = await AppointmentBuilder.create(
         scheduleId: widget.scheduleId,
-
         doctorId: widget.doctorId,
         doctorName: widget.doctorName,
         doctorImage: widget.doctorImage,
-
         patientId: user.uid,
         patientName: _forSelf ? profileName! : _patientNameCtrl.text.trim(),
-
         phone: resolvedPhone,
         relationship: _forSelf ? null : _relationshipCtrl.text.trim(),
-
         slotStartAt: widget.slotStartAt,
-
         source: "patient_app",
         bookedByUserId: user.uid,
         bookedByRole: "patient",
         bookedByName: profileName!,
-
         visitReason: _visitReason,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
