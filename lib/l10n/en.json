@@ -70,6 +70,7 @@
   "full_name": "Full Name",
   "enter_full_name": "Enter your full name",
   "full_name_required": "Please enter your name",
+  "profile_name_required_for_family": "Please complete your profile name before booking for family members.",
 
   "email_address": "Email Address",
   "email_required": "Enter your email",

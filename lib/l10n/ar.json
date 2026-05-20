@@ -81,6 +81,7 @@
   "full_name": "الاسم الكامل",
   "enter_full_name": "أدخل اسمك الكامل",
   "full_name_required": "يرجى إدخال الاسم",
+  "profile_name_required_for_family": "يرجى إكمال اسمك الكامل قبل حجز موعد لأحد أفراد العائلة",
 
   "email_address": "البريد الإلكتروني",
   "email_required": "يرجى إدخال البريد الإلكتروني",

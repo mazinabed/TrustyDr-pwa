@@ -512,7 +512,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         if (!mounted) return;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('full_name_required'.tr())),
+          SnackBar(content: Text('profile_name_required_for_family'.tr())),
         );
         return;
       }
