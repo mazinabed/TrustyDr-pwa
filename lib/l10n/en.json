@@ -455,5 +455,17 @@
   "review.submit": "Submit Review",
   "review.submit_failed": "Failed to submit review. Please try again.",
   "review.already_submitted": "You have already reviewed this appointment.",
-  "review.submit_success": "Review submitted successfully."
+  "review.submit_success": "Review submitted successfully.",
+
+  "health_awareness.title": "Health Tip",
+  "health_awareness.today_tip": "Today's Tip",
+  "health_awareness.source": "General Health",
+  "health_awareness.disclaimer": "General health information only. Consult your doctor for personal medical advice.",
+  "health_awareness.tip_1": "Drink at least 8 glasses of water daily to stay hydrated and support your body's natural functions.",
+  "health_awareness.tip_2": "Adults need 7 to 9 hours of sleep each night for optimal health and energy recovery.",
+  "health_awareness.tip_3": "A 30-minute walk each day can improve your heart health and boost your overall mood.",
+  "health_awareness.tip_4": "Eating 5 portions of fruits and vegetables daily helps your body fight illness and stay strong.",
+  "health_awareness.tip_5": "Washing your hands thoroughly with soap is one of the most effective ways to prevent common infections.",
+  "health_awareness.tip_6": "Regular health check-ups help detect problems early, when they are easiest to address.",
+  "health_awareness.tip_7": "Taking short breaks during your day and practicing slow, deep breathing can help reduce stress."
 }
