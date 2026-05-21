@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Returns true when the center has at least one valid date window open.
 /// Mirrors centerAccessProvider date-only logic from the doctor portal.
@@ -209,6 +210,19 @@ class _DoctorProfileView extends StatelessWidget {
     final canBook = doctorData['canBook'] == true;
     final canCall = doctorData['canCall'] == true;
 
+    final showSocialLinks = doctorData['showSocialLinks'] == true;
+    final _rawSocial = doctorData['socialLinks'];
+    final Map<String, String> socialLinks =
+        (showSocialLinks && _rawSocial is Map)
+            ? Map<String, String>.fromEntries(
+                ['instagram', 'facebook', 'tiktok', 'youtube', 'website']
+                    .where((k) =>
+                        _rawSocial[k] is String &&
+                        (_rawSocial[k] as String).trim().isNotEmpty)
+                    .map((k) => MapEntry(k, (_rawSocial[k] as String).trim())),
+              )
+            : {};
+
     final rating = (doctorData['ratingAverage'] is num)
         ? (doctorData['ratingAverage'] as num).toDouble()
         : 0.0;
@@ -378,6 +392,51 @@ class _DoctorProfileView extends StatelessWidget {
                   onTap: () => launchUrl(Uri.parse('mailto:$email')),
                 ),
             ],
+          ),
+        ),
+      );
+    }
+
+    SliverToBoxAdapter _buildSocialLinks(Map<String, String> links) {
+      if (links.isEmpty) {
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      }
+
+      Widget _socialIcon(IconData icon, String url, Color color) {
+        final uri = Uri.tryParse(url);
+        if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+          return const SizedBox.shrink();
+        }
+        return IconButton(
+          icon: FaIcon(icon, color: color, size: 22),
+          onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+        );
+      }
+
+      final icons = <Widget>[
+        if (links['instagram'] != null)
+          _socialIcon(FontAwesomeIcons.instagram, links['instagram']!,
+              const Color(0xFFE1306C)),
+        if (links['facebook'] != null)
+          _socialIcon(FontAwesomeIcons.facebook, links['facebook']!,
+              const Color(0xFF1877F2)),
+        if (links['tiktok'] != null)
+          _socialIcon(
+              FontAwesomeIcons.tiktok, links['tiktok']!, Colors.black87),
+        if (links['youtube'] != null)
+          _socialIcon(FontAwesomeIcons.youtube, links['youtube']!,
+              const Color(0xFFFF0000)),
+        if (links['website'] != null)
+          _socialIcon(FontAwesomeIcons.globe, links['website']!,
+              PatientAppColors.brandTeal),
+      ];
+
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: icons,
           ),
         ),
       );
@@ -854,6 +913,7 @@ class _DoctorProfileView extends StatelessWidget {
       slivers: [
         _buildHeader(context, name, specialtyShown, rating, reviews, imageUrl),
         _buildActions(context, phone, email, canCall),
+        _buildSocialLinks(socialLinks),
         if (canBook && isVerified && hasSchedule)
           _buildBookingCard(
             context,
