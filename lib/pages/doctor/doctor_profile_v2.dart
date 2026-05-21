@@ -339,8 +339,8 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    Widget _action({
-      required IconData icon,
+    Widget _actionButton({
+      required Widget iconWidget,
       required String label,
       required Color color,
       VoidCallback? onTap,
@@ -348,6 +348,7 @@ class _DoctorProfileView extends StatelessWidget {
       return InkWell(
         onTap: onTap,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(14),
@@ -355,7 +356,7 @@ class _DoctorProfileView extends StatelessWidget {
                 color: color.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color),
+              child: iconWidget,
             ),
             const SizedBox(height: 6),
             Text(label, style: const TextStyle(fontSize: 13)),
@@ -364,79 +365,67 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildActions(
-        BuildContext context, String phone, String email, bool canCall) {
-      final showCall = canCall && phone.isNotEmpty;
-      final showEmail = email.isNotEmpty;
-      if (!showCall && !showEmail) {
-        return const SliverToBoxAdapter(child: SizedBox.shrink());
-      }
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              if (showCall)
-                _action(
-                  icon: Icons.call,
-                  label: 'call_now'.tr(),
-                  color: PatientAppColors.statusConfirmed,
-                  onTap: () => launchUrl(Uri.parse('tel:$phone')),
-                ),
-              if (showEmail)
-                _action(
-                  icon: Icons.email_outlined,
-                  label: 'email_address'.tr(),
-                  color: PatientAppColors.brandTeal,
-                  onTap: () => launchUrl(Uri.parse('mailto:$email')),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
+    SliverToBoxAdapter _buildAllActions(BuildContext context, String phone,
+        String email, bool canCall, Map<String, String> socialLinks) {
+      final items = <Widget>[];
 
-    SliverToBoxAdapter _buildSocialLinks(Map<String, String> links) {
-      if (links.isEmpty) {
-        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      if (canCall && phone.isNotEmpty) {
+        items.add(_actionButton(
+          iconWidget: Icon(Icons.call, color: PatientAppColors.statusConfirmed),
+          label: 'call_now'.tr(),
+          color: PatientAppColors.statusConfirmed,
+          onTap: () => launchUrl(Uri.parse('tel:$phone')),
+        ));
+      }
+      if (email.isNotEmpty) {
+        items.add(_actionButton(
+          iconWidget:
+              Icon(Icons.email_outlined, color: PatientAppColors.brandTeal),
+          label: 'email_address'.tr(),
+          color: PatientAppColors.brandTeal,
+          onTap: () => launchUrl(Uri.parse('mailto:$email')),
+        ));
       }
 
-      Widget _socialIcon(IconData icon, String url, Color color) {
+      void addSocial(
+          String key, IconData faIcon, String labelKey, Color color) {
+        final url = socialLinks[key];
+        if (url == null) return;
         final uri = Uri.tryParse(url);
         if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-          return const SizedBox.shrink();
+          return;
         }
-        return IconButton(
-          icon: FaIcon(icon, color: color, size: 22),
-          onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
-        );
+        items.add(_actionButton(
+          iconWidget: FaIcon(faIcon, color: color, size: 24),
+          label: labelKey.tr(),
+          color: color,
+          onTap: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+        ));
       }
 
-      final icons = <Widget>[
-        if (links['instagram'] != null)
-          _socialIcon(FontAwesomeIcons.instagram, links['instagram']!,
-              const Color(0xFFE1306C)),
-        if (links['facebook'] != null)
-          _socialIcon(FontAwesomeIcons.facebook, links['facebook']!,
-              const Color(0xFF1877F2)),
-        if (links['tiktok'] != null)
-          _socialIcon(
-              FontAwesomeIcons.tiktok, links['tiktok']!, Colors.black87),
-        if (links['youtube'] != null)
-          _socialIcon(FontAwesomeIcons.youtube, links['youtube']!,
-              const Color(0xFFFF0000)),
-        if (links['website'] != null)
-          _socialIcon(FontAwesomeIcons.globe, links['website']!,
-              PatientAppColors.brandTeal),
-      ];
+      addSocial('instagram', FontAwesomeIcons.instagram, 'social_instagram',
+          const Color(0xFFE1306C));
+      addSocial('facebook', FontAwesomeIcons.facebook, 'social_facebook',
+          const Color(0xFF1877F2));
+      addSocial(
+          'tiktok', FontAwesomeIcons.tiktok, 'social_tiktok', Colors.black87);
+      addSocial('youtube', FontAwesomeIcons.youtube, 'social_youtube',
+          const Color(0xFFFF0000));
+      addSocial('website', FontAwesomeIcons.globe, 'social_website',
+          PatientAppColors.brandTeal);
+
+      if (items.isEmpty) {
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      }
 
       return SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: icons,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 12,
+            children: items,
           ),
         ),
       );
@@ -912,8 +901,7 @@ class _DoctorProfileView extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         _buildHeader(context, name, specialtyShown, rating, reviews, imageUrl),
-        _buildActions(context, phone, email, canCall),
-        _buildSocialLinks(socialLinks),
+        _buildAllActions(context, phone, email, canCall, socialLinks),
         if (canBook && isVerified && hasSchedule)
           _buildBookingCard(
             context,
