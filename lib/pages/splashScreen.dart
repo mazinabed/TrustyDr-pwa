@@ -341,11 +341,9 @@ import 'dart:async'; // 👈 Add this for PWA refresh
 import 'package:trustydr/utils/web_location.dart';
 
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
-import 'package:trustydr/firebase_options.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/pages/public_doctor_profile_page.dart';
 import 'package:trustydr/services/database_service.dart';
@@ -416,12 +414,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _start() async {
     try {
-      // 1️⃣ Firebase init (required)
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 8));
-
-      // 2️⃣ DatabaseService init (required for auth + consent + profile)
+      // Firebase is initialized in main() before runApp — see main.dart
+      // DatabaseService init (required for auth + consent + profile)
       await DatabaseService.instance
           .initialize()
           .timeout(const Duration(seconds: 5));

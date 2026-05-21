@@ -242,9 +242,11 @@ import 'package:trustydr/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter/services.dart';
 
+import 'firebase_options.dart';
 import 'pages/splashScreen.dart';
 import 'utils/fallback_localizations.dart';
 
@@ -253,6 +255,11 @@ Future<void> main() async {
 
   // ✅ Localization init is OK (lightweight)
   await EasyLocalization.ensureInitialized();
+
+  // ✅ Firebase is the single source of truth — initialized here before runApp
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
