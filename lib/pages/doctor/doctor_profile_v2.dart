@@ -201,11 +201,13 @@ class _DoctorProfileView extends StatelessWidget {
             : specialtyEn;
 
     final phone = (doctorData['phone'] ?? '').toString();
+    final email = (doctorData['email'] ?? '').toString();
     final languages = List<String>.from(doctorData['languages'] ?? []);
 
     final isVerified =
         doctorData['verified'] == true || doctorData['isVerified'] == true;
     final canBook = doctorData['canBook'] == true;
+    final canCall = doctorData['canCall'] == true;
 
     final rating = (doctorData['ratingAverage'] is num)
         ? (doctorData['ratingAverage'] as num).toDouble()
@@ -348,21 +350,33 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildActions(BuildContext context, String phone) {
+    SliverToBoxAdapter _buildActions(
+        BuildContext context, String phone, String email, bool canCall) {
+      final showCall = canCall && phone.isNotEmpty;
+      final showEmail = email.isNotEmpty;
+      if (!showCall && !showEmail) {
+        return const SliverToBoxAdapter(child: SizedBox.shrink());
+      }
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _action(
-                icon: Icons.call,
-                label: 'call_now'.tr(),
-                color: PatientAppColors.statusConfirmed,
-                onTap: phone.isNotEmpty
-                    ? () => launchUrl(Uri.parse('tel:$phone'))
-                    : null,
-              ),
+              if (showCall)
+                _action(
+                  icon: Icons.call,
+                  label: 'call_now'.tr(),
+                  color: PatientAppColors.statusConfirmed,
+                  onTap: () => launchUrl(Uri.parse('tel:$phone')),
+                ),
+              if (showEmail)
+                _action(
+                  icon: Icons.email_outlined,
+                  label: 'email_address'.tr(),
+                  color: PatientAppColors.brandTeal,
+                  onTap: () => launchUrl(Uri.parse('mailto:$email')),
+                ),
             ],
           ),
         ),
@@ -839,7 +853,7 @@ class _DoctorProfileView extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         _buildHeader(context, name, specialtyShown, rating, reviews, imageUrl),
-        _buildActions(context, phone),
+        _buildActions(context, phone, email, canCall),
         if (canBook && isVerified && hasSchedule)
           _buildBookingCard(
             context,
