@@ -246,6 +246,8 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter/services.dart';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
+
 import 'firebase_options.dart';
 import 'pages/splashScreen.dart';
 import 'utils/fallback_localizations.dart';
@@ -351,6 +353,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: const SplashScreen(),
     );
   }
