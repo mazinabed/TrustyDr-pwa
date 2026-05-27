@@ -51,7 +51,7 @@ class DoctorProfileV2 extends StatelessWidget {
 
           final doctorData = doctorSnap.data!.data();
           if (doctorData == null) {
-            return Center(child: Text('doctor_not_found'.tr()));
+            return const _DoctorNotFoundView();
           }
 
           return _DoctorProfileBody(
@@ -930,6 +930,65 @@ class _DoctorProfileView extends StatelessWidget {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
       ],
+    );
+  }
+}
+
+class _DoctorNotFoundView extends StatelessWidget {
+  const _DoctorNotFoundView();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: BackButton(color: Colors.grey[700]),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person_off, size: 72, color: Colors.grey[350]),
+                    const SizedBox(height: 24),
+                    Text(
+                      'doctor_not_found'.tr(),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    OutlinedButton(
+                      onPressed: () => Navigator.maybePop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PatientAppColors.brandTeal,
+                        side:
+                            const BorderSide(color: PatientAppColors.brandTeal),
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text('go_back'.tr()),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
