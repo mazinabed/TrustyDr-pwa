@@ -643,14 +643,20 @@ class _OTPScreenState extends State<OTPScreen> {
       return;
     }
 
-    bool needsConsent = false;
+    final bool needsConsent;
 
     try {
       needsConsent = await DatabaseService.instance
           .needsLegalAcceptanceFor(user)
           .timeout(const Duration(seconds: 8));
     } catch (_) {
-      needsConsent = false;
+      await _auth.signOut();
+      _completed = false;
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Fluttertoast.showToast(msg: 'auth_setup_failed'.tr());
+      }
+      return;
     }
 
     if (!mounted) return;

@@ -20,6 +20,7 @@
   "login_privacy_note": "نستخدم تسجيل الدخول فقط لتأمين حسابك. لا نستخدم معلوماتك للإعلانات.",
   "auth_cancelled": "تم إلغاء تسجيل الدخول.",
   "auth_failed_try_again": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+  "auth_setup_failed": "تعذّر إتمام تسجيل الدخول. يرجى المحاولة مرة أخرى.",
   "auth_account_exists_use_other_method": "هذا الحساب مسجل بطريقة دخول أخرى.",
   "auth_apple_unavailable": "تسجيل الدخول عبر Apple غير متاح حالياً.",
   "minutes_short": "{} دقيقة",

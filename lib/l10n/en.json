@@ -13,6 +13,7 @@
   "login_privacy_note": "We use sign-in only to secure your account. We do not use your information for advertising.",
   "auth_cancelled": "Sign in was cancelled.",
   "auth_failed_try_again": "Sign in failed. Please try again.",
+  "auth_setup_failed": "Unable to complete sign-in. Please try again.",
   "auth_account_exists_use_other_method": "This account already exists with another sign-in method.",
   "auth_apple_unavailable": "Apple Sign-In is currently unavailable.",
   "doctor_prefix_name": "Dr. {}",

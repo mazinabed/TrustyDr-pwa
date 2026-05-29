@@ -731,6 +731,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 import 'package:trustydr/pages/bottom_bar.dart';
@@ -954,7 +955,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       _navigateAfterLogin(needsConsent);
     } catch (_) {
-      Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
+      await FirebaseAuth.instance.signOut();
+      if (mounted) Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
