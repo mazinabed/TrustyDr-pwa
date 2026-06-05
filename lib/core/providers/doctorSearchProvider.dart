@@ -3,12 +3,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'app_location_provider.dart';
 
+// Kurdish-specific Unicode chars absent from standard Arabic.
+// Any match → route to name_ku_lower; Arabic-range chars without them → name_ar_lower.
+String _nameSearchField(String q) {
+  const kurdish = {'ئ', 'ڕ', 'ڵ', 'ۆ', 'ێ', 'ە', 'گ', 'چ', 'پ', 'ژ', 'ڤ'};
+  for (final c in q.runes) {
+    if (kurdish.contains(String.fromCharCode(c))) return 'name_ku_lower';
+  }
+  for (final c in q.runes) {
+    if (c >= 0x0600 && c <= 0x06FF) return 'name_ar_lower';
+  }
+  return 'name_lower';
+}
+
 final doctorSearchProvider = FutureProvider.autoDispose
     .family<List<QueryDocumentSnapshot<Map<String, dynamic>>>, String>(
   (ref, query) async {
     final location = ref.watch(appLocationProvider);
 
-    // 🔒 HARD GUARDS
     if (location == null ||
         location.cityEn.isEmpty ||
         location.provinceKey.isEmpty ||
@@ -16,45 +28,20 @@ final doctorSearchProvider = FutureProvider.autoDispose
       return [];
     }
 
-    final q = query.toLowerCase().trim();
+    final q = query.trim().toLowerCase();
     final end = q + String.fromCharCode(0xF8FF);
+    final field = _nameSearchField(q);
 
-    final fs = FirebaseFirestore.instance;
-
-    // 🔍 search by name
-    final nameSnap = await fs
+    final snap = await FirebaseFirestore.instance
         .collection('public_doctors')
         .where('status', isEqualTo: 'active')
         .where('province_key', isEqualTo: location.provinceKey)
         .where('city_en', isEqualTo: location.cityEn)
-        .where('name_lower', isGreaterThanOrEqualTo: q)
-        .where('name_lower', isLessThan: end)
+        .where(field, isGreaterThanOrEqualTo: q)
+        .where(field, isLessThan: end)
         .limit(10)
         .get();
 
-    // 🔍 search by specialty
-    final specialtySnap = await fs
-        .collection('public_doctors')
-        .where('status', isEqualTo: 'active')
-        .where('province_key', isEqualTo: location.provinceKey)
-        .where('city_en', isEqualTo: location.cityEn)
-        .where('specialty_lower', isGreaterThanOrEqualTo: q)
-        .where('specialty_lower', isLessThan: end)
-        .limit(10)
-        .get();
-
-    // 🔗 merge & dedupe
-    final seen = <String>{};
-    final results = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-
-    for (final snap in [nameSnap, specialtySnap]) {
-      for (final doc in snap.docs) {
-        if (seen.add(doc.id)) {
-          results.add(doc);
-        }
-      }
-    }
-
-    return results;
+    return snap.docs;
   },
 );
