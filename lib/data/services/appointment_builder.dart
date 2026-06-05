@@ -260,6 +260,8 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/core/utils/patient_identity_validator.dart';
+import 'package:trustydr/models/patient_health_profile.dart';
+import 'package:trustydr/models/patient_health_snapshot.dart';
 
 class AppointmentBuilder {
   static final _fs = FirebaseFirestore.instance;
@@ -389,6 +391,29 @@ class AppointmentBuilder {
     final doctorNameKu = rawKu.isNotEmpty ? rawKu : doctorNameEn;
 
     //-----------------------------------------
+    // HEALTH SNAPSHOT (self-bookings only)
+    // relationship == null → self-booking: read profile and build snapshot.
+    // relationship != null → family/relative booking: always write null.
+    // Profile read failure is non-blocking — appointment proceeds without snapshot.
+    //-----------------------------------------
+    PatientHealthSnapshot? healthSnapshot;
+    if (relationship == null) {
+      try {
+        final healthDoc = await _fs
+            .collection('patient_health_profiles')
+            .doc(patientId)
+            .get();
+        if (healthDoc.exists && healthDoc.data() != null) {
+          final profile = PatientHealthProfile.fromFirestore(healthDoc.data()!);
+          healthSnapshot =
+              PatientHealthSnapshot.fromProfile(profile, slotStartAt);
+        }
+      } catch (_) {
+        // Non-blocking: snapshot stays null, booking continues.
+      }
+    }
+
+    //-----------------------------------------
 // 🔥 PREVENT DOUBLE BOOKING
 //-----------------------------------------
 
@@ -459,6 +484,14 @@ class AppointmentBuilder {
           'patientName': patientName,
           'phone': phone,
           'relationship': relationship,
+
+          //------------------------------------------------
+          // PATIENT HEALTH SNAPSHOT
+          // Self-bookings: embedded at booking time (may be null if no profile).
+          // Family/relative bookings: always null — account-holder health data
+          // must never be presented as the relative's health data to the doctor.
+          //------------------------------------------------
+          'patientHealthSnapshot': healthSnapshot?.toMap(),
 
           //------------------------------------------------
           // SLOT SNAPSHOT

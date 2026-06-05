@@ -1,4 +1,6 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/constant/constant.dart' hide blackColor;
+import 'package:trustydr/core/providers/health_profile_provider.dart';
 import 'package:trustydr/pages/contact_us_page.dart';
 import 'package:trustydr/pages/faq_page.dart';
 import 'package:trustydr/pages/help_support.dart';
@@ -371,6 +373,8 @@ class _ProfileState extends State<Profile> {
                                   ],
                                 ),
                                 const SizedBox(height: 16),
+                                _HealthInfoSectionCard(uid: user.uid),
+                                const SizedBox(height: 16),
                                 _sectionCard(
                                   title: tr('about_app'),
                                   items: [
@@ -648,4 +652,99 @@ class _ActionItem {
     required this.label,
     required this.onTap,
   });
+}
+
+class _HealthInfoSectionCard extends ConsumerWidget {
+  final String uid;
+  const _HealthInfoSectionCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(healthProfileProvider(uid));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('health.title'), style: blackHeadingTextStyle),
+          const SizedBox(height: 8),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: const HealthInformationPage(),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          width: 0.25, color: PatientAppColors.brandTeal),
+                      color: PatientAppColors.brandTeal.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.favorite_outline,
+                        size: 22, color: PatientAppColors.brandTeal),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tr('health.profile_card_subtitle'),
+                            style: blackNormalBoldTextStyle),
+                        const SizedBox(height: 2),
+                        profileAsync.when(
+                          data: (profile) => Text(
+                            profile != null
+                                ? tr('health.profile_card_filled')
+                                : tr('health.optional_note'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: profile != null
+                                  ? PatientAppColors.brandTeal
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                          loading: () => const SizedBox(
+                            height: 12,
+                            width: 80,
+                            child: LinearProgressIndicator(),
+                          ),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios,
+                      size: 14, color: Colors.black54),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
