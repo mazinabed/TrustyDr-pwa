@@ -135,8 +135,8 @@ class _DoctorProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _auth = FirebaseAuth.instance;
-    final user = _auth.currentUser;
+    final auth = FirebaseAuth.instance;
+    final user = auth.currentUser;
 
     final lang = context.locale.languageCode;
     final specialtyKey =
@@ -183,10 +183,11 @@ class _DoctorProfileView extends StatelessWidget {
           .toString();
     }
 
-    final exp =
-        (doctorData['yearsOfExperience'] ?? doctorData['experienceYears'])
-                ?.toString() ??
-            'N/A';
+    final rawExp =
+        doctorData['experienceYears'] ?? doctorData['yearsOfExperience'];
+    final exp = (rawExp is num && rawExp.toInt() > 0)
+        ? rawExp.toInt().toString()
+        : 'N/A';
 
     final specialtyLegacy = (doctorData['specialty'] ?? '').toString();
 
@@ -211,15 +212,15 @@ class _DoctorProfileView extends StatelessWidget {
     final canCall = doctorData['canCall'] == true;
 
     final showSocialLinks = doctorData['showSocialLinks'] == true;
-    final _rawSocial = doctorData['socialLinks'];
+    final rawSocial = doctorData['socialLinks'];
     final Map<String, String> socialLinks =
-        (showSocialLinks && _rawSocial is Map)
+        (showSocialLinks && rawSocial is Map)
             ? Map<String, String>.fromEntries(
                 ['instagram', 'facebook', 'tiktok', 'youtube', 'website']
                     .where((k) =>
-                        _rawSocial[k] is String &&
-                        (_rawSocial[k] as String).trim().isNotEmpty)
-                    .map((k) => MapEntry(k, (_rawSocial[k] as String).trim())),
+                        rawSocial[k] is String &&
+                        (rawSocial[k] as String).trim().isNotEmpty)
+                    .map((k) => MapEntry(k, (rawSocial[k] as String).trim())),
               )
             : {};
 
@@ -260,7 +261,7 @@ class _DoctorProfileView extends StatelessWidget {
     final locationLine =
         [cityLoc, provinceLoc].where((s) => s.isNotEmpty).join(', ');
 
-    SliverAppBar _buildHeader(
+    SliverAppBar buildHeader(
       BuildContext context,
       String name,
       String specialty,
@@ -339,7 +340,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    Widget _actionButton({
+    Widget actionButton({
       required Widget iconWidget,
       required String label,
       required Color color,
@@ -353,7 +354,7 @@ class _DoctorProfileView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: iconWidget,
@@ -365,12 +366,12 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildAllActions(BuildContext context, String phone,
+    SliverToBoxAdapter buildAllActions(BuildContext context, String phone,
         String email, bool canCall, Map<String, String> socialLinks) {
       final items = <Widget>[];
 
       if (canCall && phone.isNotEmpty) {
-        items.add(_actionButton(
+        items.add(actionButton(
           iconWidget: Icon(Icons.call, color: PatientAppColors.statusConfirmed),
           label: 'call_now'.tr(),
           color: PatientAppColors.statusConfirmed,
@@ -378,7 +379,7 @@ class _DoctorProfileView extends StatelessWidget {
         ));
       }
       if (email.isNotEmpty) {
-        items.add(_actionButton(
+        items.add(actionButton(
           iconWidget:
               Icon(Icons.email_outlined, color: PatientAppColors.brandTeal),
           label: 'email_address'.tr(),
@@ -395,7 +396,7 @@ class _DoctorProfileView extends StatelessWidget {
         if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
           return;
         }
-        items.add(_actionButton(
+        items.add(actionButton(
           iconWidget: FaIcon(faIcon, color: color, size: 24),
           label: labelKey.tr(),
           color: color,
@@ -431,7 +432,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    Widget _modernCard({
+    Widget modernCard({
       required String title,
       required Widget child,
       IconData? icon,
@@ -444,7 +445,7 @@ class _DoctorProfileView extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),
@@ -459,7 +460,7 @@ class _DoctorProfileView extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: PatientAppColors.brandTeal.withOpacity(.12),
+                      color: PatientAppColors.brandTeal.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child:
@@ -482,7 +483,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    Widget _info(String title, String value) {
+    Widget info(String title, String value) {
       if (value.trim().isEmpty) return const SizedBox.shrink();
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
@@ -496,7 +497,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildBookingCard(
+    SliverToBoxAdapter buildBookingCard(
       BuildContext context,
       User? user,
       String doctorName,
@@ -528,7 +529,7 @@ class _DoctorProfileView extends StatelessWidget {
           centers.isNotEmpty && operationalCenters.isEmpty;
 
       return SliverToBoxAdapter(
-        child: _modernCard(
+        child: modernCard(
           title: 'book_appointment'.tr(),
           icon: Icons.calendar_month,
           child: Column(
@@ -729,7 +730,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildCentersSection(
+    SliverToBoxAdapter buildCentersSection(
       BuildContext context,
       List<QueryDocumentSnapshot> centers,
       List<QueryDocumentSnapshot> schedules,
@@ -738,7 +739,7 @@ class _DoctorProfileView extends StatelessWidget {
       String exp,
     ) {
       return SliverToBoxAdapter(
-        child: _modernCard(
+        child: modernCard(
           title: 'available_at'.tr(),
           icon: Icons.local_hospital,
           child: Column(
@@ -821,8 +822,8 @@ class _DoctorProfileView extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color:
-                                  PatientAppColors.brandTeal.withOpacity(.12),
+                              color: PatientAppColors.brandTeal
+                                  .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.local_hospital,
@@ -858,7 +859,7 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    SliverToBoxAdapter _buildAboutSection(
+    SliverToBoxAdapter buildAboutSection(
       BuildContext context,
       String about,
       List<String> languages,
@@ -867,7 +868,7 @@ class _DoctorProfileView extends StatelessWidget {
       String locationLine,
     ) {
       return SliverToBoxAdapter(
-        child: _modernCard(
+        child: modernCard(
           title: 'about_doctor'.tr(),
           icon: Icons.person,
           child: Column(
@@ -878,20 +879,19 @@ class _DoctorProfileView extends StatelessWidget {
                 style: greyNormalTextStyle,
               ),
               const SizedBox(height: 16),
-              _info(
+              info(
                 'languages'.tr(),
                 languages.isEmpty
                     ? 'no_languages_listed'.tr()
                     : languages.join(', '),
               ),
-              _info(
-                'experience'.tr(),
-                exp == 'N/A'
-                    ? 'experience_not_available'.tr()
-                    : '$exp ${'years'.tr()}',
-              ),
-              _info('clinic'.tr(), clinicName),
-              _info('location'.tr(), locationLine),
+              if (exp != 'N/A')
+                info(
+                  'experience'.tr(),
+                  '$exp ${'years'.tr()}',
+                ),
+              info('clinic'.tr(), clinicName),
+              info('location'.tr(), locationLine),
             ],
           ),
         ),
@@ -900,10 +900,10 @@ class _DoctorProfileView extends StatelessWidget {
 
     return CustomScrollView(
       slivers: [
-        _buildHeader(context, name, specialtyShown, rating, reviews, imageUrl),
-        _buildAllActions(context, phone, email, canCall, socialLinks),
+        buildHeader(context, name, specialtyShown, rating, reviews, imageUrl),
+        buildAllActions(context, phone, email, canCall, socialLinks),
         if (canBook && isVerified && hasSchedule)
-          _buildBookingCard(
+          buildBookingCard(
             context,
             user,
             name,
@@ -917,12 +917,11 @@ class _DoctorProfileView extends StatelessWidget {
             centers,
           ),
         if (centers.isNotEmpty)
-          _buildCentersSection(
-              context, centers, schedules, name, imageUrl, exp),
-        _buildAboutSection(
+          buildCentersSection(context, centers, schedules, name, imageUrl, exp),
+        buildAboutSection(
             context, about, languages, exp, clinicName, locationLine),
         SliverToBoxAdapter(
-          child: _modernCard(
+          child: modernCard(
             title: 'reviews'.tr(),
             icon: Icons.star,
             child: DoctorReviewsSection(doctorId: doctorId),
