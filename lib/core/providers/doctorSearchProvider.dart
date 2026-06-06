@@ -2,35 +2,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'app_location_provider.dart';
-
-// Kurdish-specific Unicode chars absent from standard Arabic.
-// Any match → route to name_ku_lower; Arabic-range chars without them → name_ar_lower.
-String _nameSearchField(String q) {
-  const kurdish = {'ئ', 'ڕ', 'ڵ', 'ۆ', 'ێ', 'ە', 'گ', 'چ', 'پ', 'ژ', 'ڤ'};
-  for (final c in q.runes) {
-    if (kurdish.contains(String.fromCharCode(c))) return 'name_ku_lower';
-  }
-  for (final c in q.runes) {
-    if (c >= 0x0600 && c <= 0x06FF) return 'name_ar_lower';
-  }
-  return 'name_lower';
-}
+import '../utils/doctor_search_utils.dart';
 
 final doctorSearchProvider = FutureProvider.autoDispose
     .family<List<QueryDocumentSnapshot<Map<String, dynamic>>>, String>(
   (ref, query) async {
     final location = ref.watch(appLocationProvider);
 
+    final stripped = stripDoctorTitles(query);
+
     if (location == null ||
         location.cityEn.isEmpty ||
         location.provinceKey.isEmpty ||
-        query.trim().length < 3) {
+        stripped.trim().length < 3) {
       return [];
     }
 
-    final q = query.trim().toLowerCase();
+    final q = stripped.trim().toLowerCase();
     final end = q + String.fromCharCode(0xF8FF);
-    final field = _nameSearchField(q);
+    final field = nameSearchField(q);
 
     final snap = await FirebaseFirestore.instance
         .collection('public_doctors')

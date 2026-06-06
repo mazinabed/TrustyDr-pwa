@@ -611,7 +611,7 @@
 //                   borderRadius: BorderRadius.circular(16),
 //                   boxShadow: [
 //                     BoxShadow(
-//                       color: Colors.black.withOpacity(0.05),
+//                       color: Colors.black.withValues(alpha: 0.05),
 //                       blurRadius: 8,
 //                       offset: const Offset(0, 3),
 //                     )
@@ -1047,7 +1047,7 @@
 //           borderRadius: BorderRadius.circular(30),
 //           boxShadow: [
 //             BoxShadow(
-//               color: Colors.black.withOpacity(0.08),
+//               color: Colors.black.withValues(alpha: 0.08),
 //               blurRadius: 5,
 //               offset: const Offset(0, 3),
 //             )
@@ -1304,7 +1304,7 @@
 //                   borderRadius: BorderRadius.circular(16),
 //                   boxShadow: [
 //                     BoxShadow(
-//                       color: Colors.black.withOpacity(0.05),
+//                       color: Colors.black.withValues(alpha: 0.05),
 //                       blurRadius: 8,
 //                       offset: const Offset(0, 3),
 //                     )
@@ -1427,10 +1427,10 @@ import 'package:page_transition/page_transition.dart';
 
 import 'package:trustydr/core/providers/app_location_provider.dart';
 import 'package:trustydr/core/providers/doctor_streams_provider.dart';
-import 'package:trustydr/pages/screens.dart';
 import 'package:trustydr/pages/speciality/google_clinic_details_page.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
+import 'package:trustydr/core/utils/doctor_search_utils.dart';
 
 class SpecialityScreen extends ConsumerStatefulWidget {
   final bool showBack;
@@ -1510,48 +1510,11 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
               ),
             ],
           );
-          if (constraints.maxWidth >= 768)
+          if (constraints.maxWidth >= 768) {
             content = WebScaffoldContainer(child: content);
+          }
           return content;
         },
-      ),
-    );
-  }
-
-  // --------------------------------------------------
-  // Header
-  // --------------------------------------------------
-  Widget _header() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 55, left: 20, right: 20, bottom: 25),
-      decoration: const BoxDecoration(
-        gradient: PatientAppColors.brandGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
-      ),
-      child: Row(
-        children: [
-          if (widget.showBack)
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(
-                Icons.arrow_back_ios,
-                color: Colors.white,
-                size: 22,
-              ),
-            ),
-          if (widget.showBack) const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              tr('specialties.title'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1569,7 +1532,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 5,
               offset: const Offset(0, 3),
             )
@@ -1643,7 +1606,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
     return GestureDetector(
       onTap: () {
         // 🔒 UX guard only (NOT for Firestore)
-        if (location == null || location.cityEn == null) return;
+        if (location == null) return;
 
         setState(() => _selectedSpecialty = value);
       },
@@ -1709,11 +1672,25 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
 
           // 2️⃣ Search filter
           if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase();
+            final stripped = stripDoctorTitles(_searchQuery);
+            if (stripped.length < 3) return true;
+            final q = stripped.toLowerCase();
 
-            return (d['name'] ?? '').toString().toLowerCase().contains(q) ||
-                (d['specialty'] ?? '').toString().toLowerCase().contains(q) ||
-                (d['clinicName'] ?? '').toString().toLowerCase().contains(q);
+            return (d['name_en'] ?? d['name'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .contains(q) ||
+                (d['name_ar'] ?? '').toString().toLowerCase().contains(q) ||
+                (d['name_ku'] ?? '').toString().toLowerCase().contains(q) ||
+                (d['clinicName_en'] ?? d['clinicName'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .contains(q) ||
+                (d['clinicName_ar'] ?? '')
+                    .toString()
+                    .toLowerCase()
+                    .contains(q) ||
+                (d['clinicName_ku'] ?? '').toString().toLowerCase().contains(q);
           }
 
           return true;
@@ -1819,7 +1796,7 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     )
@@ -1852,8 +1829,8 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                                   decoration: BoxDecoration(
                                     color: isVerified
                                         ? PatientAppColors.brandBlue
-                                            .withOpacity(0.15)
-                                        : Colors.orange.withOpacity(0.15),
+                                            .withValues(alpha: 0.15)
+                                        : Colors.orange.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
