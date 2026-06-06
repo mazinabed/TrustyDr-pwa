@@ -1750,9 +1750,10 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                     : specialtyEn;
 
 // ---------- EXPERIENCE ----------
-            final exp =
-                (data['yearsOfExperience'] ?? data['experienceYears'] ?? 0)
-                    .toString();
+            final rawExp = data['experienceYears'] ?? data['yearsOfExperience'];
+            final exp = (rawExp is num && rawExp.toInt() > 0)
+                ? rawExp.toInt().toString()
+                : '';
 
             final rating = (data['ratingAverage'] is num)
                 ? (data['ratingAverage'] as num).toDouble()
@@ -1857,13 +1858,14 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              "$exp ${tr('years_experience')}",
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 12,
+                            if (exp.isNotEmpty)
+                              Text(
+                                "$exp ${tr('years_experience')}",
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
                             if (clinic.isNotEmpty)
                               Text(
                                 clinic,
