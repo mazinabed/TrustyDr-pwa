@@ -735,6 +735,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 import 'package:trustydr/pages/bottom_bar.dart';
+import 'package:trustydr/widgets/cross_portal_doctor_card.dart';
 
 // 🔴 IMPORTANT: adjust this import path to where your auth_controller.dart is
 
@@ -883,6 +884,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Text('login_continue_google'.tr()),
             ),
 
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            const SizedBox(height: 14),
+            const CrossPortalDoctorCard(),
             const SizedBox(height: 16),
 
             Text(

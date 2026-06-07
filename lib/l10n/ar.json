@@ -468,5 +468,8 @@
   "health.saved": "تم الحفظ",
   "health.no_info_saved": "لم يتم إضافة أي معلومات صحية بعد.",
   "health.edit_button": "تعديل المعلومات الصحية",
-  "health.cancel": "إلغاء"
+  "health.cancel": "إلغاء",
+  "cross_portal_doctor_title": "هل أنت طبيب أو تمثل عيادة؟",
+  "cross_portal_doctor_body": "إذا كنت ترغب بإدارة المواعيد والحجوزات، استخدم بوابة الأطباء.",
+  "cross_portal_doctor_cta": "الانتقال إلى بوابة الأطباء"
 }

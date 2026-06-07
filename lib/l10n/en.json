@@ -467,5 +467,8 @@
   "health.saved": "Saved",
   "health.no_info_saved": "No health information added yet.",
   "health.edit_button": "Edit health information",
-  "health.cancel": "Cancel"
+  "health.cancel": "Cancel",
+  "cross_portal_doctor_title": "Are you a doctor or clinic?",
+  "cross_portal_doctor_body": "If you would like to manage appointments and bookings, use the Doctor Portal.",
+  "cross_portal_doctor_cta": "Go to Doctor Portal"
 }

@@ -8,6 +8,7 @@ import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:trustydr/pages/screens.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:trustydr/widgets/cross_portal_doctor_card.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -223,6 +224,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Text('registration_have_account'.tr(),
                     style: TextStyle(color: PatientAppColors.brandTeal)),
               ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              const SizedBox(height: 14),
+              const CrossPortalDoctorCard(),
+              const SizedBox(height: 8),
             ],
           ),
         ),

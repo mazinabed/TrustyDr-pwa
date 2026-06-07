@@ -467,5 +467,8 @@
   "health.saved": "پاشکەوتکرا",
   "health.no_info_saved": "هیچ زانیارییەکی تەندروستی زیاد نەکراوە.",
   "health.edit_button": "دەستکاری زانیاری تەندروستی",
-  "health.cancel": "پاشگەزبوونەوە"
+  "health.cancel": "پاشگەزبوونەوە",
+  "cross_portal_doctor_title": "ئایا پزیشکیت یان نوێنەری کلینیکیت؟",
+  "cross_portal_doctor_body": "ئەگەر دەتەوێت کاتژمێرەکان و حجزەکان بەڕێوەبەریت، دەرگای پزیشکەکان بەکاربێنە.",
+  "cross_portal_doctor_cta": "بڕۆ بۆ دەرگای پزیشکەکان"
 }
