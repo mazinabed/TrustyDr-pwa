@@ -1574,7 +1574,14 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
             ),
           ];
 
-          for (final doc in snap.docs) {
+          final lang = context.locale.languageCode;
+          final sortedDocs = List.of(snap.docs)
+            ..sort(
+              (a, b) => _specialtySortKey(a.data(), lang, a.id)
+                  .compareTo(_specialtySortKey(b.data(), lang, b.id)),
+            );
+
+          for (final doc in sortedDocs) {
             final data = doc.data();
             items.add(
               _specialtyItem(
@@ -1647,6 +1654,34 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
       return langMap!['ku'];
     }
     return (data['name_en'] ?? '').toString();
+  }
+
+  // Returns a lowercase sort key for a specialty doc using the fallback chain:
+  // current-locale value → Arabic → English → document id
+  String _specialtySortKey(
+    Map<String, dynamic> data,
+    String lang,
+    String docId,
+  ) {
+    final langMap = (data['lang'] ?? {}) as Map<String, dynamic>?;
+
+    String? current;
+    if (lang == 'ar') {
+      current = langMap?['ar']?.toString();
+    } else if (lang == 'ku') {
+      current = langMap?['ku']?.toString();
+    } else {
+      current = data['name_en']?.toString();
+    }
+    if (current != null && current.isNotEmpty) return current.toLowerCase();
+
+    final ar = langMap?['ar']?.toString();
+    if (ar != null && ar.isNotEmpty) return ar.toLowerCase();
+
+    final en = data['name_en']?.toString();
+    if (en != null && en.isNotEmpty) return en.toLowerCase();
+
+    return docId.toLowerCase();
   }
 
   // --------------------------------------------------
