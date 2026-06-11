@@ -41,10 +41,12 @@ class _NotificationsState extends ConsumerState<Notifications> {
     if (!kIsWeb) return;
     final status =
         await PushNotificationService.instance.currentPermissionStatus();
+    // Show the banner whenever permission is unresolved (default).
+    // Do NOT gate on hasDeclined() here — that flag only suppresses the
+    // post-booking auto-popup. The notifications page banner is the user's
+    // manual opt-in path and must always be available.
     if (status == AuthorizationStatus.authorized) return;
     if (status == AuthorizationStatus.denied) return;
-    final declined = await PushNotificationService.instance.hasDeclined();
-    if (declined) return;
     if (mounted) setState(() => _showPushBanner = true);
   }
 
