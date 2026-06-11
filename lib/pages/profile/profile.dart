@@ -9,6 +9,7 @@ import 'package:trustydr/pages/privacy_policy_page.dart';
 import 'package:trustydr/pages/screens.dart';
 import 'package:trustydr/pages/terms_conditions_page.dart';
 import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/services/push_notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -106,6 +107,11 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _logout() async {
+    // Delete FCM token before signing out so stale tokens don't accumulate.
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await PushNotificationService.instance.deleteToken(user.uid);
+    }
     await _db.signOut();
 
     if (!mounted) return;

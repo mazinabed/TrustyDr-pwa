@@ -339,6 +339,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
@@ -346,6 +348,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:trustydr/core/utils/patient_identity_validator.dart';
 import 'package:trustydr/data/services/appointment_builder.dart';
 import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/services/push_notification_service.dart';
+import 'package:trustydr/widgets/push_permission_dialog.dart';
 
 class ConfirmBookingModal extends StatefulWidget {
   final String specialtyKey;
@@ -558,6 +562,11 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
       if (!mounted) return;
 
+      // Offer push permission after a successful booking — only if not already
+      // granted and the user hasn't previously dismissed our dialog.
+      await _maybeOfferPush();
+      if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -572,6 +581,37 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  // ===========================================================
+  // PUSH PERMISSION OFFER (post-booking, guarded)
+  // ===========================================================
+  Future<void> _maybeOfferPush() async {
+    if (!kIsWeb) return;
+    final status =
+        await PushNotificationService.instance.currentPermissionStatus();
+    // Already granted or browser-denied — nothing to show.
+    if (status == AuthorizationStatus.authorized) return;
+    if (status == AuthorizationStatus.denied) return;
+    // User previously dismissed our dialog — respect that choice.
+    if (await PushNotificationService.instance.hasDeclined()) return;
+    if (!mounted) return;
+
+    final result = await showPushPermissionDialog(context);
+    if (!mounted) return;
+
+    if (result == true) {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await PushNotificationService.instance.requestPermissionAndStoreToken(
+          uid: user.uid,
+          language: context.locale.languageCode,
+        );
+      }
+    } else {
+      // "Not Now" — store dismissal so we don't prompt on the next booking.
+      await PushNotificationService.instance.markDeclined();
     }
   }
 

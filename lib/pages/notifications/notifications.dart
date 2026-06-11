@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,8 @@ import 'package:trustydr/core/providers/notifications_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/models/app_notification.dart';
 import 'package:trustydr/pages/patient/appointment_detail_page.dart';
+import 'package:trustydr/services/push_notification_service.dart';
+import 'package:trustydr/widgets/push_permission_dialog.dart';
 
 class Notifications extends ConsumerStatefulWidget {
   const Notifications({super.key});
@@ -23,6 +27,45 @@ class _NotificationsState extends ConsumerState<Notifications> {
   // Tracks the last-known unread count so we can detect new arrivals
   // and play a sound only when a previously unseen notification appears.
   int _lastUnreadCount = 0;
+
+  // Whether to show the push-enable banner. null = still loading.
+  bool _showPushBanner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPushBanner();
+  }
+
+  Future<void> _checkPushBanner() async {
+    if (!kIsWeb) return;
+    final status =
+        await PushNotificationService.instance.currentPermissionStatus();
+    if (status == AuthorizationStatus.authorized) return;
+    if (status == AuthorizationStatus.denied) return;
+    final declined = await PushNotificationService.instance.hasDeclined();
+    if (declined) return;
+    if (mounted) setState(() => _showPushBanner = true);
+  }
+
+  Future<void> _onBannerTap() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final result = await showPushPermissionDialog(context);
+    if (!mounted) return;
+    if (result == true) {
+      final lang = context.locale.languageCode;
+      final granted =
+          await PushNotificationService.instance.requestPermissionAndStoreToken(
+        uid: user.uid,
+        language: lang,
+      );
+      if (granted && mounted) setState(() => _showPushBanner = false);
+    } else {
+      await PushNotificationService.instance.markDeclined();
+      if (mounted) setState(() => _showPushBanner = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,30 +109,40 @@ class _NotificationsState extends ConsumerState<Notifications> {
         error: (_, __) => const SizedBox.shrink(),
         data: (notifications) {
           if (notifications.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    FontAwesomeIcons.bellSlash,
-                    color: Colors.grey,
-                    size: 60,
+            return Column(
+              children: [
+                if (_showPushBanner) _PushBanner(onTap: _onBannerTap),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          FontAwesomeIcons.bellSlash,
+                          color: Colors.grey,
+                          size: 60,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'home.no_notifications_title'.tr(),
+                          style: greyNormalTextStyle,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'home.no_notifications_title'.tr(),
-                    style: greyNormalTextStyle,
-                  ),
-                ],
-              ),
+                ),
+              ],
             );
           }
 
           return ListView.builder(
             physics: const BouncingScrollPhysics(),
-            itemCount: notifications.length,
+            itemCount: notifications.length + (_showPushBanner ? 1 : 0),
             itemBuilder: (context, index) {
-              final notif = notifications[index];
+              if (_showPushBanner && index == 0) {
+                return _PushBanner(onTap: _onBannerTap);
+              }
+              final notif = notifications[index - (_showPushBanner ? 1 : 0)];
               return _NotificationCard(
                 notif: notif,
                 lang: lang,
@@ -225,5 +278,63 @@ class _NotificationCard extends StatelessWidget {
 
   String _formatDate(DateTime dt, String lang) {
     return DateFormat.yMMMd(lang).format(dt);
+  }
+}
+
+class _PushBanner extends StatelessWidget {
+  const _PushBanner({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: PatientAppColors.brandIndigo.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: PatientAppColors.brandIndigo.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.notifications_active_outlined,
+              color: PatientAppColors.brandIndigo,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'push.banner_title'.tr(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: PatientAppColors.brandIndigo,
+                    ),
+                  ),
+                  Text(
+                    'push.banner_body'.tr(),
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: PatientAppColors.brandIndigo,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

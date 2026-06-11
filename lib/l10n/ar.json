@@ -337,6 +337,15 @@
     "no_notifications_title": "كل شيء على ما يرام",
     "no_notifications_message": "اعثر على طبيب موثوق اليوم واحجز موعدك بسهولة خلال دقائق."
   },
+  "push": {
+    "dialog_title": "ابقَ على اطلاع",
+    "dialog_body": "فعّل الإشعارات لتصلك تذكيرات مواعيدك من TrustyDr.",
+    "ios_note": "مستخدمو iPhone: ثبّت TrustyDr على الشاشة الرئيسية واستخدم iOS 16.4 أو أحدث لاستقبال الإشعارات.",
+    "enable": "تفعيل",
+    "not_now": "ليس الآن",
+    "banner_title": "فعّل تذكيرات المواعيد",
+    "banner_body": "اضغط لتصلك إشعارات قبل مواعيدك."
+  },
   "profile": {
     "fillAllFields": "يرجى تعبئة جميع الحقول",
     "updatedSuccessfully": "تم تحديث الملف الشخصي بنجاح",

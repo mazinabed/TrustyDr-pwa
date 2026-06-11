@@ -243,13 +243,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'firebase_options.dart';
 import 'pages/splashScreen.dart';
+import 'services/push_notification_service.dart';
 import 'utils/fallback_localizations.dart';
 
 Future<void> main() async {
@@ -262,6 +266,22 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // FCM: listen for token refresh while the app is running.
+  // Does NOT request permission — permission is prompted post-booking or via notifications banner.
+  if (kIsWeb) {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      await PushNotificationService.instance.onTokenRefreshed(
+        newToken,
+        uid: user.uid,
+      );
+    });
+
+    // Foreground push: the in-app Riverpod stream already updates the UI;
+    // no separate foreground handler is needed.
+  }
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.dumpErrorToConsole(details);
