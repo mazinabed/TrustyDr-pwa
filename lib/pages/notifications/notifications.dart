@@ -1,168 +1,229 @@
-import 'package:trustydr/constant/constant.dart';
-import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/providers/notifications_provider.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/models/app_notification.dart';
+import 'package:trustydr/pages/patient/appointment_detail_page.dart';
 
-class Notifications extends StatefulWidget {
+class Notifications extends ConsumerStatefulWidget {
   const Notifications({super.key});
 
   @override
-  _NotificationsState createState() => _NotificationsState();
+  ConsumerState<Notifications> createState() => _NotificationsState();
 }
 
-class _NotificationsState extends State<Notifications> {
-  final notificationList = [
-    {
-      'type': 'booking',
-      'title': 'Booking Success',
-      'desc': 'Your have successfully booked appointment. OrderId: OID1256789.'
-    },
-    {
-      'type': 'offer',
-      'title': '25% Off use code DoctorPro25',
-      'desc':
-          'Use code DoctorPro25 for your booking appointment between 20th sept to 25th october and get 25% off.'
-    },
-    {
-      'type': 'offer',
-      'title': 'Flat \$10 Off',
-      'desc': 'Use code Doctor10 and get \$10 off on your appointment booking.'
-    }
-  ];
+class _NotificationsState extends ConsumerState<Notifications> {
+  // Tracks the last-known unread count so we can detect new arrivals
+  // and play a sound only when a previously unseen notification appears.
+  int _lastUnreadCount = 0;
+
   @override
   Widget build(BuildContext context) {
+    final lang = context.locale.languageCode;
+
+    // Play sound + haptic when unread count rises while the page is open.
+    ref.listen<AsyncValue<List<AppNotification>>>(
+      notificationsProvider,
+      (_, next) {
+        final count =
+            next.whenData((l) => l.where((n) => !n.isRead).length).value ?? 0;
+        if (count > _lastUnreadCount) {
+          SystemSound.play(SystemSoundType.alert);
+          HapticFeedback.lightImpact();
+        }
+        _lastUnreadCount = count;
+      },
+    );
+
+    final notificationsAsync = ref.watch(notificationsProvider);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        titleSpacing: 0.0,
+        titleSpacing: 0,
         title: Text(
-          'Notifications',
+          'home.notifications_title'.tr(),
           style: appBarTitleTextStyle.copyWith(
             color: PatientAppColors.brandIndigo,
           ),
         ),
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: PatientAppColors.brandIndigo,
-          ),
+          icon: Icon(Icons.arrow_back, color: PatientAppColors.brandIndigo),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: (notificationList.isEmpty)
-          ? Center(
+      body: notificationsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (notifications) {
+          if (notifications.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
+                children: [
                   const Icon(
                     FontAwesomeIcons.bellSlash,
                     color: Colors.grey,
-                    size: 60.0,
+                    size: 60,
                   ),
-                  const SizedBox(
-                    height: 20.0,
-                  ),
+                  const SizedBox(height: 20),
                   Text(
-                    'No Notifications',
+                    'home.no_notifications_title'.tr(),
                     style: greyNormalTextStyle,
-                  )
+                  ),
                 ],
               ),
-            )
-          : ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              itemCount: notificationList.length,
-              itemBuilder: (context, index) {
-                final item = notificationList[index];
-                return Dismissible(
-                  key: Key('$item'),
-                  onDismissed: (direction) {
-                    setState(() {
-                      notificationList.removeAt(index);
-                    });
+            );
+          }
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("${item['title']} dismissed")));
-                  },
-                  background: Container(
-                      margin: (index != notificationList.length - 1)
-                          ? EdgeInsets.only(
-                              top: fixPadding * 2.0,
-                            )
-                          : EdgeInsets.only(
-                              top: fixPadding * 2.0,
-                              bottom: fixPadding * 2.0,
-                            ),
-                      color: Colors.red),
-                  child: Center(
-                    child: Container(
-                      margin: (index != notificationList.length - 1)
-                          ? EdgeInsets.only(
-                              top: fixPadding * 2.0,
-                              right: fixPadding * 2.0,
-                              left: fixPadding * 2.0,
-                            )
-                          : EdgeInsets.all(fixPadding * 2.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10.0),
-                        color: Colors.white,
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            blurRadius: 1.0,
-                            spreadRadius: 1.0,
-                            color: Colors.grey[300]!,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            alignment: Alignment.topLeft,
-                            padding: const EdgeInsets.all(10.0),
-                            child: CircleAvatar(
-                              radius: 40.0,
-                              child: Icon(
-                                (item['type'] == 'booking')
-                                    ? Icons.date_range
-                                    : Icons.local_offer,
-                                size: 30.0,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 8.0, right: 8.0, left: 8.0),
-                                  child: Text(
-                                    '${item['title']}',
-                                    style: blackNormalBoldTextStyle,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    '${item['desc']}',
-                                    style: greySmallTextStyle,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+          return ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notif = notifications[index];
+              return _NotificationCard(
+                notif: notif,
+                lang: lang,
+                onTap: () => _onNotifTap(context, notif),
+              );
+            },
+          );
+        },
+      ),
     );
+  }
+
+  Future<void> _markRead(AppNotification notif) async {
+    if (notif.isRead) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notif.id)
+        .update({'isRead': true});
+  }
+
+  void _onNotifTap(BuildContext context, AppNotification notif) {
+    _markRead(notif);
+    if (notif.type == 'appointment_reminder' &&
+        notif.appointmentId.isNotEmpty) {
+      Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: AppointmentDetailPage(appointmentId: notif.appointmentId),
+        ),
+      );
+    }
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({
+    required this.notif,
+    required this.lang,
+    required this.onTap,
+  });
+
+  final AppNotification notif;
+  final String lang;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.fromLTRB(
+          fixPadding * 2,
+          fixPadding * 2,
+          fixPadding * 2,
+          0,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: notif.isRead ? Colors.white : PatientAppColors.appBackground,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 1,
+              spreadRadius: 1,
+              color: Colors.grey[300]!,
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor:
+                    PatientAppColors.brandBlueAlt.withValues(alpha: 0.12),
+                child: Icon(
+                  Icons.calendar_today_outlined,
+                  size: 20,
+                  color: PatientAppColors.brandBlueAlt,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 10, 10, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notif.localizedTitle(lang),
+                            style: blackNormalBoldTextStyle,
+                          ),
+                        ),
+                        if (!notif.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: PatientAppColors.brandBlueAlt,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notif.localizedBody(lang),
+                      style: greySmallTextStyle,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _formatDate(notif.createdAt, lang),
+                      style: greySmallTextStyle.copyWith(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt, String lang) {
+    return DateFormat.yMMMd(lang).format(dt);
   }
 }

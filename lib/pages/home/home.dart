@@ -3116,6 +3116,8 @@ import 'package:trustydr/widgets/health_awareness_card.dart';
 import 'package:trustydr/widgets/daily_health_weather_card.dart';
 import 'package:trustydr/widgets/announcements_strip.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:trustydr/core/providers/notifications_provider.dart';
 
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
@@ -3424,6 +3426,15 @@ class _HomeState extends ConsumerState<Home>
 
   @override
   Widget build(BuildContext context) {
+    // Play alert sound + haptic when a new unread notification arrives
+    // while the home screen is in the foreground.
+    ref.listen<int>(unreadNotificationCountProvider, (prev, next) {
+      if (next > (prev ?? 0)) {
+        SystemSound.play(SystemSoundType.alert);
+        HapticFeedback.lightImpact();
+      }
+    });
+
     final provinceName = (_selectedProvinceKey == null || _provinceDocs.isEmpty)
         ? ''
         : (() {
@@ -3453,7 +3464,7 @@ class _HomeState extends ConsumerState<Home>
             const Icon(Icons.keyboard_arrow_down, color: Colors.white),
           ]),
         ),
-        actions: const [_LanguageSelector()],
+        actions: const [_NotificationBell(), _LanguageSelector()],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -3984,6 +3995,56 @@ class _LanguageSelector extends StatelessWidget {
             value: const Locale('ku', 'IQ'),
             child: const Text('کوردی')),
       ],
+    );
+  }
+}
+
+// Bell icon with unread-count badge in the home AppBar.
+// Navigates to the Notifications page on tap.
+class _NotificationBell extends ConsumerWidget {
+  const _NotificationBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(unreadNotificationCountProvider);
+
+    return IconButton(
+      tooltip: 'home.notifications_title'.tr(),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_outlined, color: Colors.white),
+          if (unread > 0)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  unread > 9 ? '9+' : '$unread',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
+      onPressed: () => Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: const Notifications(),
+        ),
+      ),
     );
   }
 }

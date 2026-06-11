@@ -736,11 +736,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/doctor/doctor_time_slot.dart';
 
-class AppointmentDetailPage extends StatelessWidget {
+class AppointmentDetailPage extends StatefulWidget {
   final String appointmentId;
   const AppointmentDetailPage({super.key, required this.appointmentId});
+
+  @override
+  State<AppointmentDetailPage> createState() => _AppointmentDetailPageState();
+}
+
+class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
+  final _fs = FirebaseFirestore.instance;
+
   String localizedField(
     Map<String, dynamic> data,
     String base,
@@ -763,10 +773,9 @@ class AppointmentDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fs = FirebaseFirestore.instance;
-
     return StreamBuilder<DocumentSnapshot>(
-      stream: fs.collection('appointments').doc(appointmentId).snapshots(),
+      stream:
+          _fs.collection('appointments').doc(widget.appointmentId).snapshots(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -800,7 +809,6 @@ class AppointmentDetailPage extends StatelessWidget {
               .format(dt);
         }
 
-        final dateKey = (data['dateKey'] ?? '').toString();
         final province = localizedField(data, 'province', context);
         final city = localizedField(data, 'city', context);
 
@@ -808,6 +816,19 @@ class AppointmentDetailPage extends StatelessWidget {
         final patientName = (data['patientName'] ?? '').toString();
         final relationship = (data['relationship'] ?? '').toString();
         final rawStatus = (data['paymentStatus'] ?? '').toString();
+
+        // Fields required by DoctorTimeSlot for reschedule — same as MyAppointmentsPage
+        final doctorId = (data['doctorId'] ?? '').toString();
+        final doctorName = (data['doctorName'] ?? '').toString();
+        final doctorImage = (data['doctorImage'] ?? '').toString();
+        final centerId = (data['centerId'] ?? '').toString();
+        final provinceKey = (data['provinceKey'] ?? '').toString();
+        final cityKey = (data['cityKey'] ?? '').toString();
+        final experience = (data['experience'] ?? '').toString();
+        final statusLc = status.toLowerCase();
+        final isActive = statusLc != 'completed' &&
+            statusLc != 'canceled' &&
+            statusLc != 'cancelled';
 
         String paymentStatusKey;
 
@@ -912,7 +933,7 @@ class AppointmentDetailPage extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: statusColor().withOpacity(.12),
+                              color: statusColor().withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -1019,6 +1040,53 @@ class AppointmentDetailPage extends StatelessWidget {
                     ],
                   ),
                 ),
+
+              /// ── ACTIONS — reschedule + cancel (active appointments only) ──
+              if (isActive) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _reschedule(
+                        context,
+                        doctorId: doctorId,
+                        doctorName: doctorName,
+                        doctorImage: doctorImage,
+                        centerId: centerId,
+                        provinceKey: provinceKey,
+                        cityKey: cityKey,
+                        experience: experience,
+                        specialtyKey: (data['specialtyKey'] ?? '').toString(),
+                        specialtyEn:
+                            (data['specialtyName_en'] ?? '').toString(),
+                        specialtyAr:
+                            (data['specialtyName_ar'] ?? '').toString(),
+                        specialtyKu:
+                            (data['specialtyName_ku'] ?? '').toString(),
+                        clinicName: clinicName,
+                        clinicAddress:
+                            clinicAddress.isEmpty ? null : clinicAddress,
+                      ),
+                      icon: const Icon(Icons.edit_calendar, size: 18),
+                      label: Text('reschedule'.tr()),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _confirmCancel(widget.appointmentId),
+                      icon: const Icon(
+                        Icons.cancel,
+                        color: Colors.red,
+                        size: 18,
+                      ),
+                      label: Text(
+                        'cancel'.tr(),
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         );
@@ -1085,6 +1153,88 @@ class AppointmentDetailPage extends StatelessWidget {
 //   };
 // }
 
+  // Identical logic to MyAppointmentsPage._confirmCancel
+  Future<void> _confirmCancel(String appointmentId) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('cancel_appointment'.tr()),
+        content: Text('cancel_appointment_confirm'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('cancel'.tr()),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('confirm'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    if (yes != true) return;
+
+    try {
+      await _fs.collection('appointments').doc(appointmentId).update({
+        'status': 'cancelled',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('appointment_canceled'.tr())),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_generic'.tr())),
+        );
+      }
+    }
+  }
+
+  // Identical navigation to MyAppointmentsPage reschedule handler
+  void _reschedule(
+    BuildContext context, {
+    required String doctorId,
+    required String doctorName,
+    required String doctorImage,
+    required String centerId,
+    required String provinceKey,
+    required String cityKey,
+    required String experience,
+    required String specialtyKey,
+    required String specialtyEn,
+    required String specialtyAr,
+    required String specialtyKu,
+    required String clinicName,
+    String? clinicAddress,
+  }) {
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.rightToLeft,
+        child: DoctorTimeSlot(
+          doctorId: doctorId,
+          doctorName: doctorName,
+          doctorImage: doctorImage,
+          centerId: centerId,
+          provinceKey: provinceKey,
+          cityKey: cityKey,
+          specialtyKey: specialtyKey,
+          specialtyEn: specialtyEn,
+          specialtyAr: specialtyAr,
+          specialtyKu: specialtyKu,
+          experience: experience.isEmpty ? 'N/A' : experience,
+          clinicName: clinicName,
+          clinicAddress: clinicAddress,
+        ),
+      ),
+    );
+  }
+
   Widget _card({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1093,7 +1243,7 @@ class AppointmentDetailPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 12,
           ),
         ],
