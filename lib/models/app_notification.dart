@@ -18,6 +18,7 @@ class AppNotification {
   final String bodyAr;
   final String bodyKu;
   final bool isRead;
+  final bool dismissed;
   final DateTime createdAt;
 
   const AppNotification({
@@ -38,6 +39,7 @@ class AppNotification {
     required this.bodyAr,
     required this.bodyKu,
     required this.isRead,
+    this.dismissed = false,
     required this.createdAt,
   });
 
@@ -60,6 +62,7 @@ class AppNotification {
       bodyAr: (d['bodyAr'] ?? '').toString(),
       bodyKu: (d['bodyKu'] ?? '').toString(),
       isRead: (d['isRead'] as bool?) ?? false,
+      dismissed: (d['dismissed'] as bool?) ?? false,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

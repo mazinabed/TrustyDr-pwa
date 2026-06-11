@@ -149,6 +149,7 @@ class _NotificationsState extends ConsumerState<Notifications> {
                 notif: notif,
                 lang: lang,
                 onTap: () => _onNotifTap(context, notif),
+                onDismiss: () => _dismiss(notif),
               );
             },
           );
@@ -167,6 +168,20 @@ class _NotificationsState extends ConsumerState<Notifications> {
         .collection('notifications')
         .doc(notif.id)
         .update({'isRead': true});
+  }
+
+  Future<void> _dismiss(AppNotification notif) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('notifications')
+        .doc(notif.id)
+        .update({
+      'dismissed': true,
+      'dismissedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   void _onNotifTap(BuildContext context, AppNotification notif) {
@@ -189,11 +204,13 @@ class _NotificationCard extends StatelessWidget {
     required this.notif,
     required this.lang,
     required this.onTap,
+    required this.onDismiss,
   });
 
   final AppNotification notif;
   final String lang;
   final VoidCallback onTap;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +252,7 @@ class _NotificationCard extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(4, 10, 10, 10),
+                padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -269,6 +286,22 @@ class _NotificationCard extends StatelessWidget {
                       style: greySmallTextStyle.copyWith(fontSize: 11),
                     ),
                   ],
+                ),
+              ),
+            ),
+            // Dismiss button — visible but unobtrusive
+            Tooltip(
+              message: 'dismiss'.tr(),
+              child: InkWell(
+                onTap: onDismiss,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.grey[400],
+                  ),
                 ),
               ),
             ),

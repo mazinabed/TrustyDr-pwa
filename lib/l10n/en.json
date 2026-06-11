@@ -371,6 +371,7 @@
     "no_notifications_title": "You’re all set",
     "no_notifications_message": "Find a trusted doctor today and book your appointment in minutes."
   },
+  "dismiss": "Dismiss",
   "push": {
     "dialog_title": "Stay updated",
     "dialog_body": "Enable notifications to get appointment reminders from TrustyDr.",

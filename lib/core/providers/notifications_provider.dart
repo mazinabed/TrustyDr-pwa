@@ -20,8 +20,10 @@ final notificationsProvider =
       .limit(50)
       .snapshots()
       .map(
-        (s) =>
-            s.docs.map((d) => AppNotification.fromMap(d.id, d.data())).toList(),
+        (s) => s.docs
+            .map((d) => AppNotification.fromMap(d.id, d.data()))
+            .where((n) => !n.dismissed)
+            .toList(),
       );
 });
 

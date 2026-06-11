@@ -337,6 +337,7 @@
     "no_notifications_title": "كل شيء على ما يرام",
     "no_notifications_message": "اعثر على طبيب موثوق اليوم واحجز موعدك بسهولة خلال دقائق."
   },
+  "dismiss": "إخفاء",
   "push": {
     "dialog_title": "ابقَ على اطلاع",
     "dialog_body": "فعّل الإشعارات لتصلك تذكيرات مواعيدك من TrustyDr.",
