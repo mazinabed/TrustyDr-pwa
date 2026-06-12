@@ -462,28 +462,47 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
             );
           }
 
-          return GestureDetector(
-            onTap: () => _onPickSlot(label),
-            child: Container(
-              width: 96,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: PatientAppColors.brandIndigo, width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+          // ── TEMP DIAGNOSTIC WRAPPER ────────────────────────────────
+          return Listener(
+            onPointerDown: (_) {
+              debugPrint('[BOOKING] RAW_POINTER_DOWN label:$label');
+              _setDebugStep('RAW_POINTER_DOWN:$label');
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                debugPrint('[BOOKING] RAW_SLOT_TAP label:$label');
+                _setDebugStep('RAW_SLOT_TAP:$label');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('RAW_SLOT_TAP: $label'),
+                    duration: const Duration(seconds: 3),
                   ),
-                ],
+                );
+                _onPickSlot(label);
+              },
+              child: Container(
+                width: 96,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: PatientAppColors.brandIndigo, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(label, style: primaryColorNormalTextStyle),
               ),
-              child: Text(label, style: primaryColorNormalTextStyle),
             ),
           );
+          // ───────────────────────────────────────────────────────────
         }).toList(),
       ),
     );
