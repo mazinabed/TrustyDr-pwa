@@ -52,6 +52,12 @@
       justify-content: center;
       background: linear-gradient(135deg, #5CC6BA, #4A90E2);
       z-index: 9999;
+      /* Safety: never block touch events when transparent/fading */
+      transition: opacity 0.3s;
+    }
+    #flutter-loader.hidden {
+      pointer-events: none;
+      opacity: 0;
     }
 
     .loader-content {
@@ -111,6 +117,7 @@
  window.addEventListener('load', function () {
   const loader = document.getElementById('flutter-loader');
   if (loader) {
+    loader.style.pointerEvents = 'none'; // immediately stop absorbing touches
     loader.style.opacity = '0';
     setTimeout(() => loader.remove(), 300);
   }
