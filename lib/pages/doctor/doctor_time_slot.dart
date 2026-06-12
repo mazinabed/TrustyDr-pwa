@@ -75,6 +75,14 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   int _capacityPerSlot = 1;
 
+  // ── TEMP DIAGNOSTIC ─────────────────────────────────────────────
+  String _debugStep = '';
+  void _setDebugStep(String step) {
+    debugPrint('[BOOKING] $step');
+    if (mounted) setState(() => _debugStep = step);
+  }
+  // ────────────────────────────────────────────────────────────────
+
   String _dateKey(DateTime d) =>
       "${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
 
@@ -238,8 +246,28 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   @override
   Widget build(BuildContext context) {
+    // ── TEMP DIAGNOSTIC PANEL ────────────────────────────────────────
+    Widget? debugPanel;
+    if (_debugStep.isNotEmpty) {
+      debugPanel = Container(
+        width: double.infinity,
+        color: Colors.orange.shade800,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Text(
+          'BOOKING DEBUG: $_debugStep',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────
+
     return Scaffold(
       backgroundColor: whiteColor,
+      bottomNavigationBar: debugPanel,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -467,100 +495,112 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   }
 
   Future<void> _onPickSlot(String slotLabel) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('login_to_book'.tr()),
-        ),
-      );
-      return;
-    }
-
-    final dateKey = _dateKey(_selectedDay);
-    final hasDup = await _hasActiveSameDayBooking(
-      userId: user.uid,
-      doctorId: widget.doctorId,
-      dateKey: dateKey,
-    );
-    if (hasDup) {
-      if (mounted) {
+    _setDebugStep('SLOT_TAP_START label:$slotLabel');
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        _setDebugStep('SLOT_TAP_AUTH_FAIL');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'appointment_conflict_doctor_day'.tr(),
-            ),
+            content: Text('login_to_book'.tr()),
           ),
         );
+        return;
       }
-      return;
-    }
+      _setDebugStep('SLOT_TAP_AUTH_OK uid:${user.uid}');
 
-    if (!mounted) return;
-
-    final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
-    final slotStart = _parseHm(_to24Hour(slotLabel), _selectedDay);
-    final slotId =
-        '${(_scheduleForDay!['scheduleId'] ?? '')}_${slotStart.millisecondsSinceEpoch}';
-
-    if (_takenSlotIds.contains(slotId)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('slot_full'.tr())),
+      final dateKey = _dateKey(_selectedDay);
+      final hasDup = await _hasActiveSameDayBooking(
+        userId: user.uid,
+        doctorId: widget.doctorId,
+        dateKey: dateKey,
       );
-      return;
-    }
-
-    final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
-    final sure = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('confirm_booking'.tr()),
-        content: Text(
-          'confirm_booking_message'.tr(namedArgs: {
-            'date': prettyDate,
-            'slot': slotLabel,
-            'doctor': widget.doctorName,
-          }),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('cancel'.tr()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: PatientAppColors.brandIndigo),
-            child: Text(
-              'confirm'.tr(),
-              style: const TextStyle(color: Colors.white),
+      _setDebugStep('SLOT_TAP_DUP_CHECK hasDup:$hasDup');
+      if (hasDup) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'appointment_conflict_doctor_day'.tr(),
+              ),
             ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) {
+        debugPrint(
+            '[BOOKING] SLOT_TAP_NOT_MOUNTED — unmounted after dup check');
+        return;
+      }
+
+      final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
+      final slotStart = _parseHm(_to24Hour(slotLabel), _selectedDay);
+      final slotId =
+          '${(_scheduleForDay!['scheduleId'] ?? '')}_${slotStart.millisecondsSinceEpoch}';
+      _setDebugStep('SLOT_TAP_SLOT_ID taken:${_takenSlotIds.contains(slotId)}');
+
+      if (_takenSlotIds.contains(slotId)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('slot_full'.tr())),
+        );
+        return;
+      }
+
+      _setDebugStep('SLOT_TAP_BEFORE_MODAL');
+      final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
+      final sure = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('confirm_booking'.tr()),
+          content: Text(
+            'confirm_booking_message'.tr(namedArgs: {
+              'date': prettyDate,
+              'slot': slotLabel,
+              'doctor': widget.doctorName,
+            }),
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('cancel'.tr()),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: PatientAppColors.brandIndigo),
+              child: Text(
+                'confirm'.tr(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+      _setDebugStep('SLOT_TAP_DIALOG_RETURNED sure:$sure');
 
-    final schedule = _scheduleForDay!;
+      final schedule = _scheduleForDay!;
 
-    final centerId = (schedule['centerId'] ?? '').toString();
-    final lang = context.locale.languageCode;
+      final centerId = (schedule['centerId'] ?? '').toString();
+      final lang = context.locale.languageCode;
 
-    String clinicName;
+      String clinicName;
 
-    if (lang == 'ar') {
-      clinicName =
-          (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '')
-              .toString();
-    } else if (lang == 'ku') {
-      clinicName =
-          (schedule['clinicName_ku'] ?? schedule['clinicName_en'] ?? '')
-              .toString();
-    } else {
-      clinicName = (schedule['clinicName_en'] ?? schedule['clinicName'] ?? '')
-          .toString();
-    }
-    final provinceKey = (schedule['provinceKey'] ?? '').toString();
-    final cityKey = (schedule['cityKey'] ?? '').toString();
+      if (lang == 'ar') {
+        clinicName =
+            (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '')
+                .toString();
+      } else if (lang == 'ku') {
+        clinicName =
+            (schedule['clinicName_ku'] ?? schedule['clinicName_en'] ?? '')
+                .toString();
+      } else {
+        clinicName = (schedule['clinicName_en'] ?? schedule['clinicName'] ?? '')
+            .toString();
+      }
+      final provinceKey = (schedule['provinceKey'] ?? '').toString();
+      final cityKey = (schedule['cityKey'] ?? '').toString();
 
 // 🔥 HARD GUARD (VERY IMPORTANT)
 // if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
@@ -570,85 +610,103 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 //   return;
 // }
 
-    if (sure != true) return;
-    if (!mounted) return;
-    final wasBooked = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ConfirmBookingModal(
-        scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
-
-        slotStartAt: slotStart,
-        slotDurationMinutes: dur,
-
-        doctorId: widget.doctorId,
-        doctorName: widget.doctorName,
-        doctorImage: widget.doctorImage,
-
-        specialtyKey: widget.specialtyKey,
-        specialtyEn: widget.specialtyEn,
-        specialtyAr: widget.specialtyAr,
-        specialtyKu: widget.specialtyKu,
-
-        clinicName: clinicName, // ✅ FROM SCHEDULE
-
-        date: _selectedDay,
-        slotLabel: slotLabel,
-        capacityPerSlot: _capacityPerSlot,
-
-        centerId: centerId, // ✅ FROM SCHEDULE
-        provinceKey: provinceKey, // ✅ FROM SCHEDULE
-        cityKey: cityKey, // ✅ FROM SCHEDULE
-      ),
-    );
-
-    if (wasBooked == true && mounted) {
-      await _loadUsageForSelectedDate();
+      if (sure != true) return;
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: PatientAppColors.brandIndigo,
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'appointment_booked_message'.tr(namedArgs: {
-                    'date': DateFormat('yyyy-MM-dd').format(_selectedDay),
-                    'slot': slotLabel,
-                  }),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 10),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const MyAppointmentsPage()),
-                  );
-                },
-                child: Text(
-                  'my_appointments'.tr(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 5),
+
+      _setDebugStep(
+          'SLOT_TAP_MODAL_OPENED centerId:$centerId clinic:$clinicName');
+      final wasBooked = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => ConfirmBookingModal(
+          scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
+
+          slotStartAt: slotStart,
+          slotDurationMinutes: dur,
+
+          doctorId: widget.doctorId,
+          doctorName: widget.doctorName,
+          doctorImage: widget.doctorImage,
+
+          specialtyKey: widget.specialtyKey,
+          specialtyEn: widget.specialtyEn,
+          specialtyAr: widget.specialtyAr,
+          specialtyKu: widget.specialtyKu,
+
+          clinicName: clinicName, // ✅ FROM SCHEDULE
+
+          date: _selectedDay,
+          slotLabel: slotLabel,
+          capacityPerSlot: _capacityPerSlot,
+
+          centerId: centerId, // ✅ FROM SCHEDULE
+          provinceKey: provinceKey, // ✅ FROM SCHEDULE
+          cityKey: cityKey, // ✅ FROM SCHEDULE
         ),
       );
+
+      _setDebugStep('SLOT_TAP_MODAL_RETURNED wasBooked:$wasBooked');
+
+      if (wasBooked == true && mounted) {
+        await _loadUsageForSelectedDate();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: PatientAppColors.brandIndigo,
+            content: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    'appointment_booked_message'.tr(namedArgs: {
+                      'date': DateFormat('yyyy-MM-dd').format(_selectedDay),
+                      'slot': slotLabel,
+                    }),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const MyAppointmentsPage()),
+                    );
+                  },
+                  child: Text(
+                    'my_appointments'.tr(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e, st) {
+      _setDebugStep('SLOT_TAP_ERROR: $e');
+      debugPrint('[BOOKING] SLOT_TAP_ERROR stacktrace:\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red.shade700,
+            content: Text('Booking error: $e'),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
     }
   }
 }
