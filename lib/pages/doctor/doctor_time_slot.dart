@@ -462,7 +462,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   }
 
   String _to24Hour(String label) {
-    final parsed = DateFormat('h:mm a').parse(label);
+    final parsed = DateFormat('h:mm a', 'en').parse(label);
     return DateFormat('HH:mm').format(parsed);
   }
 
