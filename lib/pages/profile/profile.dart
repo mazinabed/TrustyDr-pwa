@@ -376,6 +376,13 @@ class _ProfileState extends State<Profile> {
                                       onTap: () => _guardedPush(
                                           const RecommendationsPage()),
                                     ),
+                                    _ActionItem(
+                                      color: PatientAppColors.brandIndigo,
+                                      icon: Icons.link,
+                                      label: tr('account_connections.title'),
+                                      onTap: () => _guardedPush(
+                                          const AccountConnectionsScreen()),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),

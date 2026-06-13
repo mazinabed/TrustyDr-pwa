@@ -358,7 +358,7 @@
 // }
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trustydr/pages/profile/ChangePhoneNumberScreen.dart';
+import 'package:trustydr/pages/profile/account_connections_screen.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -383,9 +383,6 @@ class _EditProfileState extends State<EditProfile> {
   DocumentReference? userRef;
 
   final nameController = TextEditingController();
-  final phoneController = TextEditingController();
-  final emailController = TextEditingController();
-  final contactEmailController = TextEditingController();
 
   String profileImage = 'https://via.placeholder.com/150';
 
@@ -394,8 +391,6 @@ class _EditProfileState extends State<EditProfile> {
 
   // ✅ PATCH architecture state (initial snapshot for change-detection)
   String _initialName = '';
-  String _initialContactEmail = '';
-  String _initialPhone = '';
   String _initialProfileImage = '';
   bool _loaded = false;
 
@@ -416,9 +411,6 @@ class _EditProfileState extends State<EditProfile> {
   @override
   void dispose() {
     nameController.dispose();
-    phoneController.dispose();
-    emailController.dispose();
-    contactEmailController.dispose();
     super.dispose();
   }
 
@@ -431,9 +423,6 @@ class _EditProfileState extends State<EditProfile> {
     final data = snapshot.data() as Map<String, dynamic>;
 
     final name = (data['name'] ?? '').toString();
-    final phone = (data['phoneNumber'] ?? '').toString();
-    final email = (data['email'] ?? '').toString();
-    final contactEmail = (data['contactEmail'] ?? '').toString();
     final img =
         (data['profileImage'] ?? 'https://via.placeholder.com/150').toString();
 
@@ -441,15 +430,10 @@ class _EditProfileState extends State<EditProfile> {
 
     setState(() {
       nameController.text = name;
-      phoneController.text = phone;
-      emailController.text = email;
-      contactEmailController.text = contactEmail;
       profileImage = img;
 
       // ✅ snapshot for PATCH detection
       _initialName = name;
-      _initialPhone = phone;
-      _initialContactEmail = contactEmail;
       _initialProfileImage = img;
 
       // reset intent flags
@@ -460,11 +444,10 @@ class _EditProfileState extends State<EditProfile> {
     });
   }
 
-  /// ✅ Production-safe: PATCH-only update (optional fields)
-  /// - updates ONLY fields changed
+  /// ✅ Production-safe: PATCH-only update.
+  /// - updates ONLY fields changed (name, profileImage)
   /// - does NOT overwrite with empty values
-  /// - Email is READONLY here (1A) to avoid Auth/Firestore mismatch
-  /// - Photo removal (2A): delete Firestore field + delete Storage file
+  /// - Photo removal: deletes Firestore field + Storage file
   Future<void> _saveProfile() async {
     if (userRef == null || currentUser == null) return;
     if (!_loaded) return;
@@ -475,27 +458,10 @@ class _EditProfileState extends State<EditProfile> {
       final updates = <String, dynamic>{};
 
       final newName = nameController.text.trim();
-      final newPhone = phoneController.text.trim();
-      final newContactEmail = contactEmailController.text.trim();
 
-      // ✅ Optional fields: update only if user provided non-empty value AND changed.
+      // ✅ Name: update only if non-empty and changed.
       if (newName.isNotEmpty && newName != _initialName) {
         updates['name'] = newName;
-      }
-
-      // users/{uid}.email is the Auth/login mirror — never overwritten from profile edit.
-      // users/{uid}.contactEmail is the patient-editable contact email (display/comms only).
-      if (newContactEmail != _initialContactEmail) {
-        if (newContactEmail.isEmpty) {
-          updates['contactEmail'] = FieldValue.delete();
-        } else {
-          updates['contactEmail'] = newContactEmail;
-        }
-      }
-
-      // Phone is readOnly on this page, but keep patch-safe logic for future use.
-      if (newPhone.isNotEmpty && newPhone != _initialPhone) {
-        updates['phoneNumber'] = newPhone;
       }
 
       // ✅ Image handling (upload OR explicit clear)
@@ -568,10 +534,6 @@ class _EditProfileState extends State<EditProfile> {
       // ✅ Update local state + initial snapshot (prevents repeated writes)
       setState(() {
         if (updates.containsKey('name')) _initialName = newName;
-        if (updates.containsKey('contactEmail')) {
-          _initialContactEmail = newContactEmail.isEmpty ? '' : newContactEmail;
-        }
-        if (updates.containsKey('phoneNumber')) _initialPhone = newPhone;
 
         if (updates.containsKey('profileImage')) {
           if (uploadedUrl != null) {
@@ -713,6 +675,83 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  Widget _accountConnectionsCard(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: fixPadding,
+        vertical: fixPadding * 0.75,
+      ),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AccountConnectionsScreen(),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: fixPadding * 1.5,
+            vertical: fixPadding * 1.2,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 2,
+                spreadRadius: 1,
+                color: Colors.grey[200]!,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: PatientAppColors.brandIndigo.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.link,
+                  color: PatientAppColors.brandIndigo,
+                  size: 20,
+                ),
+              ),
+              SizedBox(width: fixPadding),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('account_connections.title'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      tr('account_connections.subtitle'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget getTile(
     String title,
     TextEditingController controller, {
@@ -769,6 +808,37 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  bool get _hasRealPhoto =>
+      pickedImage != null ||
+      (profileImage.isNotEmpty &&
+          profileImage != 'https://via.placeholder.com/150');
+
+  Widget _buildAvatar() {
+    if (_hasRealPhoto) {
+      return Container(
+        width: 104,
+        height: 104,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(width: 3, color: Colors.white),
+          image: DecorationImage(
+            image: _resolveProfileImageProvider(),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    return Container(
+      width: 104,
+      height: 104,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: PatientAppColors.brandGradient,
+      ),
+      child: const Icon(Icons.person, color: Colors.white, size: 52),
+    );
+  }
+
   ImageProvider _resolveProfileImageProvider() {
     if (pickedImage != null) {
       if (kIsWeb) {
@@ -806,69 +876,39 @@ class _EditProfileState extends State<EditProfile> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  InkWell(
-                    onTap: _selectOptionBottomSheet,
-                    child: Container(
-                      width: 100.0,
-                      height: 100.0,
-                      margin: EdgeInsets.all(fixPadding * 4.0),
-                      alignment: Alignment.bottomRight,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5.0),
-                        border: Border.all(width: 2.0, color: Colors.white),
-                        image: DecorationImage(
-                          image: _resolveProfileImageProvider(),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      child: Container(
-                        height: 22.0,
-                        width: 22.0,
-                        margin: EdgeInsets.all(fixPadding / 2),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(11.0),
-                          border: Border.all(
-                            width: 1.0,
-                            color: Colors.white.withOpacity(0.7),
+                  Padding(
+                    padding: EdgeInsets.all(fixPadding * 3.0),
+                    child: InkWell(
+                      onTap: _selectOptionBottomSheet,
+                      borderRadius: BorderRadius.circular(52),
+                      child: Stack(
+                        children: [
+                          _buildAvatar(),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: PatientAppColors.brandTeal,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
                           ),
-                          color: Colors.orange,
-                        ),
-                        child: Icon(Icons.add, color: Colors.white, size: 15.0),
+                        ],
                       ),
                     ),
                   ),
                   getTile(tr('profile.fullName'), nameController),
-                  getTile(
-                    tr('profile.phone'),
-                    phoneController,
-                    readOnly: true,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChangePhoneNumberScreen(),
-                        ),
-                      ).then((_) => _loadUserData());
-                    },
-                  ),
-                  getTile(
-                    tr('profile.loginEmail'),
-                    emailController,
-                    readOnly: true,
-                  ),
-                  getTile(
-                    tr('profile.contactEmail'),
-                    contactEmailController,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    helperText: tr('profile.contactEmailHint'),
-                  ),
-                  getTile(
-                    tr('profile.password'),
-                    TextEditingController(text: '******'),
-                    readOnly: true,
-                  ),
+                  _accountConnectionsCard(context),
                   const SizedBox(height: 20),
                   Padding(
                     padding: EdgeInsets.symmetric(

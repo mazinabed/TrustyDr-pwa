@@ -532,6 +532,8 @@ import 'package:trustydr/pages/login_signup/consent_screen.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/services/database_service.dart';
 
+enum _OtpPhase { sending, ready, failed }
+
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
   const OTPScreen({super.key, required this.phoneNumber});
@@ -548,6 +550,8 @@ class _OTPScreenState extends State<OTPScreen> {
 
   String? _verificationId;
 
+  _OtpPhase _phase = _OtpPhase.sending;
+  String _failureMessage = '';
   bool _isLoading = false;
   bool _sendingOtp = false;
   bool _completed = false;
@@ -555,20 +559,36 @@ class _OTPScreenState extends State<OTPScreen> {
   @override
   void initState() {
     super.initState();
+    // ignore: avoid_print
+    print('[PhoneAuth] OTPScreen mounted phone=${widget.phoneNumber}');
     _sendOTP();
   }
 
   Future<void> _sendOTP() async {
-    if (_sendingOtp) return;
+    if (_sendingOtp) {
+      // ignore: avoid_print
+      print('[PhoneAuth] _sendOTP skipped – already in progress');
+      return;
+    }
     _sendingOtp = true;
+    // ignore: avoid_print
+    print('[PhoneAuth] _sendOTP started phone=${widget.phoneNumber}');
 
-    if (mounted) setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _phase = _OtpPhase.sending;
+        _failureMessage = '';
+        _verificationId = null;
+      });
+    }
 
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: widget.phoneNumber,
         timeout: const Duration(seconds: 60),
         verificationCompleted: (credential) async {
+          // ignore: avoid_print
+          print('[PhoneAuth] verificationCompleted (auto-sign-in)');
           if (_completed) return;
           _completed = true;
 
@@ -582,25 +602,55 @@ class _OTPScreenState extends State<OTPScreen> {
           }
         },
         verificationFailed: (e) {
+          // ignore: avoid_print
+          print(
+            '[PhoneAuth] verificationFailed code=${e.code} msg=${e.message}',
+          );
           _sendingOtp = false;
-          if (mounted) setState(() => _isLoading = false);
-          Fluttertoast.showToast(msg: e.message ?? 'otp_send_failed'.tr());
+          if (mounted) {
+            setState(() {
+              _phase = _OtpPhase.failed;
+              _failureMessage = _localizedFailureMessage(e.code);
+            });
+          }
         },
-        codeSent: (verificationId, _) {
-          _verificationId = verificationId;
+        codeSent: (verificationId, resendToken) {
+          // ignore: avoid_print
+          print(
+            '[PhoneAuth] codeSent verificationId=$verificationId resendToken=$resendToken',
+          );
           _sendingOtp = false;
-          if (mounted) setState(() => _isLoading = false);
+          if (mounted) {
+            setState(() {
+              _verificationId = verificationId;
+              _phase = _OtpPhase.ready;
+            });
+          }
         },
         codeAutoRetrievalTimeout: (verificationId) {
-          _verificationId = verificationId;
+          // ignore: avoid_print
+          print(
+            '[PhoneAuth] codeAutoRetrievalTimeout verificationId=$verificationId',
+          );
           _sendingOtp = false;
-          if (mounted) setState(() => _isLoading = false);
+          if (mounted) {
+            setState(() {
+              _verificationId = verificationId;
+              if (_phase == _OtpPhase.sending) _phase = _OtpPhase.ready;
+            });
+          }
         },
       );
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('[PhoneAuth] verifyPhoneNumber threw: $e');
       _sendingOtp = false;
-      if (mounted) setState(() => _isLoading = false);
-      Fluttertoast.showToast(msg: 'otp_send_failed'.tr());
+      if (mounted) {
+        setState(() {
+          _phase = _OtpPhase.failed;
+          _failureMessage = 'otp_send_failed'.tr();
+        });
+      }
     }
   }
 
@@ -687,116 +737,162 @@ class _OTPScreenState extends State<OTPScreen> {
     super.dispose();
   }
 
+  String _localizedFailureMessage(String? code) {
+    if (code == 'too-many-requests') return 'otp_too_many_attempts'.tr();
+    return 'otp_send_failed'.tr();
+  }
+
+  Widget _buildSendingState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 20),
+          Text(
+            'otp_sending'.tr(),
+            textAlign: TextAlign.center,
+            textDirection: ui.TextDirection.rtl,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFailedState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+          const SizedBox(height: 16),
+          Text(
+            _failureMessage,
+            textAlign: TextAlign.center,
+            textDirection: ui.TextDirection.rtl,
+            style: TextStyle(color: Colors.red.shade700),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _sendOTP,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+            child: Text(
+              'otp_resend'.tr(),
+              textDirection: ui.TextDirection.rtl,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadyState() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: Colors.black12, blurRadius: 6),
+            ],
+          ),
+          child: Directionality(
+            textDirection: ui.TextDirection.ltr,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(6, (i) {
+                return SizedBox(
+                  width: 44,
+                  child: TextField(
+                    controller: otpControllers[i],
+                    focusNode: focusNodes[i],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    onChanged: (v) {
+                      if (v.isNotEmpty && i < 5) {
+                        focusNodes[i + 1].requestFocus();
+                      } else if (v.isEmpty && i > 0) {
+                        focusNodes[i - 1].requestFocus();
+                      }
+                    },
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 30),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _verifyOTP,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text('otp_verify'.tr(), textDirection: ui.TextDirection.rtl),
+        ),
+        const SizedBox(height: 12),
+        TextButton(
+          onPressed: _isLoading ? null : _sendOTP,
+          child: Text(
+            'otp_resend'.tr(),
+            textDirection: ui.TextDirection.rtl,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
-      textDirection: ui.TextDirection.ltr, // layout always LTR
+      textDirection: ui.TextDirection.ltr,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            /// Header (same as login)
-            StaticInfoHeader(
-              title: 'otp_title'.tr(),
-              showBack: true,
-            ),
-
+            StaticInfoHeader(title: 'otp_title'.tr(), showBack: true),
             const SizedBox(height: 20),
-
             Text(
               'otp_description'.tr(namedArgs: {'phone': widget.phoneNumber}),
               textAlign: TextAlign.center,
-              textDirection: ui.TextDirection.rtl, // Arabic text only
+              textDirection: ui.TextDirection.rtl,
             ),
-
             const SizedBox(height: 30),
-
-            /// OTP card
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-              child: Directionality(
-                textDirection: ui.TextDirection.ltr,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (i) {
-                    return SizedBox(
-                      width: 44,
-                      child: TextField(
-                        controller: otpControllers[i],
-                        focusNode: focusNodes[i],
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
-                        ],
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: const InputDecoration(
-                          counterText: '',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
-                          ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        onChanged: (v) {
-                          if (v.isNotEmpty && i < 5) {
-                            focusNodes[i + 1].requestFocus();
-                          } else if (v.isEmpty && i > 0) {
-                            focusNodes[i - 1].requestFocus();
-                          }
-                        },
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            ElevatedButton(
-              onPressed: _isLoading ? null : _verifyOTP,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      'otp_verify'.tr(),
-                      textDirection: ui.TextDirection.rtl,
-                    ),
-            ),
-
-            const SizedBox(height: 12),
-
-            TextButton(
-              onPressed: _isLoading ? null : _sendOTP,
-              child: Text(
-                'otp_resend'.tr(),
-                textDirection: ui.TextDirection.rtl,
-              ),
-            ),
+            if (_phase == _OtpPhase.sending)
+              _buildSendingState()
+            else if (_phase == _OtpPhase.failed)
+              _buildFailedState()
+            else
+              _buildReadyState(),
           ],
         ),
       ),

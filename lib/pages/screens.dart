@@ -18,6 +18,8 @@ export 'patient/my_doctors_page.dart';
 export 'patient/recommendations_page.dart';
 export 'about/about_us.dart';
 export 'profile/edit_profile.dart';
+export 'profile/link_phone_screen.dart';
+export 'profile/account_connections_screen.dart';
 export 'profile/health_information_page.dart';
 export 'login_signup/login.dart';
 export 'login_signup/otp.dart';

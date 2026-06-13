@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
+import 'package:trustydr/pages/profile/link_phone_screen.dart';
 
 // Legal pages (EXISTING — DO NOT CHANGE)
 
@@ -139,11 +140,24 @@ class _ConsentScreenState extends State<ConsentScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const BottomBar()),
-        (_) => false,
-      );
+      final hasPhone = user.providerData.any((p) => p.providerId == 'phone');
+
+      if (!hasPhone) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                const LinkPhoneScreen(navigateToHomeOnSuccess: true),
+          ),
+          (_) => false,
+        );
+      } else {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const BottomBar()),
+          (_) => false,
+        );
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _saving = false);

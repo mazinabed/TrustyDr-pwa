@@ -166,4 +166,39 @@ class AuthService {
     return await _auth.signInWithEmailAndPassword(
         email: email, password: password);
   }
+
+  Future<void> linkGoogleProvider() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'No signed-in user.',
+      );
+    }
+    final provider = GoogleAuthProvider();
+    provider.setCustomParameters({'prompt': 'select_account'});
+    if (kIsWeb) {
+      await user.linkWithPopup(provider);
+    } else {
+      await user.linkWithProvider(provider);
+    }
+  }
+
+  Future<void> linkPhoneCredential({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'no-current-user',
+        message: 'No signed-in user.',
+      );
+    }
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    await user.linkWithCredential(credential);
+  }
 }

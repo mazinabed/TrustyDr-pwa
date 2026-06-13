@@ -2,8 +2,8 @@
 // This file must remain at web/firebase-messaging-sw.js (root of the served web directory).
 // The Flutter service worker (flutter_service_worker.js) coexists without conflict.
 
-importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.3.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.3.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
   apiKey: 'AIzaSyAyBhbQAQZboBJd90lSqJNZuBOVcEOGJ3E',

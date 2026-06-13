@@ -1,12 +1,14 @@
 import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:trustydr/constant/constant.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+
+import 'package:trustydr/widgets/StaticInfoHeader.dart';
 
 class ChangePhoneNumberScreen extends StatefulWidget {
   const ChangePhoneNumberScreen({super.key});
@@ -49,7 +51,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
           msg: tr('auth.enterPhoneNumber'),
           backgroundColor: Colors.black,
-          textColor: whiteColor);
+          textColor: Colors.white);
       return;
     }
 
@@ -67,7 +69,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
         Fluttertoast.showToast(
           msg: e.message ?? tr('auth.otpSendingFailed'),
           backgroundColor: Colors.black,
-          textColor: whiteColor,
+          textColor: Colors.white,
         );
       },
       codeSent: (String verificationId, int? resendToken) {
@@ -79,7 +81,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
         Fluttertoast.showToast(
           msg: '${tr('auth.otpSentTo')} $phoneNumber',
           backgroundColor: Colors.black,
-          textColor: whiteColor,
+          textColor: Colors.white,
         );
       },
       codeAutoRetrievalTimeout: (String verificationId) {
@@ -94,7 +96,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
         msg: tr('auth.enterCompleteOtp'),
         backgroundColor: Colors.black,
-        textColor: whiteColor,
+        textColor: Colors.white,
       );
       return;
     }
@@ -103,7 +105,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
         msg: tr('auth.verificationIdMissing'),
         backgroundColor: Colors.black,
-        textColor: whiteColor,
+        textColor: Colors.white,
       );
       return;
     }
@@ -123,7 +125,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
         msg: e.message ?? tr('auth.invalidOtp'),
         backgroundColor: Colors.black,
-        textColor: whiteColor,
+        textColor: Colors.white,
       );
     }
   }
@@ -150,7 +152,7 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
         msg: tr('auth.phoneUpdatedSuccessfully'),
         backgroundColor: Colors.black,
-        textColor: whiteColor,
+        textColor: Colors.white,
       );
 
       // ✅ Close screen cleanly
@@ -162,215 +164,184 @@ class _ChangePhoneNumberScreenState extends State<ChangePhoneNumberScreen> {
       Fluttertoast.showToast(
         msg: '${tr('auth.errorUpdatingPhone')}: $e',
         backgroundColor: Colors.black,
-        textColor: whiteColor,
+        textColor: Colors.white,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
-
-    return Container(
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/doctor_bg.jpg'),
-          fit: BoxFit.cover,
+    return Directionality(
+      textDirection: ui.TextDirection.ltr,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            StaticInfoHeader(title: tr('auth.changePhone'), showBack: true),
+            const SizedBox(height: 24),
+            if (!_otpSent) _buildPhoneSection(context),
+            if (_otpSent) _buildOtpSection(context),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          ],
         ),
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            child: Container(
-              width: width,
-              height: height,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.1, 0.3, 0.5, 0.7, 0.9],
-                  colors: [
-                    Colors.black.withValues(alpha: 0.4),
-                    Colors.black.withValues(alpha: 0.55),
-                    Colors.black.withValues(alpha: 0.7),
-                    Colors.black.withValues(alpha: 0.8),
-                    Colors.black.withValues(alpha: 1.0),
-                  ],
-                ),
+    );
+  }
+
+  Widget _buildPhoneSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          tr('auth.enterNewPhoneNumber'),
+          textAlign: TextAlign.center,
+          textDirection: ui.TextDirection.rtl,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: Colors.black12, blurRadius: 6),
+            ],
+          ),
+          child: Directionality(
+            textDirection: ui.TextDirection.ltr,
+            child: InternationalPhoneNumberInput(
+              initialValue: number,
+              textFieldController: phoneController,
+              selectorConfig: const SelectorConfig(
+                selectorType: PhoneInputSelectorType.DIALOG,
               ),
+              inputBorder: InputBorder.none,
+              autoValidateMode: AutovalidateMode.disabled,
+              textStyle: const TextStyle(fontSize: 16),
+              selectorTextStyle: const TextStyle(fontSize: 16),
+              inputDecoration: InputDecoration(
+                hintText: tr('auth.phoneNumber'),
+                border: InputBorder.none,
+              ),
+              onInputChanged: (PhoneNumber num) {
+                phoneNumber = num.phoneNumber ?? '';
+              },
             ),
           ),
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: whiteColor),
-              title:
-                  Text(tr('auth.changePhone'), style: whiteSmallLoginTextStyle),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _sendOTP,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
             ),
-            body: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(20),
-              children: [
-                const SizedBox(height: 20),
-                if (!_otpSent)
-                  Column(
-                    children: [
-                      Text(tr('auth.enterNewPhoneNumber'),
-                          style: loginBigTextStyle),
-                      const SizedBox(height: 20),
-                      Directionality(
-                        textDirection: ui.TextDirection.ltr,
-                        child: InternationalPhoneNumberInput(
-                          textStyle: inputLoginTextStyle,
-                          autoValidateMode: AutovalidateMode.disabled,
-                          selectorTextStyle: const TextStyle(
-                              color: Colors.white, fontSize: 16.0),
-                          initialValue: number,
-                          textFieldController: phoneController,
-                          inputBorder: InputBorder.none,
-                          inputDecoration: InputDecoration(
-                            contentPadding:
-                                const EdgeInsets.only(left: 0.0, bottom: 15.0),
-                            hintText: tr('auth.phoneNumber'),
-                            hintStyle: inputLoginTextStyle,
-                            border: InputBorder.none,
-                            filled: true,
-                            fillColor: Colors.grey[200]!.withValues(alpha: 0.3),
-                          ),
-                          selectorConfig: const SelectorConfig(
-                            selectorType: PhoneInputSelectorType.DIALOG,
-                          ),
-                          onInputChanged: (PhoneNumber num) {
-                            phoneNumber = num.phoneNumber ?? '';
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      InkWell(
-                        onTap: _sendOTP,
-                        child: Container(
-                          height: 50,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.bottomRight,
-                              stops: const [0.1, 0.5, 0.9],
-                              colors: [
-                                Colors.blue[300]!.withValues(alpha: 0.8),
-                                Colors.blue[500]!.withValues(alpha: 0.8),
-                                Colors.blue[800]!.withValues(alpha: 0.8),
-                              ],
-                            ),
-                          ),
-                          child: Text(tr('auth.sendOtp'),
-                              style: inputLoginTextStyle),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Column(
-                    children: [
-                      Text('${tr('auth.enterOtpSentTo')} $phoneNumber',
-                          style: loginBigTextStyle),
-                      const SizedBox(height: 50),
-                      Directionality(
-                        textDirection: ui.TextDirection.ltr,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(6, (index) {
-                            return Container(
-                              width: 50,
-                              height: 50,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200]!.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: TextField(
-                                controller: otpControllers[index],
-                                focusNode: focusNodes[index],
-                                style: inputOtpTextStyle,
-                                keyboardType: TextInputType.number,
-                                cursorColor: whiteColor,
-                                textAlign: TextAlign.center,
-                                maxLength: 1,
-                                decoration: const InputDecoration(
-                                  counterText: '',
-                                  border: InputBorder.none,
-                                ),
-                                onChanged: (v) {
-                                  if (v.isNotEmpty && index < 5) {
-                                    FocusScope.of(context)
-                                        .requestFocus(focusNodes[index + 1]);
-                                  } else if (v.isEmpty && index > 0) {
-                                    FocusScope.of(context)
-                                        .requestFocus(focusNodes[index - 1]);
-                                  }
-                                },
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      InkWell(
-                        onTap: _verifyOTP,
-                        child: Container(
-                          height: 50,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.bottomRight,
-                              stops: const [0.1, 0.5, 0.9],
-                              colors: [
-                                Colors.blue[300]!.withValues(alpha: 0.8),
-                                Colors.blue[500]!.withValues(alpha: 0.8),
-                                Colors.blue[800]!.withValues(alpha: 0.8),
-                              ],
-                            ),
-                          ),
-                          child: Text(tr('auth.verifyOtp'),
-                              style: inputLoginTextStyle),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(tr('auth.didntReceiveOtp'),
-                              style: greySmallTextStyle),
-                          const SizedBox(width: 10),
-                          InkWell(
-                            onTap: _sendOTP,
-                            child: Text(tr('auth.resend'),
-                                style: inputLoginTextStyle),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                if (_isLoading)
-                  Container(
-                    color: Colors.black.withOpacity(0.3),
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Colors.orange),
+          ),
+          child: Text(
+            tr('auth.sendOtp'),
+            textDirection: ui.TextDirection.rtl,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtpSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          '${tr('auth.enterOtpSentTo')} $phoneNumber',
+          textAlign: TextAlign.center,
+          textDirection: ui.TextDirection.rtl,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: Colors.black12, blurRadius: 6),
+            ],
+          ),
+          child: Directionality(
+            textDirection: ui.TextDirection.ltr,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(6, (index) {
+                return SizedBox(
+                  width: 44,
+                  child: TextField(
+                    controller: otpControllers[index],
+                    focusNode: focusNodes[index],
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    maxLength: 1,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      contentPadding: EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    onChanged: (v) {
+                      if (v.isNotEmpty && index < 5) {
+                        FocusScope.of(context)
+                            .requestFocus(focusNodes[index + 1]);
+                      } else if (v.isEmpty && index > 0) {
+                        FocusScope.of(context)
+                            .requestFocus(focusNodes[index - 1]);
+                      }
+                    },
                   ),
-              ],
+                );
+              }),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _verifyOTP,
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+          ),
+          child: Text(
+            tr('auth.verifyOtp'),
+            textDirection: ui.TextDirection.rtl,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              tr('auth.didntReceiveOtp'),
+              textDirection: ui.TextDirection.rtl,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _isLoading ? null : _sendOTP,
+              child: Text(tr('auth.resend')),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

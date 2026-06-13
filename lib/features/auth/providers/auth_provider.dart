@@ -114,4 +114,15 @@ class AuthController extends StateNotifier<AsyncValue<User?>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> linkGoogle() async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(authServiceProvider).linkGoogleProvider();
+      await _auth.currentUser?.reload();
+      state = AsyncValue.data(_auth.currentUser);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
