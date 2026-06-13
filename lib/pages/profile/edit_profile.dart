@@ -385,6 +385,7 @@ class _EditProfileState extends State<EditProfile> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
+  final contactEmailController = TextEditingController();
 
   String profileImage = 'https://via.placeholder.com/150';
 
@@ -393,7 +394,7 @@ class _EditProfileState extends State<EditProfile> {
 
   // ✅ PATCH architecture state (initial snapshot for change-detection)
   String _initialName = '';
-  String _initialEmail = '';
+  String _initialContactEmail = '';
   String _initialPhone = '';
   String _initialProfileImage = '';
   bool _loaded = false;
@@ -417,6 +418,7 @@ class _EditProfileState extends State<EditProfile> {
     nameController.dispose();
     phoneController.dispose();
     emailController.dispose();
+    contactEmailController.dispose();
     super.dispose();
   }
 
@@ -431,6 +433,7 @@ class _EditProfileState extends State<EditProfile> {
     final name = (data['name'] ?? '').toString();
     final phone = (data['phoneNumber'] ?? '').toString();
     final email = (data['email'] ?? '').toString();
+    final contactEmail = (data['contactEmail'] ?? '').toString();
     final img =
         (data['profileImage'] ?? 'https://via.placeholder.com/150').toString();
 
@@ -440,12 +443,13 @@ class _EditProfileState extends State<EditProfile> {
       nameController.text = name;
       phoneController.text = phone;
       emailController.text = email;
+      contactEmailController.text = contactEmail;
       profileImage = img;
 
       // ✅ snapshot for PATCH detection
       _initialName = name;
       _initialPhone = phone;
-      _initialEmail = email;
+      _initialContactEmail = contactEmail;
       _initialProfileImage = img;
 
       // reset intent flags
@@ -471,17 +475,23 @@ class _EditProfileState extends State<EditProfile> {
       final updates = <String, dynamic>{};
 
       final newName = nameController.text.trim();
-      final newEmail =
-          emailController.text.trim(); // readOnly but keep for diff
       final newPhone = phoneController.text.trim();
+      final newContactEmail = contactEmailController.text.trim();
 
       // ✅ Optional fields: update only if user provided non-empty value AND changed.
       if (newName.isNotEmpty && newName != _initialName) {
         updates['name'] = newName;
       }
 
-      // ✅ Email is READONLY in UI (1A), so we do not update it here.
-      // If you later build ChangeEmailScreen, it should update FirebaseAuth + Firestore together.
+      // users/{uid}.email is the Auth/login mirror — never overwritten from profile edit.
+      // users/{uid}.contactEmail is the patient-editable contact email (display/comms only).
+      if (newContactEmail != _initialContactEmail) {
+        if (newContactEmail.isEmpty) {
+          updates['contactEmail'] = FieldValue.delete();
+        } else {
+          updates['contactEmail'] = newContactEmail;
+        }
+      }
 
       // Phone is readOnly on this page, but keep patch-safe logic for future use.
       if (newPhone.isNotEmpty && newPhone != _initialPhone) {
@@ -558,6 +568,9 @@ class _EditProfileState extends State<EditProfile> {
       // ✅ Update local state + initial snapshot (prevents repeated writes)
       setState(() {
         if (updates.containsKey('name')) _initialName = newName;
+        if (updates.containsKey('contactEmail')) {
+          _initialContactEmail = newContactEmail.isEmpty ? '' : newContactEmail;
+        }
         if (updates.containsKey('phoneNumber')) _initialPhone = newPhone;
 
         if (updates.containsKey('profileImage')) {
@@ -705,6 +718,9 @@ class _EditProfileState extends State<EditProfile> {
     TextEditingController controller, {
     bool readOnly = false,
     VoidCallback? onTap,
+    TextInputType? keyboardType,
+    List<String>? autofillHints,
+    String? helperText,
   }) {
     return Container(
       margin: EdgeInsets.symmetric(
@@ -735,13 +751,17 @@ class _EditProfileState extends State<EditProfile> {
             controller: controller,
             readOnly: readOnly,
             onTap: readOnly ? onTap : null,
-            decoration: const InputDecoration(
+            keyboardType: keyboardType,
+            autofillHints: autofillHints,
+            decoration: InputDecoration(
               isDense: true,
-              border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
+              border: const OutlineInputBorder(),
+              enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey)),
-              focusedBorder: OutlineInputBorder(
+              focusedBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: PatientAppColors.brandTeal)),
+              helperText: helperText,
+              helperMaxLines: 2,
             ),
           ),
         ],
@@ -832,11 +852,17 @@ class _EditProfileState extends State<EditProfile> {
                       ).then((_) => _loadUserData());
                     },
                   ),
-                  // ✅ 1A: Email readOnly (change via dedicated flow later)
                   getTile(
-                    tr('profile.email'),
+                    tr('profile.loginEmail'),
                     emailController,
                     readOnly: true,
+                  ),
+                  getTile(
+                    tr('profile.contactEmail'),
+                    contactEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    helperText: tr('profile.contactEmailHint'),
                   ),
                   getTile(
                     tr('profile.password'),
