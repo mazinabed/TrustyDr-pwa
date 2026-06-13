@@ -75,14 +75,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   int _capacityPerSlot = 1;
 
-  // ── TEMP DIAGNOSTIC ─────────────────────────────────────────────
-  String _debugStep = '';
-  void _setDebugStep(String step) {
-    debugPrint('[BOOKING] $step');
-    if (mounted) setState(() => _debugStep = step);
-  }
-  // ────────────────────────────────────────────────────────────────
-
   String _dateKey(DateTime d) =>
       "${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
 
@@ -246,28 +238,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   @override
   Widget build(BuildContext context) {
-    // ── TEMP DIAGNOSTIC PANEL ────────────────────────────────────────
-    Widget? debugPanel;
-    if (_debugStep.isNotEmpty) {
-      debugPanel = Container(
-        width: double.infinity,
-        color: Colors.orange.shade800,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Text(
-          'BOOKING DEBUG: $_debugStep',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-    }
-    // ─────────────────────────────────────────────────────────────────
-
     return Scaffold(
       backgroundColor: whiteColor,
-      bottomNavigationBar: debugPanel,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -462,51 +434,33 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
             );
           }
 
-          // ── TEMP DIAGNOSTIC WRAPPER ────────────────────────────────
-          return Listener(
-            onPointerDown: (_) {
-              debugPrint('[BOOKING] RAW_POINTER_DOWN label:$label');
-              _setDebugStep('RAW_POINTER_DOWN:$label');
-            },
-            child: Material(
-              color: Colors.transparent,
+          return Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
               borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: () {
-                  debugPrint('[BOOKING] RAW_SLOT_TAP label:$label');
-                  _setDebugStep('RAW_SLOT_TAP:$label');
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('RAW_SLOT_TAP: $label'),
-                      duration: const Duration(seconds: 3),
+              onTap: () => _onPickSlot(label),
+              child: Container(
+                width: 96,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: PatientAppColors.brandIndigo, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
-                  );
-                  _onPickSlot(label);
-                },
-                child: Container(
-                  width: 96,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                        color: PatientAppColors.brandIndigo, width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(label, style: primaryColorNormalTextStyle),
+                  ],
                 ),
+                child: Text(label, style: primaryColorNormalTextStyle),
               ),
             ),
           );
-          // ───────────────────────────────────────────────────────────
         }).toList(),
       ),
     );
@@ -519,19 +473,14 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
   }
 
   Future<void> _onPickSlot(String slotLabel) async {
-    _setDebugStep('SLOT_TAP_START label:$slotLabel');
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        _setDebugStep('SLOT_TAP_AUTH_FAIL');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('login_to_book'.tr()),
-          ),
+          SnackBar(content: Text('login_to_book'.tr())),
         );
         return;
       }
-      _setDebugStep('SLOT_TAP_AUTH_OK uid:${user.uid}');
 
       final dateKey = _dateKey(_selectedDay);
       final hasDup = await _hasActiveSameDayBooking(
@@ -539,31 +488,23 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         doctorId: widget.doctorId,
         dateKey: dateKey,
       );
-      _setDebugStep('SLOT_TAP_DUP_CHECK hasDup:$hasDup');
       if (hasDup) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'appointment_conflict_doctor_day'.tr(),
-              ),
+              content: Text('appointment_conflict_doctor_day'.tr()),
             ),
           );
         }
         return;
       }
 
-      if (!mounted) {
-        debugPrint(
-            '[BOOKING] SLOT_TAP_NOT_MOUNTED — unmounted after dup check');
-        return;
-      }
+      if (!mounted) return;
 
       final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
       final slotStart = _parseHm(_to24Hour(slotLabel), _selectedDay);
       final slotId =
           '${(_scheduleForDay!['scheduleId'] ?? '')}_${slotStart.millisecondsSinceEpoch}';
-      _setDebugStep('SLOT_TAP_SLOT_ID taken:${_takenSlotIds.contains(slotId)}');
 
       if (_takenSlotIds.contains(slotId)) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -572,7 +513,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         return;
       }
 
-      _setDebugStep('SLOT_TAP_BEFORE_MODAL');
       final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
       final sure = await showDialog<bool>(
         context: context,
@@ -602,15 +542,12 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           ],
         ),
       );
-      _setDebugStep('SLOT_TAP_DIALOG_RETURNED sure:$sure');
 
       final schedule = _scheduleForDay!;
-
       final centerId = (schedule['centerId'] ?? '').toString();
       final lang = context.locale.languageCode;
 
       String clinicName;
-
       if (lang == 'ar') {
         clinicName =
             (schedule['clinicName_ar'] ?? schedule['clinicName_en'] ?? '')
@@ -626,51 +563,33 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       final provinceKey = (schedule['provinceKey'] ?? '').toString();
       final cityKey = (schedule['cityKey'] ?? '').toString();
 
-// 🔥 HARD GUARD (VERY IMPORTANT)
-// if (centerId.isEmpty || clinicName.isEmpty || provinceKey.isEmpty || cityKey.isEmpty) {
-//   ScaffoldMessenger.of(context).showSnackBar(
-//     const SnackBar(content: Text('Center location is missing. Please contact the clinic.')),
-//   );
-//   return;
-// }
-
       if (sure != true) return;
       if (!mounted) return;
 
-      _setDebugStep(
-          'SLOT_TAP_MODAL_OPENED centerId:$centerId clinic:$clinicName');
       final wasBooked = await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (_) => ConfirmBookingModal(
           scheduleId: (_scheduleForDay!['scheduleId'] ?? '').toString(),
-
           slotStartAt: slotStart,
           slotDurationMinutes: dur,
-
           doctorId: widget.doctorId,
           doctorName: widget.doctorName,
           doctorImage: widget.doctorImage,
-
           specialtyKey: widget.specialtyKey,
           specialtyEn: widget.specialtyEn,
           specialtyAr: widget.specialtyAr,
           specialtyKu: widget.specialtyKu,
-
-          clinicName: clinicName, // ✅ FROM SCHEDULE
-
+          clinicName: clinicName,
           date: _selectedDay,
           slotLabel: slotLabel,
           capacityPerSlot: _capacityPerSlot,
-
-          centerId: centerId, // ✅ FROM SCHEDULE
-          provinceKey: provinceKey, // ✅ FROM SCHEDULE
-          cityKey: cityKey, // ✅ FROM SCHEDULE
+          centerId: centerId,
+          provinceKey: provinceKey,
+          cityKey: cityKey,
         ),
       );
-
-      _setDebugStep('SLOT_TAP_MODAL_RETURNED wasBooked:$wasBooked');
 
       if (wasBooked == true && mounted) {
         await _loadUsageForSelectedDate();
@@ -702,7 +621,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                   },
                   child: Text(
                     'my_appointments'.tr(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
@@ -719,16 +638,10 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           ),
         );
       }
-    } catch (e, st) {
-      _setDebugStep('SLOT_TAP_ERROR: $e');
-      debugPrint('[BOOKING] SLOT_TAP_ERROR stacktrace:\n$st');
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red.shade700,
-            content: Text('Booking error: $e'),
-            duration: const Duration(seconds: 6),
-          ),
+          SnackBar(content: Text('error_generic'.tr())),
         );
       }
     }
