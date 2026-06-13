@@ -514,7 +514,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   String _to24Hour(String label) {
     final parsed = DateFormat('h:mm a', 'en').parse(label);
-    return DateFormat('HH:mm').format(parsed);
+    return DateFormat('HH:mm', 'en')
+        .format(parsed); // 'en' prevents Arabic-Indic digits
   }
 
   Future<void> _onPickSlot(String slotLabel) async {
