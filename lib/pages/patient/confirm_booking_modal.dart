@@ -411,6 +411,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
   bool _submitting = false;
   bool _profileNameChecked = false;
   bool _profileNameMissing = false;
+  String? _duplicateError;
 
   // ✅ Visit reason
   final List<String> _visitReasons = [
@@ -538,73 +539,76 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
   // BOOK
   // ===========================================================
   Future<void> _book() async {
+    if (_submitting) return;
     final user = _auth.currentUser;
     if (user == null) return;
 
-    //---------------------------------------
-    // Resolve patient + bookedBy names
-    //---------------------------------------
-    final userSnap = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    String? profileName = userSnap.data()?['name'] ??
-        userSnap.data()?['username'] ??
-        user.displayName;
-
-    if (!mounted) return;
-
-    // Name guard — button is disabled when _profileNameMissing; this is a safety net.
-    if (!PatientIdentityValidator.isValidName(profileName)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('booking.profile_name_missing'.tr())),
-      );
-      return;
-    }
-
-    //---------------------------------------
-    // Validate family patient name + relationship
-    //---------------------------------------
-    if (!_forSelf &&
-        (!PatientIdentityValidator.isValidName(_patientNameCtrl.text) ||
-            _selectedRelationshipKey == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('patient_info_required'.tr())),
-      );
-      return;
-    }
-
-    // Resolve phone from already-fetched user snapshot; fallback to Auth phone
-    final rawPhone = (userSnap.data()?['phoneNumber'] as String?)?.trim();
-    final resolvedPhone =
-        (rawPhone != null && rawPhone.isNotEmpty) ? rawPhone : user.phoneNumber;
-
-    //---------------------------------------
-    // Duplicate appointment check
-    //---------------------------------------
-    final resolvedPatientName =
-        _forSelf ? profileName! : _patientNameCtrl.text.trim();
-    final patientIdentityKey = _forSelf
-        ? 'self'
-        : 'family:${_selectedRelationshipKey ?? 'other'}:${resolvedPatientName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ')}';
-    final hasDup = await _hasDuplicateAppointment(
-      patientId: user.uid,
-      patientIdentityKey: patientIdentityKey,
-      doctorId: widget.doctorId,
-      dateKey: _dateKey,
-    );
-    if (hasDup) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('booking.duplicate_appointment'.tr())),
-      );
-      return;
-    }
-
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _duplicateError = null;
+    });
 
     try {
+      //---------------------------------------
+      // Resolve patient + bookedBy names
+      //---------------------------------------
+      final userSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      String? profileName = userSnap.data()?['name'] ??
+          userSnap.data()?['username'] ??
+          user.displayName;
+
+      if (!mounted) return;
+
+      // Name guard — button is disabled when _profileNameMissing; this is a safety net.
+      if (!PatientIdentityValidator.isValidName(profileName)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('booking.profile_name_missing'.tr())),
+        );
+        return;
+      }
+
+      //---------------------------------------
+      // Validate family patient name + relationship
+      //---------------------------------------
+      if (!_forSelf &&
+          (!PatientIdentityValidator.isValidName(_patientNameCtrl.text) ||
+              _selectedRelationshipKey == null)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('patient_info_required'.tr())),
+        );
+        return;
+      }
+
+      // Resolve phone from already-fetched user snapshot; fallback to Auth phone
+      final rawPhone = (userSnap.data()?['phoneNumber'] as String?)?.trim();
+      final resolvedPhone = (rawPhone != null && rawPhone.isNotEmpty)
+          ? rawPhone
+          : user.phoneNumber;
+
+      //---------------------------------------
+      // Duplicate appointment check
+      //---------------------------------------
+      final resolvedPatientName =
+          _forSelf ? profileName! : _patientNameCtrl.text.trim();
+      final patientIdentityKey = _forSelf
+          ? 'self'
+          : 'family:${_selectedRelationshipKey ?? 'other'}:${resolvedPatientName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ')}';
+      final hasDup = await _hasDuplicateAppointment(
+        patientId: user.uid,
+        patientIdentityKey: patientIdentityKey,
+        doctorId: widget.doctorId,
+        dateKey: _dateKey,
+      );
+      if (hasDup) {
+        if (!mounted) return;
+        setState(() => _duplicateError = 'booking.duplicate_appointment'.tr());
+        return;
+      }
+
       //---------------------------------------
       // 🔥 BUILD APPOINTMENT (ONLY WAY)
       //---------------------------------------
@@ -889,13 +893,19 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                   ChoiceChip(
                     label: Text('self'.tr()),
                     selected: _forSelf,
-                    onSelected: (_) => setState(() => _forSelf = true),
+                    onSelected: (_) => setState(() {
+                      _forSelf = true;
+                      _duplicateError = null;
+                    }),
                   ),
                   const SizedBox(width: 12),
                   ChoiceChip(
                     label: Text('someone_else'.tr()),
                     selected: !_forSelf,
-                    onSelected: (_) => setState(() => _forSelf = false),
+                    onSelected: (_) => setState(() {
+                      _forSelf = false;
+                      _duplicateError = null;
+                    }),
                   ),
                 ],
               ),
@@ -904,6 +914,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _patientNameCtrl,
+                  onChanged: (_) => setState(() => _duplicateError = null),
                   decoration: InputDecoration(
                     labelText: 'patient_full_name'.tr(),
                     border: OutlineInputBorder(
@@ -926,8 +937,10 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                       child: Text(o.localizedLabel),
                     );
                   }).toList(),
-                  onChanged: (v) =>
-                      setState(() => _selectedRelationshipKey = v),
+                  onChanged: (v) => setState(() {
+                    _selectedRelationshipKey = v;
+                    _duplicateError = null;
+                  }),
                 ),
               ],
 
@@ -970,6 +983,37 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
               ),
 
               const SizedBox(height: 28),
+
+              // ===========================
+              // DUPLICATE ERROR BANNER
+              // ===========================
+              if (_duplicateError != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline,
+                          color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _duplicateError!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.red.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               // ===========================
               // CONFIRM BUTTON
