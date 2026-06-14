@@ -75,9 +75,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   int _capacityPerSlot = 1;
 
-  String _dateKey(DateTime d) =>
-      "${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
-
   DateTime _parseHm(String hm, DateTime base) {
     final parts = hm.split(':');
     final h = int.parse(parts[0]);
@@ -214,26 +211,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       cur = cur.add(Duration(minutes: dur));
     }
     return entries;
-  }
-
-  Future<bool> _hasActiveSameDayBooking({
-    required String userId,
-    required String doctorId,
-    required String dateKey,
-  }) async {
-    try {
-      final qs = await _fs
-          .collection('appointments')
-          .where('patientId', isEqualTo: userId)
-          .where('doctorId', isEqualTo: doctorId)
-          .where('dateKey', isEqualTo: dateKey)
-          .where('status', whereIn: ['pending', 'confirmed'])
-          .limit(1)
-          .get();
-      return qs.docs.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
   }
 
   @override
@@ -479,23 +456,6 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('login_to_book'.tr())),
         );
-        return;
-      }
-
-      final dateKey = _dateKey(_selectedDay);
-      final hasDup = await _hasActiveSameDayBooking(
-        userId: user.uid,
-        doctorId: widget.doctorId,
-        dateKey: dateKey,
-      );
-      if (hasDup) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('appointment_conflict_doctor_day'.tr()),
-            ),
-          );
-        }
         return;
       }
 

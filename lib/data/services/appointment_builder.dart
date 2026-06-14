@@ -284,6 +284,7 @@ class AppointmentBuilder {
     required String patientName,
     String? phone,
     String? relationship,
+    String? relationshipKey,
 
     // SLOT SNAPSHOT
     required DateTime slotStartAt,
@@ -414,6 +415,24 @@ class AppointmentBuilder {
     }
 
     //-----------------------------------------
+    // PATIENT IDENTITY KEY
+    // Computed once at creation; stored as an immutable snapshot field.
+    // Only written for patient_app source; null for reception/walk-in.
+    //-----------------------------------------
+    final String? patientIdentityKey;
+    if (source == 'patient_app') {
+      if (relationship == null) {
+        patientIdentityKey = 'self';
+      } else {
+        final namePart =
+            patientName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+        patientIdentityKey = 'family:${relationshipKey ?? 'other'}:$namePart';
+      }
+    } else {
+      patientIdentityKey = null;
+    }
+
+    //-----------------------------------------
 // 🔥 PREVENT DOUBLE BOOKING
 //-----------------------------------------
 
@@ -484,6 +503,8 @@ class AppointmentBuilder {
           'patientName': patientName,
           'phone': phone,
           'relationship': relationship,
+          'relationshipKey': relationshipKey,
+          'patientIdentityKey': patientIdentityKey,
 
           //------------------------------------------------
           // PATIENT HEALTH SNAPSHOT

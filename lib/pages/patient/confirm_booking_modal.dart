@@ -347,7 +347,7 @@ import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:trustydr/core/utils/patient_identity_validator.dart';
 import 'package:trustydr/data/services/appointment_builder.dart';
-import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/models/relationship_option.dart';
 import 'package:trustydr/services/push_notification_service.dart';
 import 'package:trustydr/widgets/push_permission_dialog.dart';
 
@@ -405,10 +405,12 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
   bool _forSelf = true;
   final _patientNameCtrl = TextEditingController();
-  final _relationshipCtrl = TextEditingController();
+  String? _selectedRelationshipKey;
   final _notesCtrl = TextEditingController();
 
   bool _submitting = false;
+  bool _profileNameChecked = false;
+  bool _profileNameMissing = false;
 
   // ✅ Visit reason
   final List<String> _visitReasons = [
@@ -419,6 +421,60 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
     'visit_reason.consultation',
     'visit_reason.other',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkProfileName();
+  }
+
+  Future<void> _checkProfileName() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final name =
+          snap.data()?['name'] ?? snap.data()?['username'] ?? user.displayName;
+      if (!mounted) return;
+      final isValid =
+          name is String && PatientIdentityValidator.isValidName(name);
+      setState(() {
+        _profileNameMissing = !isValid;
+        _profileNameChecked = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _profileNameChecked = true);
+    }
+  }
+
+  // ===========================================================
+  // DUPLICATE CHECK
+  // ===========================================================
+  Future<bool> _hasDuplicateAppointment({
+    required String patientId,
+    required String patientIdentityKey,
+    required String doctorId,
+    required String dateKey,
+  }) async {
+    try {
+      final qs = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('patientId', isEqualTo: patientId)
+          .where('patientIdentityKey', isEqualTo: patientIdentityKey)
+          .where('doctorId', isEqualTo: doctorId)
+          .where('dateKey', isEqualTo: dateKey)
+          .where('status', whereIn: ['pending', 'confirmed'])
+          .limit(1)
+          .get();
+      return qs.docs.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
 
   DateTime _buildAppointmentDateTime() {
     final label = widget.slotLabel; // e.g. "12:30 PM"
@@ -499,24 +555,12 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
 
     if (!mounted) return;
 
-    // Validate main user identity — required for both self and family bookings
-    // (booker/responsible contact must have a real name, not a placeholder)
+    // Name guard — button is disabled when _profileNameMissing; this is a safety net.
     if (!PatientIdentityValidator.isValidName(profileName)) {
-      if (_forSelf) {
-        final enteredName = await _askForNameOnce(context);
-        if (enteredName == null || !mounted) return;
-        profileName = enteredName;
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'name': enteredName,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        if (!mounted) return;
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('profile_name_required_for_family'.tr())),
-        );
-        return;
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('booking.profile_name_missing'.tr())),
+      );
+      return;
     }
 
     //---------------------------------------
@@ -524,7 +568,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
     //---------------------------------------
     if (!_forSelf &&
         (!PatientIdentityValidator.isValidName(_patientNameCtrl.text) ||
-            _relationshipCtrl.text.trim().isEmpty)) {
+            _selectedRelationshipKey == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('patient_info_required'.tr())),
       );
@@ -536,13 +580,42 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
     final resolvedPhone =
         (rawPhone != null && rawPhone.isNotEmpty) ? rawPhone : user.phoneNumber;
 
+    //---------------------------------------
+    // Duplicate appointment check
+    //---------------------------------------
+    final resolvedPatientName =
+        _forSelf ? profileName! : _patientNameCtrl.text.trim();
+    final patientIdentityKey = _forSelf
+        ? 'self'
+        : 'family:${_selectedRelationshipKey ?? 'other'}:${resolvedPatientName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ')}';
+    final hasDup = await _hasDuplicateAppointment(
+      patientId: user.uid,
+      patientIdentityKey: patientIdentityKey,
+      doctorId: widget.doctorId,
+      dateKey: _dateKey,
+    );
+    if (hasDup) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('booking.duplicate_appointment'.tr())),
+      );
+      return;
+    }
+
     setState(() => _submitting = true);
 
     try {
       //---------------------------------------
       // 🔥 BUILD APPOINTMENT (ONLY WAY)
       //---------------------------------------
-      final slotId = await AppointmentBuilder.create(
+      final relationshipDisplay = _forSelf
+          ? null
+          : RelationshipOption.options
+              .firstWhere((o) => o.key == _selectedRelationshipKey,
+                  orElse: () => RelationshipOption.options.last)
+              .localizedLabel;
+
+      await AppointmentBuilder.create(
         scheduleId: widget.scheduleId,
         doctorId: widget.doctorId,
         doctorName: widget.doctorName,
@@ -550,7 +623,8 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
         patientId: user.uid,
         patientName: _forSelf ? profileName! : _patientNameCtrl.text.trim(),
         phone: resolvedPhone,
-        relationship: _forSelf ? null : _relationshipCtrl.text.trim(),
+        relationship: relationshipDisplay,
+        relationshipKey: _selectedRelationshipKey,
         slotStartAt: widget.slotStartAt,
         source: "patient_app",
         bookedByUserId: user.uid,
@@ -762,6 +836,41 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
               const SizedBox(height: 24),
 
               // ===========================
+              // PROFILE NAME WARNING
+              // ===========================
+              if (_profileNameChecked && _profileNameMissing) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded,
+                          color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'booking.profile_name_missing'.tr(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('booking.go_to_profile'.tr()),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ===========================
               // WHO IS THIS FOR
               // ===========================
 
@@ -803,14 +912,22 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _relationshipCtrl,
+                DropdownButtonFormField<String>(
+                  value: _selectedRelationshipKey,
                   decoration: InputDecoration(
                     labelText: 'relationship'.tr(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
+                  items: RelationshipOption.options.map((o) {
+                    return DropdownMenuItem(
+                      value: o.key,
+                      child: Text(o.localizedLabel),
+                    );
+                  }).toList(),
+                  onChanged: (v) =>
+                      setState(() => _selectedRelationshipKey = v),
                 ),
               ],
 
@@ -859,7 +976,7 @@ class _ConfirmBookingModalState extends State<ConfirmBookingModal> {
               // ===========================
 
               ElevatedButton(
-                onPressed: _submitting ? null : _book,
+                onPressed: (_submitting || _profileNameMissing) ? null : _book,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PatientAppColors.brandIndigo,
                   padding: const EdgeInsets.symmetric(vertical: 16),
