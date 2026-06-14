@@ -736,6 +736,7 @@ import 'package:trustydr/core/theme/patient_app_colors.dart';
 
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/widgets/cross_portal_doctor_card.dart';
+import 'package:trustydr/widgets/carrier_notice_widget.dart';
 
 // 🔴 IMPORTANT: adjust this import path to where your auth_controller.dart is
 
@@ -823,6 +824,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
+
+            const CarrierNoticeWidget(),
 
             const SizedBox(height: 30),
 

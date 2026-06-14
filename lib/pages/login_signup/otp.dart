@@ -519,6 +519,7 @@
 
 // }
 
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -531,6 +532,7 @@ import 'package:trustydr/widgets/StaticInfoHeader.dart';
 import 'package:trustydr/pages/login_signup/consent_screen.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/widgets/carrier_notice_widget.dart';
 
 enum _OtpPhase { sending, ready, failed }
 
@@ -556,6 +558,10 @@ class _OTPScreenState extends State<OTPScreen> {
   bool _sendingOtp = false;
   bool _completed = false;
 
+  int _sendCount = 0;
+  int _resendCountdown = 0;
+  Timer? _countdownTimer;
+
   @override
   void initState() {
     super.initState();
@@ -570,6 +576,8 @@ class _OTPScreenState extends State<OTPScreen> {
       print('[PhoneAuth] _sendOTP skipped – already in progress');
       return;
     }
+    if (_sendCount >= 3) return;
+    if (_resendCountdown > 0) return;
     _sendingOtp = true;
     // ignore: avoid_print
     print('[PhoneAuth] _sendOTP started phone=${widget.phoneNumber}');
@@ -620,6 +628,8 @@ class _OTPScreenState extends State<OTPScreen> {
             '[PhoneAuth] codeSent verificationId=$verificationId resendToken=$resendToken',
           );
           _sendingOtp = false;
+          _sendCount++;
+          _startCountdown();
           if (mounted) {
             setState(() {
               _verificationId = verificationId;
@@ -726,8 +736,27 @@ class _OTPScreenState extends State<OTPScreen> {
     }
   }
 
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _resendCountdown = 60;
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        _countdownTimer?.cancel();
+        return;
+      }
+      setState(() {
+        if (_resendCountdown > 0) {
+          _resendCountdown--;
+        } else {
+          _countdownTimer?.cancel();
+        }
+      });
+    });
+  }
+
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     for (final c in otpControllers) {
       c.dispose();
     }
@@ -740,6 +769,40 @@ class _OTPScreenState extends State<OTPScreen> {
   String _localizedFailureMessage(String? code) {
     if (code == 'too-many-requests') return 'otp_too_many_attempts'.tr();
     return 'otp_send_failed'.tr();
+  }
+
+  Widget _buildResendWidget({required bool elevated}) {
+    if (_sendCount >= 3) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Text(
+          'otp_session_limit'.tr(),
+          textAlign: TextAlign.center,
+          textDirection: ui.TextDirection.rtl,
+          style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+        ),
+      );
+    }
+    final label = _resendCountdown > 0
+        ? 'otp_resend_countdown'.tr(namedArgs: {'s': '$_resendCountdown'})
+        : 'otp_resend'.tr();
+    final onPressed = (_resendCountdown > 0 || _isLoading) ? null : _sendOTP;
+    if (elevated) {
+      return ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(label, textDirection: ui.TextDirection.rtl),
+      );
+    }
+    return TextButton(
+      onPressed: onPressed,
+      child: Text(label, textDirection: ui.TextDirection.rtl),
+    );
   }
 
   Widget _buildSendingState() {
@@ -773,19 +836,7 @@ class _OTPScreenState extends State<OTPScreen> {
             style: TextStyle(color: Colors.red.shade700),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _sendOTP,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: Text(
-              'otp_resend'.tr(),
-              textDirection: ui.TextDirection.rtl,
-            ),
-          ),
+          _buildResendWidget(elevated: true),
         ],
       ),
     );
@@ -859,13 +910,7 @@ class _OTPScreenState extends State<OTPScreen> {
               : Text('otp_verify'.tr(), textDirection: ui.TextDirection.rtl),
         ),
         const SizedBox(height: 12),
-        TextButton(
-          onPressed: _isLoading ? null : _sendOTP,
-          child: Text(
-            'otp_resend'.tr(),
-            textDirection: ui.TextDirection.rtl,
-          ),
-        ),
+        _buildResendWidget(elevated: false),
       ],
     );
   }
@@ -887,6 +932,7 @@ class _OTPScreenState extends State<OTPScreen> {
               textDirection: ui.TextDirection.rtl,
             ),
             const SizedBox(height: 30),
+            const CarrierNoticeWidget(),
             if (_phase == _OtpPhase.sending)
               _buildSendingState()
             else if (_phase == _OtpPhase.failed)
