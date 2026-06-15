@@ -822,7 +822,8 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
                   ),
                 );
               },
-              onCancel: () => _confirmCancel(id),
+              onCancel: () =>
+                  _confirmCancel(id, slotId: data['slotId'] as String?),
               onReschedule: () {
                 Navigator.push(
                   context,
@@ -864,7 +865,10 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     );
   }
 
-  Future<void> _confirmCancel(String appointmentId) async {
+  Future<void> _confirmCancel(
+    String appointmentId, {
+    String? slotId,
+  }) async {
     final yes = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -889,10 +893,18 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     if (yes != true) return;
 
     try {
-      await _fs.collection('appointments').doc(appointmentId).update({
-        'status': 'cancelled',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final effectiveSlotId = slotId ?? appointmentId;
+      final batch = _fs.batch();
+      batch.update(
+        _fs.collection('appointments').doc(appointmentId),
+        {
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+      batch.delete(_fs.collection('slot_locks').doc(effectiveSlotId));
+      await batch.commit();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('appointment_canceled'.tr())),

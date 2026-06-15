@@ -164,10 +164,9 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     });
     try {
       // Build slot IDs from the schedule — no list query needed.
-      // Per-slot get() calls work within the read rule:
-      //   • non-existent doc  → resource == null → allowed → exists=false → available
-      //   • booked by me      → patientId matches → allowed → exists=true → taken
-      //   • booked by other   → permission-denied → catch → taken
+      // Per-slot get() checks slot_locks/{slotId} directly.
+      //   • no lock doc  → slot is available
+      //   • lock exists  → slot is taken (regardless of who locked it)
       final entries = _buildSlotEntries();
       if (entries.isEmpty) {
         if (mounted) setState(() => _loadingUsage = false);
@@ -177,7 +176,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       final futures = entries.map((entry) async {
         try {
           final snap =
-              await _fs.collection('appointments').doc(entry.slotId).get();
+              await _fs.collection('slot_locks').doc(entry.slotId).get();
           return snap.exists ? entry.slotId : null;
         } catch (_) {
           return entry.slotId;

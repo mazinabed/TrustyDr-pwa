@@ -437,18 +437,29 @@ class AppointmentBuilder {
 //-----------------------------------------
 
     final slotId = '${scheduleId}_${slotStartAt.millisecondsSinceEpoch}';
+    final dateKey =
+        "${slotStartAt.year}-${slotStartAt.month.toString().padLeft(2, '0')}-${slotStartAt.day.toString().padLeft(2, '0')}";
 
-    final docRef = _fs.collection('appointments').doc(slotId);
+    final slotLockRef = _fs.collection('slot_locks').doc(slotId);
+    final appointmentRef = _fs.collection('appointments').doc();
 
     try {
       await _fs.runTransaction((tx) async {
-        final existing = await tx.get(docRef);
+        final existingLock = await tx.get(slotLockRef);
 
-        if (existing.exists) {
+        if (existingLock.exists) {
           throw Exception('SLOT_ALREADY_BOOKED');
         }
 
-        tx.set(docRef, {
+        tx.set(slotLockRef, {
+          'appointmentId': appointmentRef.id,
+          'centerId': centerId,
+          'dateKey': dateKey,
+          'lockedBy': bookedByUserId,
+          'lockedAt': FieldValue.serverTimestamp(),
+        });
+
+        tx.set(appointmentRef, {
           'slotId': slotId,
 
           /// 🔥 VERSION
@@ -552,18 +563,17 @@ class AppointmentBuilder {
           // TIME
           //------------------------------------------------
           'appointmentAt': Timestamp.fromDate(slotStartAt),
-          'dateKey':
-              "${slotStartAt.year}-${slotStartAt.month.toString().padLeft(2, '0')}-${slotStartAt.day.toString().padLeft(2, '0')}",
+          'dateKey': dateKey,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }); // ✅ CLOSE TRANSACTION
     } catch (_) {
-      final check = await docRef.get();
+      final check = await slotLockRef.get();
       if (check.exists) throw Exception('SLOT_ALREADY_BOOKED');
       rethrow;
     }
 
-    return slotId; // ✅ RETURN AFTER TRANSACTION
+    return appointmentRef.id; // ✅ RETURN AFTER TRANSACTION
   }
 }

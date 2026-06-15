@@ -1073,7 +1073,10 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
                       label: Text('reschedule'.tr()),
                     ),
                     TextButton.icon(
-                      onPressed: () => _confirmCancel(widget.appointmentId),
+                      onPressed: () => _confirmCancel(
+                        widget.appointmentId,
+                        slotId: data['slotId'] as String?,
+                      ),
                       icon: const Icon(
                         Icons.cancel,
                         color: Colors.red,
@@ -1154,7 +1157,10 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
 // }
 
   // Identical logic to MyAppointmentsPage._confirmCancel
-  Future<void> _confirmCancel(String appointmentId) async {
+  Future<void> _confirmCancel(
+    String appointmentId, {
+    String? slotId,
+  }) async {
     final yes = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -1177,10 +1183,18 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
     if (yes != true) return;
 
     try {
-      await _fs.collection('appointments').doc(appointmentId).update({
-        'status': 'cancelled',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final effectiveSlotId = slotId ?? appointmentId;
+      final batch = _fs.batch();
+      batch.update(
+        _fs.collection('appointments').doc(appointmentId),
+        {
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+      batch.delete(_fs.collection('slot_locks').doc(effectiveSlotId));
+      await batch.commit();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('appointment_canceled'.tr())),
