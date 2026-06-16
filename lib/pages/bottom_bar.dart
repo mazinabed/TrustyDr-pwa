@@ -305,6 +305,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/utils/web_reload.dart';
 
 import 'package:trustydr/pages/screens.dart'
     show Home, SpecialityScreen, MyAppointmentsPage, Profile;
@@ -323,9 +324,54 @@ class BottomBar extends ConsumerStatefulWidget {
 
 class _BottomBarState extends ConsumerState<BottomBar> {
   int _selectedIndex = 0;
+  bool _updateAvailable = false;
+  bool _bannerShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    listenForPwaUpdate(() {
+      if (mounted) setState(() => _updateAvailable = true);
+    });
+    // JS may have detected the update before this listener was registered.
+    // Check the persistent flag so we never miss an early-fired event.
+    if (isPwaUpdateAvailable()) {
+      _updateAvailable = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_updateAvailable && !_bannerShown) {
+      _bannerShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showMaterialBanner(
+          MaterialBanner(
+            backgroundColor: const Color(0xFF0A5C4A),
+            leading: const Icon(
+              Icons.system_update_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+            content: Text(
+              'app_update_body'.tr(),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: reloadPage,
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                child: Text(
+                  'app_update_reload'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    }
     final auth = ref.watch(authStateProvider);
     // 🔥 IMPORTANT: DO NOT block UI on loading
     final user = auth.value; // may be null → OK

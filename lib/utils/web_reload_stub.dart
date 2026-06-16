@@ -1,1 +1,3 @@
-export 'web_reload.dart' if (dart.library.html) 'web_reload_web.dart';
+﻿void reloadPage() {}
+void listenForPwaUpdate(void Function() onUpdate) {}
+bool isPwaUpdateAvailable() => false;

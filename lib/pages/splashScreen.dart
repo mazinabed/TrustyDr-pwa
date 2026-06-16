@@ -348,7 +348,8 @@ import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/pages/public_doctor_profile_page.dart';
 import 'package:trustydr/services/database_service.dart';
 // Ensure your DatabaseService and BottomBar imports are here
-import 'package:trustydr/utils/web_reload_stub.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:trustydr/utils/web_reload.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -523,13 +524,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          "Update Available",
-                          style: TextStyle(
+                        Text(
+                          'app_update_title'.tr(),
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                         const SizedBox(height: 8),
-                        const Text("A new version of the app is ready."),
+                        Text('app_update_body'.tr()),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
@@ -540,7 +541,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 horizontal: 24, vertical: 12),
                           ),
                           onPressed: () => reloadPage(),
-                          child: const Text("REFRESH NOW"),
+                          child: Text('app_update_reload'.tr()),
                         ),
                       ],
                     ),

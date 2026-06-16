@@ -527,5 +527,8 @@
   "health.cancel": "إلغاء",
   "cross_portal_doctor_title": "هل أنت طبيب أو تمثل عيادة؟",
   "cross_portal_doctor_body": "إذا كنت ترغب بإدارة المواعيد والحجوزات، استخدم بوابة الأطباء.",
-  "cross_portal_doctor_cta": "الانتقال إلى بوابة الأطباء"
+  "cross_portal_doctor_cta": "الانتقال إلى بوابة الأطباء",
+  "app_update_title": "تم تحديث التطبيق",
+  "app_update_body": "تم تحديث التطبيق. يرجى إعادة تحميل الصفحة للمتابعة.",
+  "app_update_reload": "إعادة تحميل"
 }

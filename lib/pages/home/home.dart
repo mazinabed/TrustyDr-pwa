@@ -3751,13 +3751,15 @@ class _HomeState extends ConsumerState<Home>
                                   'doctor_prefix_name'.tr(args: [
                                     localizedField(data, 'doctorName', context)
                                   ]),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: PatientAppColors.darkNavy,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     const Icon(
@@ -3770,6 +3772,8 @@ class _HomeState extends ConsumerState<Home>
                                       child: Text(
                                         _localizedSpecialtyFromAppointment(
                                             data),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           color: Colors.black54,
                                           fontSize: 13,
@@ -3791,6 +3795,8 @@ class _HomeState extends ConsumerState<Home>
                                       child: Text(
                                         localizedField(
                                             data, 'clinicName', context),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           color: Color(0x73000000),
                                           fontSize: 12,

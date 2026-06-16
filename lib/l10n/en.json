@@ -526,5 +526,8 @@
   "health.cancel": "Cancel",
   "cross_portal_doctor_title": "Are you a doctor or clinic?",
   "cross_portal_doctor_body": "If you would like to manage appointments and bookings, use the Doctor Portal.",
-  "cross_portal_doctor_cta": "Go to Doctor Portal"
+  "cross_portal_doctor_cta": "Go to Doctor Portal",
+  "app_update_title": "App Updated",
+  "app_update_body": "The app has been updated. Please reload the page to continue.",
+  "app_update_reload": "Reload"
 }
