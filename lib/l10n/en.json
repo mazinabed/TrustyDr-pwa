@@ -529,5 +529,10 @@
   "cross_portal_doctor_cta": "Go to Doctor Portal",
   "app_update_title": "App Updated",
   "app_update_body": "The app has been updated. Please reload the page to continue.",
-  "app_update_reload": "Reload"
+  "app_update_reload": "Reload",
+  "lang": {
+    "Arabic": "Arabic",
+    "English": "English",
+    "Kurdish": "Kurdish"
+  }
 }

@@ -883,7 +883,11 @@ class _DoctorProfileView extends StatelessWidget {
                 'languages'.tr(),
                 languages.isEmpty
                     ? 'no_languages_listed'.tr()
-                    : languages.join(', '),
+                    : languages.map((l) {
+                        final key = 'lang.$l';
+                        final result = key.tr();
+                        return result == key ? l : result;
+                      }).join(', '),
               ),
               if (exp != 'N/A')
                 info(
