@@ -388,6 +388,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                   firstDay: DateTime.now(),
                   lastDay: _calendarLastDay,
                   locale: _calendarLocale(),
+                  daysOfWeekHeight: 24,
                   focusedDay: _focusedDay,
                   currentDay: DateTime.now(),
                   enabledDayPredicate: _isDateEnabled,
@@ -418,14 +419,14 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                       if (_calendarLocale() != 'ar') return null;
                       final name = DateFormat('EEEE', 'ar').format(day);
                       return Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 1),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
                             child: Text(
                               name,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF6B7280),
                               ),
