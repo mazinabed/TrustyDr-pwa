@@ -75,17 +75,32 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   int _capacityPerSlot = 1;
 
-  DateTime _parseHm(String hm, DateTime base) {
-    final parts = hm.split(':');
-    final h = int.parse(parts[0]);
-    final m = int.parse(parts[1]);
-    return DateTime(base.year, base.month, base.day, h, m);
+  DateTime _toBaghdadUtc(DateTime local) {
+    return DateTime.utc(
+      local.year,
+      local.month,
+      local.day,
+      local.hour,
+      local.minute,
+    ).subtract(const Duration(hours: 3));
   }
 
-  String _formatHm(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+  DateTime _parseHm(String hm, DateTime base) {
+    final parts = hm.split(':');
+    return _toBaghdadUtc(DateTime(
+      base.year,
+      base.month,
+      base.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    ));
+  }
+
+  String _formatHm(DateTime utcDt) {
+    final baghdadLocal = utcDt.toUtc().add(const Duration(hours: 3));
+    final h = baghdadLocal.hour % 12 == 0 ? 12 : baghdadLocal.hour % 12;
+    final m = baghdadLocal.minute.toString().padLeft(2, '0');
+    final ampm = baghdadLocal.hour >= 12 ? 'PM' : 'AM';
     return '$h:$m $ampm';
   }
 

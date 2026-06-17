@@ -437,8 +437,9 @@ class AppointmentBuilder {
 //-----------------------------------------
 
     final slotId = '${scheduleId}_${slotStartAt.millisecondsSinceEpoch}';
+    final baghdadLocal = slotStartAt.toUtc().add(const Duration(hours: 3));
     final dateKey =
-        "${slotStartAt.year}-${slotStartAt.month.toString().padLeft(2, '0')}-${slotStartAt.day.toString().padLeft(2, '0')}";
+        "${baghdadLocal.year}-${baghdadLocal.month.toString().padLeft(2, '0')}-${baghdadLocal.day.toString().padLeft(2, '0')}";
 
     final slotLockRef = _fs.collection('slot_locks').doc(slotId);
     final appointmentRef = _fs.collection('appointments').doc();
