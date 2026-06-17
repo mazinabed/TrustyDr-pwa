@@ -8,7 +8,6 @@ import 'package:trustydr/pages/patient/my_appointments_page.dart'
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -66,6 +65,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
 
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
+  DateTime _calendarLastDay = DateTime.now().add(const Duration(days: 60));
+  bool _calendarInitialized = false;
 
   Map<String, dynamic>? _scheduleForDay;
   bool _loadingSchedule = true;
@@ -136,6 +137,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           _capacityPerSlot = 1;
           _loadingSchedule = false;
           _loadingUsage = false;
+          _calendarInitialized = true;
         });
         return;
       }
@@ -152,7 +154,33 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           ? data['capacityPerSlot'] as int
           : int.tryParse("${data['capacityPerSlot']}") ?? 1;
 
-      setState(() => _loadingSchedule = false);
+      final maxDays = (data['maxFutureDays'] as int?) ?? 60;
+      final now = DateTime.now();
+      final todayNorm = DateTime(now.year, now.month, now.day);
+      DateTime calEnd = todayNorm.add(Duration(days: maxDays));
+      final validToTs = data['validTo'];
+      if (validToTs is Timestamp) {
+        final vtDate = validToTs.toDate();
+        final vtNorm = DateTime(vtDate.year, vtDate.month, vtDate.day);
+        if (vtNorm.isBefore(calEnd)) calEnd = vtNorm;
+      }
+      // calEnd must never be before today (expired validTo edge case)
+      if (calEnd.isBefore(todayNorm)) calEnd = todayNorm;
+
+      final calEndNorm = DateTime(calEnd.year, calEnd.month, calEnd.day);
+      final selNorm =
+          DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
+
+      setState(() {
+        _calendarLastDay = calEnd;
+        if (selNorm.isAfter(calEndNorm)) {
+          _selectedDay = todayNorm;
+          _focusedDay = todayNorm;
+          _scheduleForDay = null;
+        }
+        _calendarInitialized = true;
+        _loadingSchedule = false;
+      });
 
       await _loadUsageForSelectedDate();
     } catch (_) {
@@ -161,6 +189,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         _capacityPerSlot = 1;
         _loadingSchedule = false;
         _loadingUsage = false;
+        _calendarInitialized = true;
       });
     }
   }
@@ -212,8 +241,55 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
     }
   }
 
+  bool _isDateEnabled(DateTime day) {
+    final today = DateTime.now();
+    final todayNorm = DateTime(today.year, today.month, today.day);
+    final dayNorm = DateTime(day.year, day.month, day.day);
+    final lastNorm = DateTime(
+        _calendarLastDay.year, _calendarLastDay.month, _calendarLastDay.day);
+    return !dayNorm.isBefore(todayNorm) && !dayNorm.isAfter(lastNorm);
+  }
+
+  String _calendarLocale() {
+    final lang = context.locale.languageCode;
+    return (lang == 'ar' || lang == 'ku') ? 'ar' : 'en';
+  }
+
+  String _localizeSlotLabel(String label) {
+    final lang = context.locale.languageCode;
+    if (lang != 'ar' && lang != 'ku') return label;
+    return label.replaceAll('AM', 'ص').replaceAll('PM', 'م');
+  }
+
+  String _arabicMonthOrdinal(int month) {
+    const ordinals = [
+      '',
+      'الشهر الأول',
+      'الشهر الثاني',
+      'الشهر الثالث',
+      'الشهر الرابع',
+      'الشهر الخامس',
+      'الشهر السادس',
+      'الشهر السابع',
+      'الشهر الثامن',
+      'الشهر التاسع',
+      'الشهر العاشر',
+      'الشهر الحادي عشر',
+      'الشهر الثاني عشر',
+    ];
+    return (month >= 1 && month <= 12) ? ordinals[month] : '';
+  }
+
   List<_SlotEntry> _buildSlotEntries() {
     if (_scheduleForDay == null) return [];
+    final validToTs = _scheduleForDay!['validTo'];
+    if (validToTs is Timestamp) {
+      final vtDate = validToTs.toDate();
+      final sel =
+          DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
+      final vt = DateTime(vtDate.year, vtDate.month, vtDate.day);
+      if (sel.isAfter(vt)) return [];
+    }
     final start = _parseHm(_scheduleForDay!['startTime'], _selectedDay);
     final end = _parseHm(_scheduleForDay!['endTime'], _selectedDay);
     final dur = (_scheduleForDay!['slotDurationMinutes'] ?? 20) as int;
@@ -285,52 +361,134 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                 ],
               ),
             ),
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: fixPadding * 1.5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  )
-                ],
-              ),
-              child: TableCalendar(
-                firstDay: DateTime.now(),
-                lastDay: DateTime.now().add(const Duration(days: 60)),
-                focusedDay: _focusedDay,
-                currentDay: DateTime.now(),
-                selectedDayPredicate: (d) =>
-                    d.year == _selectedDay.year &&
-                    d.month == _selectedDay.month &&
-                    d.day == _selectedDay.day,
-                calendarStyle: CalendarStyle(
-                  todayDecoration: BoxDecoration(
-                    color: PatientAppColors.brandIndigo.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  selectedDecoration: BoxDecoration(
+            if (!_calendarInitialized)
+              const SizedBox(
+                height: 340,
+                child: Center(
+                  child: CircularProgressIndicator(
                     color: PatientAppColors.brandIndigo,
-                    shape: BoxShape.circle,
                   ),
                 ),
-                headerStyle: const HeaderStyle(
-                  formatButtonVisible: false,
-                  titleCentered: true,
+              )
+            else
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: fixPadding * 1.5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
-                onDaySelected: (sel, foc) async {
-                  setState(() {
-                    _selectedDay = sel;
-                    _focusedDay = foc;
-                  });
-                  await _loadScheduleForSelectedDay();
-                },
-                onPageChanged: (foc) => _focusedDay = foc,
+                child: TableCalendar(
+                  firstDay: DateTime.now(),
+                  lastDay: _calendarLastDay,
+                  locale: _calendarLocale(),
+                  focusedDay: _focusedDay,
+                  currentDay: DateTime.now(),
+                  enabledDayPredicate: _isDateEnabled,
+                  selectedDayPredicate: (d) =>
+                      d.year == _selectedDay.year &&
+                      d.month == _selectedDay.month &&
+                      d.day == _selectedDay.day,
+                  calendarStyle: CalendarStyle(
+                    todayDecoration: BoxDecoration(
+                      color: PatientAppColors.brandIndigo.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    selectedDecoration: const BoxDecoration(
+                      color: PatientAppColors.brandIndigo,
+                      shape: BoxShape.circle,
+                    ),
+                    disabledTextStyle: const TextStyle(
+                      color: Color(0xFFCCCCCC),
+                      fontSize: 14,
+                    ),
+                  ),
+                  headerStyle: const HeaderStyle(
+                    formatButtonVisible: false,
+                    titleCentered: true,
+                  ),
+                  calendarBuilders: CalendarBuilders(
+                    dowBuilder: (context, day) {
+                      if (_calendarLocale() != 'ar') return null;
+                      final name = DateFormat('EEEE', 'ar').format(day);
+                      return Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 1),
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    headerTitleBuilder: (context, day) {
+                      if (_calendarLocale() != 'ar') return null;
+                      final monthYear =
+                          DateFormat('MMMM yyyy', 'ar').format(day);
+                      final ordinal = _arabicMonthOrdinal(day.month);
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            monthYear,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Text(
+                            ordinal,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF9CA3AF),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  onDaySelected: (sel, foc) async {
+                    if (!_isDateEnabled(sel)) {
+                      setState(() {
+                        _scheduleForDay = null;
+                        _loadingSchedule = false;
+                        _loadingUsage = false;
+                        _takenSlotIds = {};
+                      });
+                      return;
+                    }
+                    setState(() {
+                      _selectedDay = sel;
+                      _focusedDay = foc;
+                    });
+                    await _loadScheduleForSelectedDay();
+                  },
+                  onPageChanged: (foc) {
+                    final lastNorm = DateTime(_calendarLastDay.year,
+                        _calendarLastDay.month, _calendarLastDay.day);
+                    setState(() {
+                      _focusedDay = foc.isAfter(lastNorm) ? lastNorm : foc;
+                    });
+                  },
+                ),
               ),
-            ),
             const SizedBox(height: 10),
             if (_loadingSchedule)
               const SizedBox(
@@ -449,7 +607,8 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                     ),
                   ],
                 ),
-                child: Text(label, style: primaryColorNormalTextStyle),
+                child: Text(_localizeSlotLabel(label),
+                    style: primaryColorNormalTextStyle),
               ),
             ),
           );
@@ -488,7 +647,11 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
         return;
       }
 
-      final prettyDate = DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
+      final locale0 = context.locale.languageCode;
+      final prettyDate = (locale0 == 'ar' || locale0 == 'ku')
+          ? DateFormat('d / M / yyyy').format(_selectedDay)
+          : DateFormat('EEE, MMM d, yyyy').format(_selectedDay);
+      final displaySlot = _localizeSlotLabel(slotLabel);
       final sure = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
@@ -496,7 +659,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
           content: Text(
             'confirm_booking_message'.tr(namedArgs: {
               'date': prettyDate,
-              'slot': slotLabel,
+              'slot': displaySlot,
               'doctor': widget.doctorName,
             }),
           ),
@@ -579,7 +742,7 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
                   child: Text(
                     'appointment_booked_message'.tr(namedArgs: {
                       'date': DateFormat('yyyy-MM-dd').format(_selectedDay),
-                      'slot': slotLabel,
+                      'slot': displaySlot,
                     }),
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                     overflow: TextOverflow.ellipsis,
