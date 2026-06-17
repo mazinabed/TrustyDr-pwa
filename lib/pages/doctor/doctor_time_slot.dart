@@ -121,9 +121,10 @@ class _DoctorTimeSlotState extends State<DoctorTimeSlot> {
       final weekday = _selectedDay.weekday;
       final qs = await _fs
           .collection('schedules')
+          .where('centerId', isEqualTo: widget.centerId)
           .where('doctorId', isEqualTo: widget.doctorId)
           .where('dayOfWeek', isEqualTo: weekday)
-          .where('status', isEqualTo: 'published') // ✅ FIX
+          .where('status', isEqualTo: 'published')
           .where('isActive', isEqualTo: true)
           .where('visitType', isEqualTo: 'inPerson')
           .limit(1)
