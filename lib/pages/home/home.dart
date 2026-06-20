@@ -3533,22 +3533,15 @@ class _HomeState extends ConsumerState<Home>
               CenterActionGrid(
                 items: [
                   ActionItem(
-                    icon: Icons.category_outlined,
-                    label: 'specialties'.tr(),
+                    icon: Icons.local_hospital,
+                    label: 'medical_centers'.tr(),
                     onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                            type: PageTransitionType.rightToLeft,
-                            child: const SpecialityScreen())),
-                  ),
-                  ActionItem(
-                    icon: Icons.calendar_month_outlined,
-                    label: 'my_appointments'.tr(),
-                    onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                            type: PageTransitionType.rightToLeft,
-                            child: const MyAppointmentsPage(showBack: true))),
+                      context,
+                      PageTransition(
+                        type: PageTransitionType.rightToLeft,
+                        child: const CentersScreen(),
+                      ),
+                    ),
                   ),
                   ActionItem(
                     icon: Icons.people_outline,
@@ -3560,15 +3553,40 @@ class _HomeState extends ConsumerState<Home>
                             child: const MyDoctorsPage())),
                   ),
                   ActionItem(
-                    icon: Icons.local_hospital,
-                    label: 'medical_centers'.tr(),
+                    icon: Icons.calendar_month_outlined,
+                    label: 'my_appointments'.tr(),
                     onTap: () => Navigator.push(
-                      context,
-                      PageTransition(
-                        type: PageTransitionType.rightToLeft,
-                        child: const CentersScreen(),
-                      ),
-                    ),
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyAppointmentsPage(showBack: true))),
+                  ),
+                  ActionItem(
+                    icon: Icons.category_outlined,
+                    label: 'specialties'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const SpecialityScreen())),
+                  ),
+                  ActionItem(
+                    icon: Icons.science_outlined,
+                    label: 'my_results'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyResultsPage())),
+                  ),
+                  ActionItem(
+                    icon: Icons.biotech_outlined,
+                    label: 'labs'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const LaboratoriesScreen())),
                   ),
                 ],
               ),

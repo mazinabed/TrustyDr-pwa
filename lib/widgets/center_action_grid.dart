@@ -180,16 +180,14 @@ class CenterActionGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (int i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(width: 6),
-              Expanded(child: _buildTile(items[i])),
-            ],
-          ],
-        ),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 3,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1.3,
+        children: items.map(_buildTile).toList(),
       ),
     );
   }
