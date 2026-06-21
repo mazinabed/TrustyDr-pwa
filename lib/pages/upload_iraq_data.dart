@@ -149,6 +149,155 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
     }
   }
 
+  // ─── Lab specialty seeding ────────────────────────────────────────────────
+
+  static const List<Map<String, dynamic>> _newLabSpecialties = [
+    {
+      'name_en': 'Medical Imaging',
+      'name_ar': 'التصوير الطبي',
+      'name_ku': 'وێنەگرتنی پزیشکی',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'التصوير الطبي', 'ku': 'وێنەگرتنی پزیشکی'},
+    },
+    {
+      'name_en': 'X-Ray',
+      'name_ar': 'الأشعة السينية',
+      'name_ku': 'ئێکسڕەی',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'الأشعة السينية', 'ku': 'ئێکسڕەی'},
+    },
+    {
+      'name_en': 'Ultrasound',
+      'name_ar': 'السونار',
+      'name_ku': 'سۆنار',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'السونار', 'ku': 'سۆنار'},
+    },
+    {
+      'name_en': 'MRI',
+      'name_ar': 'الرنين المغناطيسي',
+      'name_ku': 'ئێم ئار ئای',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'الرنين المغناطيسي', 'ku': 'ئێم ئار ئای'},
+    },
+    {
+      'name_en': 'CT Scan',
+      'name_ar': 'الأشعة المقطعية',
+      'name_ku': 'سی تی سکان',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'الأشعة المقطعية', 'ku': 'سی تی سکان'},
+    },
+    {
+      'name_en': 'Echocardiography',
+      'name_ar': 'إيكو القلب',
+      'name_ku': 'ئیکۆی دڵ',
+      'icon': 'assets/icons/radiology.png',
+      'iconUrl': '',
+      'status': 'active',
+      'serviceGroup': 'imaging',
+      'lang': {'ar': 'إيكو القلب', 'ku': 'ئیکۆی دڵ'},
+    },
+  ];
+
+  // Adds serviceGroup to the 3 existing lab/imaging specialties.
+  // Queries by name_en — safe even without knowing their auto-generated IDs.
+  Future<void> _classifyExistingLabSpecialties() async {
+    setState(() {
+      _isUploading = true;
+      _status = 'Classifying existing lab specialties...';
+    });
+    try {
+      final toClassify = {
+        'Radiology': 'imaging',
+        'Laboratory Medicine': 'laboratory',
+        'Vision & Eye Care': 'imaging',
+      };
+
+      int updated = 0;
+      int notFound = 0;
+
+      for (final entry in toClassify.entries) {
+        final snap = await _firestore
+            .collection('specialties')
+            .where('name_en', isEqualTo: entry.key)
+            .limit(1)
+            .get();
+
+        if (snap.docs.isEmpty) {
+          notFound++;
+          continue;
+        }
+
+        await snap.docs.first.reference.update({'serviceGroup': entry.value});
+        updated++;
+      }
+
+      _showSnack(
+        '✅ Classified $updated specialties.${notFound > 0 ? ' $notFound not found in Firestore.' : ''}',
+        true,
+      );
+    } catch (e) {
+      _showSnack('❌ Classification failed: $e', false);
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
+
+  // Creates the 6 new lab/imaging specialties with auto-generated IDs.
+  // Skips any that already exist (matched by name_en) to prevent duplicates.
+  Future<void> _seedNewLabSpecialties() async {
+    setState(() {
+      _isUploading = true;
+      _status = 'Seeding new lab specialties...';
+    });
+    try {
+      int created = 0;
+      int skipped = 0;
+
+      for (final spec in _newLabSpecialties) {
+        final nameEn = spec['name_en'] as String;
+
+        final existing = await _firestore
+            .collection('specialties')
+            .where('name_en', isEqualTo: nameEn)
+            .limit(1)
+            .get();
+
+        if (existing.docs.isNotEmpty) {
+          skipped++;
+          continue;
+        }
+
+        await _firestore.collection('specialties').doc().set(spec);
+        created++;
+      }
+
+      _showSnack(
+        '✅ Created $created lab specialties.${skipped > 0 ? ' Skipped $skipped (already exist).' : ''}',
+        true,
+      );
+    } catch (e) {
+      _showSnack('❌ Lab specialty seed failed: $e', false);
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,7 +310,7 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
             children: [
               if (_isUploading)
                 const CircularProgressIndicator()
-              else
+              else ...[
                 ElevatedButton.icon(
                   onPressed: uploadAll,
                   icon: const Icon(Icons.cloud_upload),
@@ -173,6 +322,31 @@ class _UploadFirestoreDataState extends State<UploadFirestoreData> {
                         vertical: 16, horizontal: 24),
                   ),
                 ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: _classifyExistingLabSpecialties,
+                  icon: const Icon(Icons.label_outline),
+                  label: const Text('Classify Existing Lab Specialties'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 24),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: _seedNewLabSpecialties,
+                  icon: const Icon(Icons.biotech_outlined),
+                  label: const Text('Seed New Lab Specialties'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 24),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               Text(
                 _status.isEmpty

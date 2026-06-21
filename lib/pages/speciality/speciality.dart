@@ -1581,7 +1581,12 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
                   .compareTo(_specialtySortKey(b.data(), lang, b.id)),
             );
 
-          for (final doc in sortedDocs) {
+          final clinicalDocs = sortedDocs.where((doc) {
+            final sg = (doc.data()['serviceGroup'] ?? 'clinical').toString();
+            return sg == 'clinical';
+          }).toList();
+
+          for (final doc in clinicalDocs) {
             final data = doc.data();
             items.add(
               _specialtyItem(
@@ -1689,6 +1694,17 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
   // --------------------------------------------------
   Widget _doctorList() {
     final doctorsAsync = ref.watch(doctorsStreamProvider);
+    final labIds = ref.watch(specialtiesStreamProvider).when(
+          data: (snap) => snap.docs
+              .where((d) {
+                final sg = (d.data()['serviceGroup'] ?? 'clinical').toString();
+                return sg == 'laboratory' || sg == 'imaging';
+              })
+              .map((d) => d.id)
+              .toSet(),
+          loading: () => const <String>{},
+          error: (_, __) => const <String>{},
+        );
 
     return doctorsAsync.when(
       data: (docs) {
@@ -1703,6 +1719,10 @@ class _SpecialityScreenState extends ConsumerState<SpecialityScreen> {
             if (doctorSpecialty != _selectedSpecialty) {
               return false;
             }
+          } else if (labIds.isNotEmpty) {
+            final specKey =
+                (d['specialty_key'] ?? d['specialtyKey'] ?? '').toString();
+            if (specKey.isNotEmpty && labIds.contains(specKey)) return false;
           }
 
           // 2️⃣ Search filter

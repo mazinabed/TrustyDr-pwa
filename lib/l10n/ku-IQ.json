@@ -153,6 +153,8 @@
   "pharmacies_coming_soon": "لیستی دەرمانخانەکان بەزوویی دێت",
   "labs": "تاقیگەکان",
   "labs_coming_soon": "لیستی تاقیگەکان بەزوویی دێت",
+  "all_labs": "هەموو تاقیگەکان",
+  "no_labs_found": "هیچ تاقیگەیەک لەم ناوچەیەدا نەدۆزرایەوە.",
   "my_results": "ئەنجامەکانم",
   "result_doctor_note": "تێبینی پزیشک",
   "result_attachments": "پەیوەستکراوەکان",

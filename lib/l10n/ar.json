@@ -154,6 +154,8 @@
   "pharmacies_coming_soon": "قائمة الصيدليات قريباً",
   "labs": "المختبرات",
   "labs_coming_soon": "قائمة المختبرات قريباً",
+  "all_labs": "جميع المختبرات",
+  "no_labs_found": "لا توجد مختبرات في هذه المنطقة.",
   "my_results": "نتائجي",
   "result_doctor_note": "ملاحظة الطبيب",
   "result_attachments": "المرفقات",

@@ -160,6 +160,8 @@
   "pharmacies_coming_soon": "Pharmacies list coming soon",
   "labs": "Labs",
   "labs_coming_soon": "Labs list coming soon",
+  "all_labs": "All Labs",
+  "no_labs_found": "No laboratories found in this area.",
   "my_results": "My Results",
   "result_doctor_note": "Doctor's Note",
   "result_attachments": "Attachments",
