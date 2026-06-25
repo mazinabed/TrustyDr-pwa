@@ -384,9 +384,10 @@ class _EditProfileState extends State<EditProfile> {
 
   final nameController = TextEditingController();
 
-  String profileImage = 'https://via.placeholder.com/150';
+  String profileImage = '';
 
   XFile? pickedImage;
+  Uint8List? _pickedWebBytes;
   bool isLoading = false;
 
   // ✅ PATCH architecture state (initial snapshot for change-detection)
@@ -423,8 +424,11 @@ class _EditProfileState extends State<EditProfile> {
     final data = snapshot.data() as Map<String, dynamic>;
 
     final name = (data['name'] ?? '').toString();
+    final rawImg = (data['profileImage'] ?? '').toString().trim();
     final img =
-        (data['profileImage'] ?? 'https://via.placeholder.com/150').toString();
+        (rawImg.startsWith('http') && !rawImg.contains('placeholder.com'))
+            ? rawImg
+            : '';
 
     if (!mounted) return;
 
@@ -471,27 +475,19 @@ class _EditProfileState extends State<EditProfile> {
         final storageRef = FirebaseStorage.instance
             .ref()
             .child('profile_images/${currentUser!.uid}.jpg');
-        if (pickedImage != null) {
-          final storageRef = FirebaseStorage.instance
-              .ref()
-              .child('profile_images/${currentUser!.uid}.jpg');
 
-          if (kIsWeb) {
-            final Uint8List bytes = await pickedImage!.readAsBytes();
-            await storageRef.putData(
-              bytes,
-              SettableMetadata(contentType: 'image/jpeg'),
-            );
-          } else {
-            await storageRef.putFile(File(pickedImage!.path));
-          }
-
-          uploadedUrl = await storageRef.getDownloadURL();
-
-          if (uploadedUrl != _initialProfileImage) {
-            updates['profileImage'] = uploadedUrl;
-          }
+        if (kIsWeb) {
+          final Uint8List bytes =
+              _pickedWebBytes ?? await pickedImage!.readAsBytes();
+          await storageRef.putData(
+            bytes,
+            SettableMetadata(contentType: 'image/jpeg'),
+          );
+        } else {
+          await storageRef.putFile(File(pickedImage!.path));
         }
+
+        uploadedUrl = await storageRef.getDownloadURL();
 
         if (uploadedUrl != _initialProfileImage) {
           updates['profileImage'] = uploadedUrl;
@@ -537,16 +533,17 @@ class _EditProfileState extends State<EditProfile> {
 
         if (updates.containsKey('profileImage')) {
           if (uploadedUrl != null) {
-            profileImage = uploadedUrl!;
-            _initialProfileImage = uploadedUrl!;
+            profileImage = uploadedUrl;
+            _initialProfileImage = uploadedUrl;
           } else {
             // deleted
-            profileImage = 'https://via.placeholder.com/150';
+            profileImage = '';
             _initialProfileImage = '';
           }
         }
 
         pickedImage = null;
+        _pickedWebBytes = null;
         _photoRemoveRequested = false;
         isLoading = false;
       });
@@ -569,10 +566,22 @@ class _EditProfileState extends State<EditProfile> {
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source, imageQuality: 80);
-    if (picked != null) {
+    if (picked == null) return;
+
+    if (kIsWeb) {
+      final bytes = await picked.readAsBytes();
+      if (!mounted) return;
       setState(() {
         pickedImage = picked;
-        _photoRemoveRequested = false; // uploading overrides remove intent
+        _pickedWebBytes = bytes;
+        _photoRemoveRequested = false;
+      });
+    } else {
+      if (!mounted) return;
+      setState(() {
+        pickedImage = picked;
+        _pickedWebBytes = null;
+        _photoRemoveRequested = false;
       });
     }
   }
@@ -581,7 +590,8 @@ class _EditProfileState extends State<EditProfile> {
   void _removePhoto() {
     setState(() {
       pickedImage = null;
-      profileImage = 'https://via.placeholder.com/150';
+      _pickedWebBytes = null;
+      profileImage = '';
       _photoRemoveRequested = true;
     });
   }
@@ -810,8 +820,7 @@ class _EditProfileState extends State<EditProfile> {
 
   bool get _hasRealPhoto =>
       pickedImage != null ||
-      (profileImage.isNotEmpty &&
-          profileImage != 'https://via.placeholder.com/150');
+      (profileImage.isNotEmpty && profileImage.startsWith('http'));
 
   Widget _buildAvatar() {
     if (_hasRealPhoto) {
@@ -841,20 +850,18 @@ class _EditProfileState extends State<EditProfile> {
 
   ImageProvider _resolveProfileImageProvider() {
     if (pickedImage != null) {
-      if (kIsWeb) {
-        // Web preview: requires bytes
-        // We'll render using Image.memory in the widget instead (recommended),
-        // because ImageProvider needs bytes which are async.
-        return NetworkImage(profileImage.trim().isEmpty
-            ? 'https://via.placeholder.com/150'
-            : profileImage);
-      } else {
+      if (kIsWeb && _pickedWebBytes != null) {
+        return MemoryImage(_pickedWebBytes!);
+      } else if (!kIsWeb) {
         return FileImage(File(pickedImage!.path));
       }
     }
 
     final url = profileImage.trim();
-    return NetworkImage(url.isEmpty ? 'https://via.placeholder.com/150' : url);
+    if (url.isNotEmpty && url.startsWith('http')) {
+      return NetworkImage(url);
+    }
+    return const AssetImage('assets/user/placeholder_user.png');
   }
 
   @override
