@@ -550,7 +550,8 @@
     "confirm_submit": "تحديد الموعد",
     "request_scheduled": "تم إرسال الطلب. في انتظار تأكيد المختبر.",
     "no_schedule": "لا يوجد جدول لهذا التاريخ",
-    "duplicate_booking": "لديك موعد محجوز بالفعل في هذا التاريخ"
+    "duplicate_booking": "لديك موعد محجوز بالفعل في هذا التاريخ",
+    "choose_another_time": "اختيار وقت آخر"
   },
   "lang": {
     "Arabic": "العربية",

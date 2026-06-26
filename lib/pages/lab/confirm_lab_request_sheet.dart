@@ -275,6 +275,38 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
           child: ListView(
             controller: controller,
             children: [
+              // ── Drag handle + close button ────────────────────────────────
+              SizedBox(
+                height: 28,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
               // ── Provider header ──────────────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(18),
@@ -494,12 +526,17 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
                 ),
               ],
 
-              // ── Submit button ────────────────────────────────────────────
+              // ── Submit / choose-another-time button ──────────────────────
               ElevatedButton(
-                onPressed:
-                    (_submitting || _profileNameMissing) ? null : _submit,
+                onPressed: _submitting || _profileNameMissing
+                    ? null
+                    : _duplicateError != null
+                        ? () => Navigator.pop(context)
+                        : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PatientAppColors.brandTeal,
+                  backgroundColor: _duplicateError != null
+                      ? PatientAppColors.brandIndigo
+                      : PatientAppColors.brandTeal,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16)),
@@ -507,7 +544,9 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
                 child: _submitting
                     ? const CircularProgressIndicator(color: Colors.white)
                     : Text(
-                        'lab_booking.confirm_submit'.tr(),
+                        _duplicateError != null
+                            ? 'lab_booking.choose_another_time'.tr()
+                            : 'lab_booking.confirm_submit'.tr(),
                         style: const TextStyle(
                             color: Colors.white, fontWeight: FontWeight.w600),
                       ),
