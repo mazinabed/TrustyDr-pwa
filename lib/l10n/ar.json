@@ -536,6 +536,16 @@
   "app_update_title": "تم تحديث التطبيق",
   "app_update_body": "تم تحديث التطبيق. يرجى إعادة تحميل الصفحة للمتابعة.",
   "app_update_reload": "إعادة تحميل",
+  "services_available": "خدمة متاحة",
+  "coming_soon": "قريباً",
+  "provider_info": "معلومات المزود",
+  "lab_booking": {
+    "select_service": "اختر خدمة",
+    "select_service_hint": "يرجى اختيار خدمة أعلاه للمتابعة",
+    "confirm_submit": "تحديد الموعد",
+    "request_scheduled": "تم إرسال الطلب. في انتظار تأكيد المختبر.",
+    "no_schedule": "لا يوجد جدول لهذا التاريخ"
+  },
   "lang": {
     "Arabic": "العربية",
     "English": "الإنجليزية",

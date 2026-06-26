@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/providers/app_location_provider.dart';
+import 'package:trustydr/core/providers/diagnostic_provider_streams_provider.dart';
 import 'package:trustydr/core/providers/doctor_streams_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
-import 'package:trustydr/core/utils/doctor_search_utils.dart';
-import 'package:trustydr/pages/doctor/doctor_profile_v2.dart';
+import 'package:trustydr/pages/lab/diagnostic_provider_profile_page.dart';
 import 'package:trustydr/widget/doctor_avatar.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
@@ -23,6 +23,9 @@ class LaboratoriesScreen extends ConsumerStatefulWidget {
 
 class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
   Timer? _searchDebounce;
+
+  // Value is a specialty doc ID. The chip's serviceGroup is used to derive
+  // the providerKind filter; '' = show all.
   String _selectedLabKey = '';
   String _searchQuery = '';
 
@@ -36,6 +39,7 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
   Widget build(BuildContext context) {
     final location = ref.watch(appLocationProvider);
 
+    // Specialty chips — same source as before, filtered to lab/imaging groups.
     final specialtiesAsync = ref.watch(specialtiesStreamProvider);
     final labDocs = specialtiesAsync.when(
       data: (snap) => snap.docs.where((d) {
@@ -45,7 +49,6 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
       loading: () => <QueryDocumentSnapshot<Map<String, dynamic>>>[],
       error: (_, __) => <QueryDocumentSnapshot<Map<String, dynamic>>>[],
     );
-    final labIds = labDocs.map((d) => d.id).toSet();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -85,7 +88,7 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
                         key: const PageStorageKey('labs_scroll'),
                         slivers: [
                           SliverToBoxAdapter(
-                            child: _providerList(labIds),
+                            child: _providerList(labDocs),
                           ),
                         ],
                       ),
@@ -101,9 +104,8 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
     );
   }
 
-  // --------------------------------------------------
-  // Search Bar
-  // --------------------------------------------------
+  // ── Search bar ───────────────────────────────────────────────────────────────
+
   Widget _searchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -139,9 +141,8 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
     );
   }
 
-  // --------------------------------------------------
-  // Specialty Bar — lab/imaging specialties only
-  // --------------------------------------------------
+  // ── Specialty chip bar ───────────────────────────────────────────────────────
+
   Widget _specialtyBar(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> labDocs,
   ) {
@@ -211,66 +212,53 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
     return (data['name_en'] ?? '').toString();
   }
 
-  // --------------------------------------------------
-  // Provider List — filtered to lab/imaging only
-  // --------------------------------------------------
-  Widget _providerList(Set<String> labIds) {
-    final doctorsAsync = ref.watch(doctorsStreamProvider);
+  // ── Provider list ────────────────────────────────────────────────────────────
+  // Reads from public_diagnostic_providers via diagnosticProvidersStreamProvider.
+  // The specialty chip filter maps the selected chip's serviceGroup to providerKind.
 
-    return doctorsAsync.when(
+  Widget _providerList(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> labDocs,
+  ) {
+    // Map: specialty doc ID → serviceGroup ('laboratory' | 'imaging')
+    final specGroupMap = {
+      for (final doc in labDocs)
+        doc.id: (doc.data()['serviceGroup'] ?? '').toString(),
+    };
+
+    final providersAsync = ref.watch(diagnosticProvidersStreamProvider);
+
+    return providersAsync.when(
       data: (docs) {
+        final lang = context.locale.languageCode;
+
         final filtered = docs.where((doc) {
           final d = doc.data();
 
-          // 1. Must belong to a lab/imaging specialty
-          final specKey =
-              (d['specialty_key'] ?? d['specialtyKey'] ?? '').toString();
-          final specLower = (d['specialty_lower'] ?? '').toString();
-
-          final bool isLabProvider;
-          if (labIds.isEmpty) {
-            isLabProvider = false;
-          } else if (specKey.isNotEmpty) {
-            isLabProvider = labIds.contains(specKey);
-          } else {
-            // Fallback: specialty_lower matched against lab doc IDs
-            isLabProvider = labIds.contains(specLower);
-          }
-          if (!isLabProvider) return false;
-
-          // 2. If a specific lab specialty chip is selected, narrow to it
+          // 1. If a category chip is selected, filter by providerKind.
           if (_selectedLabKey.isNotEmpty) {
-            if (specKey.isNotEmpty) {
-              if (specKey != _selectedLabKey) return false;
-            } else {
-              if (specLower != _selectedLabKey) return false;
+            final selectedGroup = specGroupMap[_selectedLabKey] ?? '';
+            if (selectedGroup.isNotEmpty) {
+              final kind =
+                  (d['providerKind'] ?? d['serviceGroup'] ?? '').toString();
+              if (kind != selectedGroup) return false;
             }
           }
 
-          // 3. Search filter
-          if (_searchQuery.isNotEmpty) {
-            final stripped = stripDoctorTitles(_searchQuery);
-            if (stripped.length >= 3) {
-              final q = stripped.toLowerCase();
-              final nameMatch = (d['name_en'] ?? d['name'] ?? '')
-                      .toString()
-                      .toLowerCase()
-                      .contains(q) ||
-                  (d['name_ar'] ?? '').toString().toLowerCase().contains(q) ||
-                  (d['name_ku'] ?? '').toString().toLowerCase().contains(q);
-              final clinicMatch = (d['clinicName_en'] ?? d['clinicName'] ?? '')
-                      .toString()
-                      .toLowerCase()
-                      .contains(q) ||
-                  (d['clinicName_ar'] ?? '')
-                      .toString()
-                      .toLowerCase()
-                      .contains(q) ||
-                  (d['clinicName_ku'] ?? '')
-                      .toString()
-                      .toLowerCase()
-                      .contains(q);
-              if (!nameMatch && !clinicMatch) return false;
+          // 2. Text search against facility name fields.
+          if (_searchQuery.isNotEmpty && _searchQuery.length >= 3) {
+            final q = _searchQuery.toLowerCase();
+            final nameEn =
+                (d['facilityName_en'] ?? '').toString().toLowerCase();
+            final nameAr =
+                (d['facilityName_ar'] ?? '').toString().toLowerCase();
+            final nameKu =
+                (d['facilityName_ku'] ?? '').toString().toLowerCase();
+            final addr = (d['facilityAddress'] ?? '').toString().toLowerCase();
+            if (!nameEn.contains(q) &&
+                !nameAr.contains(q) &&
+                !nameKu.contains(q) &&
+                !addr.contains(q)) {
+              return false;
             }
           }
 
@@ -295,56 +283,33 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
             final doc = filtered[i];
             final d = doc.data();
             final id = doc.id;
-            final lang = context.locale.languageCode;
 
-            final nameEn = (d['name_en'] ?? '').toString();
-            final nameAr = (d['name_ar'] ?? nameEn).toString();
-            final nameKu = (d['name_ku'] ?? nameEn).toString();
-            final name = lang == 'ar'
-                ? nameAr
+            final facilityName = lang == 'ar'
+                ? (d['facilityName_ar']?.toString().isNotEmpty == true
+                    ? d['facilityName_ar']
+                    : d['facilityName_en'] ?? '')
                 : lang == 'ku'
-                    ? nameKu
-                    : nameEn;
+                    ? (d['facilityName_ku']?.toString().isNotEmpty == true
+                        ? d['facilityName_ku']
+                        : d['facilityName_en'] ?? '')
+                    : (d['facilityName_en'] ?? '');
 
-            final specialtyEn =
-                (d['specialty_en'] ?? d['specialtyName_en'] ?? '').toString();
-            final specialtyAr =
-                (d['specialty_ar'] ?? d['specialtyName_ar'] ?? specialtyEn)
-                    .toString();
-            final specialtyKu =
-                (d['specialty_ku'] ?? d['specialtyName_ku'] ?? specialtyEn)
-                    .toString();
+            final specialtyEn = (d['specialty_en'] ?? '').toString();
+            final specialtyAr = (d['specialty_ar'] ?? specialtyEn).toString();
+            final specialtyKu = (d['specialty_ku'] ?? specialtyEn).toString();
             final specialty = lang == 'ar'
                 ? specialtyAr
                 : lang == 'ku'
                     ? specialtyKu
                     : specialtyEn;
 
-            final rawExp = d['experienceYears'] ?? d['yearsOfExperience'];
-            final exp = (rawExp is num && rawExp.toInt() > 0)
-                ? rawExp.toInt().toString()
-                : '';
-
-            final rating = (d['ratingAverage'] is num)
-                ? (d['ratingAverage'] as num).toDouble()
-                : 0.0;
-            final reviews = (d['ratingCount'] ?? 0).toInt();
-            final clinic = d['clinicName'] ?? d['address'] ?? d['city'] ?? '';
-            final isVerified = d['verified'] == true || d['isVerified'] == true;
+            final address = (d['facilityAddress'] ?? '').toString();
+            final serviceCount = (d['serviceCount'] ?? 0) as int;
+            final providerKind = (d['providerKind'] ?? 'laboratory').toString();
 
             String imageUrl = 'assets/user/placeholder_user.png';
-            try {
-              final photos = d['photos'];
-              if (photos is List && photos.isNotEmpty) {
-                final first = photos.first?.toString().trim();
-                if (first != null && first.startsWith('http')) {
-                  imageUrl = first;
-                }
-              } else if (d['imageUrl'] != null &&
-                  d['imageUrl'].toString().trim().startsWith('http')) {
-                imageUrl = d['imageUrl'].toString().trim();
-              }
-            } catch (_) {}
+            final raw = d['imageUrl']?.toString().trim() ?? '';
+            if (raw.startsWith('http')) imageUrl = raw;
 
             return GestureDetector(
               onTap: () {
@@ -353,7 +318,7 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
                   PageTransition(
                     type: PageTransitionType.fade,
                     duration: const Duration(milliseconds: 400),
-                    child: DoctorProfileV2(doctorId: id),
+                    child: DiagnosticProviderProfilePage(providerId: id),
                   ),
                 );
               },
@@ -384,84 +349,72 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    'doctor_prefix_name'.tr(args: [name]),
+                                    facilityName.toString(),
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
+                                // Provider kind badge
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isVerified
-                                        ? PatientAppColors.brandBlue
-                                            .withValues(alpha: 0.15)
-                                        : Colors.orange.withValues(alpha: 0.15),
+                                    color: providerKind == 'imaging'
+                                        ? const Color(0xFF7C3AED)
+                                            .withValues(alpha: 0.12)
+                                        : PatientAppColors.brandTeal
+                                            .withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    isVerified
-                                        ? tr('verified')
-                                        : tr('not_registered'),
+                                    _kindLabel(providerKind, lang),
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: isVerified
-                                          ? PatientAppColors.brandBlue
-                                          : Colors.orange,
+                                      color: providerKind == 'imaging'
+                                          ? const Color(0xFF7C3AED)
+                                          : PatientAppColors.brandTeal,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              specialty,
-                              style: const TextStyle(
-                                color: PatientAppColors.brandTeal,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            if (exp.isNotEmpty)
+                            if (specialty.isNotEmpty) ...[
+                              const SizedBox(height: 4),
                               Text(
-                                '$exp ${tr('years_experience')}',
+                                specialty,
                                 style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 12,
+                                  color: PatientAppColors.brandTeal,
+                                  fontSize: 13,
                                 ),
                               ),
-                            if (clinic.toString().isNotEmpty)
+                            ],
+                            if (address.isNotEmpty) ...[
+                              const SizedBox(height: 4),
                               Text(
-                                clinic.toString(),
+                                address,
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.black45,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(Icons.star,
-                                    color: Colors.amber, size: 16),
-                                const SizedBox(width: 3),
-                                Text(
-                                  rating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                            ],
+                            if (serviceCount > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '$serviceCount ${'services_available'.tr()}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
                                 ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '($reviews ${tr('reviews')})',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -489,5 +442,16 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
         ),
       ),
     );
+  }
+
+  String _kindLabel(String kind, String lang) {
+    if (kind == 'imaging') {
+      if (lang == 'ar') return 'تصوير طبي';
+      if (lang == 'ku') return 'وێنەکێشانی پزیشکی';
+      return 'Imaging';
+    }
+    if (lang == 'ar') return 'مختبر';
+    if (lang == 'ku') return 'تاقیگە';
+    return 'Lab';
   }
 }

@@ -535,6 +535,16 @@
   "app_update_title": "App Updated",
   "app_update_body": "The app has been updated. Please reload the page to continue.",
   "app_update_reload": "Reload",
+  "services_available": "services available",
+  "coming_soon": "Coming soon",
+  "provider_info": "Provider Info",
+  "lab_booking": {
+    "select_service": "Select a service",
+    "select_service_hint": "Please select a service above to continue",
+    "confirm_submit": "Schedule Appointment",
+    "request_scheduled": "Request submitted. Awaiting lab confirmation.",
+    "no_schedule": "No schedule available for this date"
+  },
   "lang": {
     "Arabic": "Arabic",
     "English": "English",
