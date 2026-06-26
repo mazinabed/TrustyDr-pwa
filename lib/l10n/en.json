@@ -176,7 +176,12 @@
   "status.canceled": "Canceled",
   "status.cancelled": "Cancelled",
   "status.approved": "Confirmed",
+  "status.pendingConfirmation": "Awaiting Confirmation",
+  "status.checkedIn": "Checked In",
+  "status.missed": "Missed",
   "status.label": "Status",
+  "lab": "Lab",
+  "imaging": "Imaging",
   "upcoming": "Upcoming",
   "past": "Past",
   "canceled": "Canceled",
@@ -543,7 +548,8 @@
     "select_service_hint": "Please select a service above to continue",
     "confirm_submit": "Schedule Appointment",
     "request_scheduled": "Request submitted. Awaiting lab confirmation.",
-    "no_schedule": "No schedule available for this date"
+    "no_schedule": "No schedule available for this date",
+    "duplicate_booking": "You already have an appointment booked for this date"
   },
   "lang": {
     "Arabic": "Arabic",

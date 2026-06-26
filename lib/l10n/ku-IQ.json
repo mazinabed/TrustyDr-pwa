@@ -169,7 +169,12 @@
   "status.canceled": "هەڵوەشاو",
   "status.cancelled": "هەڵوەشاوە",
   "status.approved": "پشتڕاستکراو",
+  "status.pendingConfirmation": "چاوەڕوانی پشتڕاستکردنەوەیە",
+  "status.checkedIn": "تۆمارکرا",
+  "status.missed": "لەدەستچوو",
   "status.label": "دۆخ",
+  "lab": "تاقیگە",
+  "imaging": "وێنەکێشی",
   "upcoming": "داهاتوو",
   "past": "پێشووتر",
   "canceled": "هەڵوەشاو",
@@ -543,7 +548,8 @@
     "select_service_hint": "تکایە خزمەتگوزارییەکەی سەرەوە هەڵبژێرە بۆ بەردەوامبوون",
     "confirm_submit": "نیشتەجێبوون دیاری بکە",
     "request_scheduled": "داواکاری نێردرا. چاوەڕوانی پەسەندکردنی تاقیگەکە.",
-    "no_schedule": "هیچ خشتەیەک بۆ ئەم بەرواره نییە"
+    "no_schedule": "هیچ خشتەیەک بۆ ئەم بەرواره نییە",
+    "duplicate_booking": "ئێستا نیشتەجێبوونێکت هەیە بۆ ئەم بەروارە"
   },
   "lang": {
     "Arabic": "عەرەبی",

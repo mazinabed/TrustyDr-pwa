@@ -170,7 +170,12 @@
   "status.canceled": "ملغي",
   "status.cancelled": "ملغي",
   "status.approved": "مؤكد",
+  "status.pendingConfirmation": "في انتظار التأكيد",
+  "status.checkedIn": "تم تسجيل الوصول",
+  "status.missed": "فائت",
   "status.label": "الحالة",
+  "lab": "مختبر",
+  "imaging": "تصوير",
   "upcoming": "القادمة",
   "past": "السابقة",
   "canceled": "الملغاة",
@@ -544,7 +549,8 @@
     "select_service_hint": "يرجى اختيار خدمة أعلاه للمتابعة",
     "confirm_submit": "تحديد الموعد",
     "request_scheduled": "تم إرسال الطلب. في انتظار تأكيد المختبر.",
-    "no_schedule": "لا يوجد جدول لهذا التاريخ"
+    "no_schedule": "لا يوجد جدول لهذا التاريخ",
+    "duplicate_booking": "لديك موعد محجوز بالفعل في هذا التاريخ"
   },
   "lang": {
     "Arabic": "العربية",

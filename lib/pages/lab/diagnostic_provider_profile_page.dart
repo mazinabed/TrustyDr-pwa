@@ -369,6 +369,20 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                 serviceNameEn: _selectedServiceNameEn,
                                 serviceNameAr: _selectedServiceNameAr,
                                 serviceNameKu: _selectedServiceNameKu,
+                                providerNameEn: widget.data['facilityName_en']
+                                        ?.toString() ??
+                                    facilityName,
+                                providerNameAr: widget.data['facilityName_ar']
+                                        ?.toString() ??
+                                    facilityName,
+                                providerNameKu: widget.data['facilityName_ku']
+                                        ?.toString() ??
+                                    facilityName,
+                                providerAddress:
+                                    (widget.data['facilityAddress'] ?? '')
+                                        .toString(),
+                                providerImage: imageUrl,
+                                providerPhone: phone,
                               ),
                             ),
                           );

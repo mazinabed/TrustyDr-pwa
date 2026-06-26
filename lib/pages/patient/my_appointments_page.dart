@@ -507,21 +507,26 @@
 //This is with modern and match app style but missing back arrow.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/constant/constant.dart';
+import 'package:trustydr/core/providers/patient_appointments_provider.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/models/patient_appointment_item.dart';
+import 'package:trustydr/pages/doctor/doctor_time_slot.dart';
+import 'package:trustydr/pages/lab/lab_time_slot_page.dart';
+import 'package:trustydr/pages/patient/appointment_detail_page.dart';
+import 'package:trustydr/pages/patient/lab_appointment_detail_page.dart';
 import 'package:trustydr/pages/patient/write_review_page.dart'
     show WriteReviewModal;
 import 'package:trustydr/pages/screens.dart' show LoginScreen;
-import 'package:trustydr/pages/doctor/doctor_time_slot.dart';
-import 'package:trustydr/pages/patient/appointment_detail_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:page_transition/page_transition.dart';
-import 'package:easy_localization/easy_localization.dart';
-import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
-class MyAppointmentsPage extends StatefulWidget {
+class MyAppointmentsPage extends ConsumerStatefulWidget {
   final bool showBack;
 
   const MyAppointmentsPage({
@@ -530,10 +535,10 @@ class MyAppointmentsPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<MyAppointmentsPage> createState() => _MyAppointmentsPageState();
+  ConsumerState<MyAppointmentsPage> createState() => _MyAppointmentsPageState();
 }
 
-class _MyAppointmentsPageState extends State<MyAppointmentsPage>
+class _MyAppointmentsPageState extends ConsumerState<MyAppointmentsPage>
     with SingleTickerProviderStateMixin {
   final _auth = FirebaseAuth.instance;
   final _fs = FirebaseFirestore.instance;
@@ -552,316 +557,243 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
     super.dispose();
   }
 
-  String _localizedSpecialty(Map<String, dynamic> data, BuildContext context) {
-    final lang = context.locale.languageCode;
-
-    // ✅ New appointments (Option B)
-    if (lang == 'ar' && data['specialtyName_ar'] != null) {
-      return data['specialtyName_ar'].toString();
-    }
-    if (lang == 'ku' && data['specialtyName_ku'] != null) {
-      return data['specialtyName_ku'].toString();
-    }
-    if (data['specialtyName_en'] != null) {
-      return data['specialtyName_en'].toString();
-    }
-
-    // 🟡 Fallback for old appointments
-    if (data['doctorType'] != null) {
-      return data['doctorType'].toString();
-    }
-
-    return '';
-  }
-
-  String localizedField(
-      Map<String, dynamic> data, String base, BuildContext ctx) {
-    final lang = ctx.locale.languageCode;
-
-    final localized = data['${base}_$lang'];
-    if (localized != null && localized.toString().isNotEmpty) {
-      return localized.toString();
-    }
-
-    final en = data['${base}_en'];
-    if (en != null && en.toString().isNotEmpty) {
-      return en.toString();
-    }
-
-    return (data[base] ?? '').toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
 
     if (user == null) {
-      return Scaffold(
-        backgroundColor: PatientAppColors.pageBackground,
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            Widget content = Column(
-              children: [
-                TrustyDrCurvedHeader(
-                  title: 'my_appointments'.tr(),
-                  showBack: widget.showBack,
-                  height: 100,
-                ),
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.lock_outline,
-                              size: 48, color: Colors.grey),
-                          const SizedBox(height: 12),
-                          Text('login_required'.tr(),
-                              style: blackHeadingTextStyle),
-                          const SizedBox(height: 10),
-                          Text(
-                            'please_login'.tr(),
-                            textAlign: TextAlign.center,
-                            style: greySmallTextStyle,
-                          ),
-                          const SizedBox(height: 18),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                PageTransition(
-                                  type: PageTransitionType.rightToLeft,
-                                  child: const LoginScreen(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: PatientAppColors.brandIndigo,
-                              minimumSize: const Size.fromHeight(44),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'login_button'.tr(),
-                              style: whiteColorButtonTextStyle,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-            if (constraints.maxWidth >= 768)
-              content = WebScaffoldContainer(child: content);
-            return content;
-          },
-        ),
-      );
+      return _buildLoginPrompt(context);
     }
+
+    final lang = context.locale.languageCode;
+    final allAsync = ref.watch(patientAllAppointmentsProvider);
+
+    Widget content = Column(
+      children: [
+        TrustyDrCurvedHeader(
+          title: 'my_appointments'.tr(),
+          showBack: widget.showBack,
+          height: 100,
+        ),
+        Container(
+          height: 16,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF6F8FB),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TabBar(
+            controller: _tab,
+            labelColor: PatientAppColors.brandIndigo,
+            unselectedLabelColor: Colors.black54,
+            indicator: UnderlineTabIndicator(
+              borderSide:
+                  BorderSide(color: PatientAppColors.brandIndigo, width: 3),
+              insets: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            tabs: [
+              Tab(text: 'upcoming'.tr()),
+              Tab(text: 'past'.tr()),
+              Tab(text: 'canceled'.tr()),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tab,
+            children: [
+              _buildTab(allAsync, (i) => i.isUpcoming, lang: lang),
+              _buildTab(allAsync, (i) => i.isPast,
+                  lang: lang, descending: true),
+              _buildTab(allAsync, (i) => i.isCancelled,
+                  lang: lang, descending: true),
+            ],
+          ),
+        ),
+      ],
+    );
 
     return Scaffold(
       backgroundColor: PatientAppColors.pageBackground,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          Widget content = Column(
-            children: [
-              // 🌈 Gradient Header with Title
-              TrustyDrCurvedHeader(
-                title: 'my_appointments'.tr(),
-                showBack: widget.showBack,
-                height: 100,
-              ),
-
-              // White curved divider below gradient
-              Container(
-                height: 16,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF6F8FB),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-              ),
-
-              // 📅 Tabs
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: TabBar(
-                  controller: _tab,
-                  labelColor: PatientAppColors.brandIndigo,
-                  unselectedLabelColor: Colors.black54,
-                  indicator: UnderlineTabIndicator(
-                    borderSide: BorderSide(
-                        color: PatientAppColors.brandIndigo, width: 3),
-                    insets: const EdgeInsets.symmetric(horizontal: 24),
-                  ),
-                  tabs: [
-                    Tab(text: 'upcoming'.tr()),
-                    Tab(text: 'past'.tr()),
-                    Tab(text: 'canceled'.tr()),
-                  ],
-                ),
-              ),
-
-              // 🔄 Tab Views
-              Expanded(
-                child: TabBarView(
-                  controller: _tab,
-                  children: [
-                    _buildList(user.uid, ['pending', 'confirmed', 'approved']),
-                    _buildList(user.uid, ['completed']),
-                    _buildList(user.uid, ['cancelled']),
-                  ],
-                ),
-              ),
-            ],
-          );
-          if (constraints.maxWidth >= 768)
+          if (constraints.maxWidth >= 768) {
             content = WebScaffoldContainer(child: content);
+          }
           return content;
         },
       ),
     );
   }
 
-// ⚠️ Firestore whereIn limit = 10 values MAX
-  Widget _buildList(String userId, List<String> statuses) {
-    assert(statuses.length <= 10);
-
-    final q = _fs
-        .collection('appointments')
-        .where('patientId', isEqualTo: userId)
-        .where('status', whereIn: statuses)
-        .orderBy('createdAt', descending: true);
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: q.snapshots(),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: PatientAppColors.brandIndigo,
-            ),
+  Widget _buildLoginPrompt(BuildContext context) {
+    return Scaffold(
+      backgroundColor: PatientAppColors.pageBackground,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          Widget content = Column(
+            children: [
+              TrustyDrCurvedHeader(
+                title: 'my_appointments'.tr(),
+                showBack: widget.showBack,
+                height: 100,
+              ),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lock_outline,
+                            size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Text('login_required'.tr(),
+                            style: blackHeadingTextStyle),
+                        const SizedBox(height: 10),
+                        Text(
+                          'please_login'.tr(),
+                          textAlign: TextAlign.center,
+                          style: greySmallTextStyle,
+                        ),
+                        const SizedBox(height: 18),
+                        ElevatedButton(
+                          onPressed: () => Navigator.push(
+                            context,
+                            PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const LoginScreen(),
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PatientAppColors.brandIndigo,
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'login_button'.tr(),
+                            style: whiteColorButtonTextStyle,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
-        }
-        if (snap.hasError) {
-          return Center(
-            child: Text(
-              'error_generic'.tr(),
-              style: blackNormalTextStyle,
-            ),
-          );
-        }
-        if (!snap.hasData || snap.data!.docs.isEmpty) {
+          if (constraints.maxWidth >= 768) {
+            content = WebScaffoldContainer(child: content);
+          }
+          return content;
+        },
+      ),
+    );
+  }
+
+  Widget _buildTab(
+    AsyncValue<List<PatientAppointmentItem>> allAsync,
+    bool Function(PatientAppointmentItem) filter, {
+    required String lang,
+    bool descending = false,
+  }) {
+    return allAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: PatientAppColors.brandIndigo),
+      ),
+      error: (e, _) => Center(
+        child: Text('error_generic'.tr(), style: blackNormalTextStyle),
+      ),
+      data: (all) {
+        var items = all.where(filter).toList();
+        if (descending) items = items.reversed.toList();
+        if (items.isEmpty) {
           return Center(
             child: Text('no_results'.tr(), style: greyNormalTextStyle),
           );
         }
-
-        final docs = snap.data!.docs;
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-          itemCount: docs.length,
+          itemCount: items.length,
           itemBuilder: (_, i) {
-            final data = docs[i].data() as Map<String, dynamic>;
-            final id = docs[i].id;
-
-            final doctorName = (data['doctorName'] ?? '').toString();
-
-            final doctorImage = (data['doctorImage'] ?? '').toString();
-            final dateKey = (data['dateKey'] ?? '').toString();
-            final time = (data['time'] ?? data['slotTime'] ?? '').toString();
-            final status = (data['status'] ?? 'Pending').toString();
-            final clinicName = localizedField(data, 'clinicName', context);
-            final clinicAddress =
-                localizedField(data, 'clinicAddress', context);
-
-            final doctorId = (data['doctorId'] ?? '').toString();
-            final experience = (data['experience'] ?? '').toString();
-            final centerId = data['centerId'] ?? '';
-            final provinceKey = data['provinceKey'] ?? '';
-            final cityKey = data['cityKey'] ?? '';
-
-            final isPastTab =
-                statuses.length == 1 && statuses.first == 'completed';
-            final specialty = _localizedSpecialty(data, context);
-
-            return _AppointmentCard(
-              id: id,
-              doctorId: doctorId,
-              doctorName: doctorName,
-              doctorType: specialty,
-              doctorImage: doctorImage,
-              clinicName: clinicName,
-              clinicAddress: clinicAddress,
-              experience: experience,
-              dateKey: dateKey,
-              time: time,
-              status: status,
-              hasReviewed: data['hasReviewed'] == true ||
-                  _sessionReviewedIds.contains(id),
-              onOpenDetails: () {
-                Navigator.push(
+            final item = items[i];
+            if (item.type == PatientAppointmentType.doctor) {
+              return _DoctorCard(
+                item: item,
+                lang: lang,
+                hasReviewed: _sessionReviewedIds.contains(item.sourceId),
+                onOpenDetails: () => Navigator.push(
                   context,
                   PageTransition(
                     type: PageTransitionType.rightToLeft,
-                    child: AppointmentDetailPage(appointmentId: id),
+                    child: AppointmentDetailPage(appointmentId: item.sourceId),
                   ),
-                );
-              },
-              onCancel: () =>
-                  _confirmCancel(id, slotId: data['slotId'] as String?),
-              onReschedule: () {
-                Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: DoctorTimeSlot(
-                      doctorId: doctorId,
-                      doctorName: doctorName,
-                      doctorImage: doctorImage,
-                      centerId: centerId,
-                      provinceKey: provinceKey,
-                      cityKey: cityKey,
-
-                      // ✅ SOURCE OF TRUTH = appointment
-                      specialtyKey: data['specialtyKey'] ?? '',
-                      specialtyEn: data['specialtyName_en'] ?? '',
-                      specialtyAr: data['specialtyName_ar'] ?? '',
-                      specialtyKu: data['specialtyName_ku'] ?? '',
-                      experience: experience.isEmpty ? 'N/A' : experience,
-                      clinicName: clinicName,
-
-                      clinicAddress: clinicAddress,
-                    ),
-                  ),
-                );
-              },
-              onWriteReview: isPastTab
-                  ? () => _openWriteReview(
-                        appointmentId: id,
-                        doctorId: doctorId,
-                        doctorName: doctorName,
-                        doctorImage: doctorImage,
-                      )
+                ),
+                onReschedule: () => _openReschedule(item, lang),
+                onCancel: () =>
+                    _confirmCancel(item.sourceId, slotId: item.slotId),
+                onWriteReview: item.isPast
+                    ? () => _openWriteReview(
+                          appointmentId: item.sourceId,
+                          doctorId: item.doctorId ?? '',
+                          doctorName: item.providerName(lang),
+                          doctorImage: item.providerImage ?? '',
+                        )
+                    : null,
+              );
+            }
+            return _LabCard(
+              item: item,
+              lang: lang,
+              onViewDetails: () => _openLabDetails(item, lang),
+              onReschedule:
+                  item.isUpcoming ? () => _openLabReschedule(item, lang) : null,
+              onCancel: item.isUpcoming
+                  ? () => _confirmLabCancel(item.sourceId, slotId: item.slotId)
                   : null,
             );
           },
         );
       },
+    );
+  }
+
+  void _openReschedule(PatientAppointmentItem item, String lang) {
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.rightToLeft,
+        child: DoctorTimeSlot(
+          doctorId: item.doctorId ?? '',
+          doctorName: item.providerName(lang),
+          doctorImage: item.providerImage ?? '',
+          centerId: item.centerId ?? '',
+          provinceKey: item.provinceKey ?? '',
+          cityKey: item.cityKey ?? '',
+          specialtyKey: item.specialtyKey ?? '',
+          specialtyEn: item.specialtyNameEn ?? '',
+          specialtyAr: item.specialtyNameAr ?? '',
+          specialtyKu: item.specialtyNameKu ?? '',
+          experience: 'N/A',
+          clinicName: item.locationLabel(lang) ?? '',
+          clinicAddress: item.addressLabel(lang) ?? '',
+        ),
+      ),
     );
   }
 
@@ -873,9 +805,7 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       context: context,
       builder: (_) => AlertDialog(
         title: Text('cancel_appointment'.tr()),
-        content: Text(
-          'cancel_appointment_confirm'.tr(),
-        ),
+        content: Text('cancel_appointment_confirm'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -943,66 +873,157 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage>
       setState(() => _sessionReviewedIds.add(appointmentId));
     }
   }
+
+  void _openLabDetails(PatientAppointmentItem item, String lang) {
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.rightToLeft,
+        child: LabAppointmentDetailPage(item: item),
+      ),
+    );
+  }
+
+  void _openLabReschedule(PatientAppointmentItem item, String lang) {
+    final labId = item.labId;
+    final centerId = item.centerId;
+    final specialtyId = item.specialtyId;
+    if (labId == null || centerId == null || specialtyId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('error_generic'.tr())),
+      );
+      return;
+    }
+    final serviceGroup =
+        item.type == PatientAppointmentType.imaging ? 'imaging' : 'laboratory';
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.rightToLeft,
+        child: LabTimeSlotPage(
+          labId: labId,
+          centerId: centerId,
+          facilityName: item.providerName(lang),
+          imageUrl: item.providerImage ?? '',
+          serviceGroup: serviceGroup,
+          specialtyId: specialtyId,
+          serviceNameEn: item.serviceLabelEn,
+          serviceNameAr: item.serviceLabelAr,
+          serviceNameKu: item.serviceLabelKu,
+          providerNameEn: item.providerNameEn,
+          providerNameAr: item.providerNameAr,
+          providerNameKu: item.providerNameKu,
+          providerAddress: item.locationLabel('en') ?? '',
+          providerImage: item.providerImage ?? '',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmLabCancel(
+    String requestId, {
+    String? slotId,
+  }) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('cancel_appointment'.tr()),
+        content: Text('cancel_appointment_confirm'.tr()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('cancel'.tr()),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('confirm'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    if (yes != true) return;
+
+    try {
+      final batch = _fs.batch();
+      batch.update(
+        _fs.collection('clinical_requests').doc(requestId),
+        {
+          'partnerStatus': 'cancelled',
+          'status': 'cancelled',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+      if (slotId != null) {
+        batch.delete(_fs.collection('slot_locks').doc(slotId));
+      }
+      await batch.commit();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('appointment_canceled'.tr())),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_generic'.tr())),
+        );
+      }
+    }
+  }
 }
 
-// Reuse gradient header for consistent top curve
-class _AppointmentCard extends StatelessWidget {
-  final String id;
-  final String doctorId;
-  final String doctorName;
-  final String doctorType;
-  final String doctorImage;
-  final String clinicName;
-  final String clinicAddress;
+// ── Doctor appointment card ──────────────────────────────────────────────────
 
-  final String experience;
-  final String dateKey;
-  final String time;
-  final String status;
-  final VoidCallback onOpenDetails;
-  final VoidCallback onCancel;
-  final VoidCallback onReschedule;
-  final VoidCallback? onWriteReview;
+class _DoctorCard extends StatelessWidget {
+  final PatientAppointmentItem item;
+  final String lang;
   final bool hasReviewed;
+  final VoidCallback onOpenDetails;
+  final VoidCallback onReschedule;
+  final VoidCallback onCancel;
+  final VoidCallback? onWriteReview;
 
-  const _AppointmentCard({
-    required this.id,
-    required this.doctorId,
-    required this.doctorName,
-    required this.doctorType,
-    required this.doctorImage,
-    required this.clinicName,
-    required this.experience,
-    required this.dateKey,
-    required this.time,
-    required this.status,
-    required this.onOpenDetails,
-    required this.onCancel,
-    required this.onReschedule,
-    this.onWriteReview,
+  const _DoctorCard({
+    required this.item,
+    required this.lang,
     required this.hasReviewed,
-    required this.clinicAddress,
+    required this.onOpenDetails,
+    required this.onReschedule,
+    required this.onCancel,
+    this.onWriteReview,
   });
 
-  Color get _statusColor {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return PatientAppColors.statusConfirmed;
-      case 'pending':
-        return PatientAppColors.statusWarning;
-      case 'completed':
-        return PatientAppColors.statusCompleted;
-      case 'canceled':
-      case 'cancelled':
-        return PatientAppColors.statusCancelled;
-      default:
-        return Colors.grey;
-    }
+  static String _fmtDate(DateTime dt) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final statusLc = status.toLowerCase();
+    final statusKey = item.statusKey();
+    final statusColor = item.statusColor();
+    final providerImage = item.providerImage ?? '';
+    final clinicName = item.locationLabel(lang) ?? '';
+    final clinicAddress = item.addressLabel(lang) ?? '';
+    final dateStr = _fmtDate(item.appointmentDateTime);
+    final timeStr = item.timeLabel ?? '';
+    final dateTime = timeStr.isNotEmpty ? '$dateStr • $timeStr' : dateStr;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -1033,31 +1054,20 @@ class _AppointmentCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Column(
               children: [
-                /// ---------------- HEADER ----------------
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: doctorImage.isNotEmpty
+                      child: providerImage.isNotEmpty
                           ? Image.network(
-                              doctorImage,
+                              providerImage,
                               width: 70,
                               height: 70,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 70,
-                                height: 70,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.person, size: 36),
-                              ),
+                              errorBuilder: (_, __, ___) => _placeholder(),
                             )
-                          : Container(
-                              width: 70,
-                              height: 70,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.person, size: 36),
-                            ),
+                          : _placeholder(),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1065,105 +1075,68 @@ class _AppointmentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${'doctor_prefix'.tr()} $doctorName',
+                            '${'doctor_prefix'.tr()} ${item.providerName(lang)}',
                             style: blackNormalBoldTextStyle,
                           ),
                           const SizedBox(height: 4),
-                          Text(doctorType, style: greySmallTextStyle),
+                          Text(item.serviceLabel(lang),
+                              style: greySmallTextStyle),
                           const SizedBox(height: 4),
                           if (clinicName.isNotEmpty)
                             Text('🏥 $clinicName', style: greySmallTextStyle),
                           if (clinicAddress.isNotEmpty)
-                            Text(
-                              '📍 $clinicAddress',
-                              style: greySmallTextStyle,
-                            ),
+                            Text('📍 $clinicAddress',
+                                style: greySmallTextStyle),
                           const SizedBox(height: 6),
                           Row(
                             children: [
                               const Icon(Icons.calendar_month,
                                   size: 16, color: Colors.black54),
                               const SizedBox(width: 6),
-                              Text(
-                                '$dateKey • $time',
-                                style: blackSmallTextStyle,
+                              Flexible(
+                                child:
+                                    Text(dateTime, style: blackSmallTextStyle),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-
-                    /// STATUS CHIP
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _statusColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'status.${status.toLowerCase()}'.tr(),
-                        style: TextStyle(
-                          color: _statusColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                    _StatusChip(
+                        label: 'status.$statusKey'.tr(), color: statusColor),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
-                /// ---------------- ACTIONS ----------------
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
-                  alignment: WrapAlignment.spaceBetween,
                   children: [
                     TextButton.icon(
                       onPressed: onOpenDetails,
                       icon: const Icon(Icons.info_outline, size: 18),
                       label: Text('view_details'.tr()),
                     ),
-
-                    /// ⭐ REVIEW (ONLY ONCE, ONLY WHEN COMPLETED)
-                    if (statusLc == 'completed' &&
-                        !hasReviewed &&
-                        onWriteReview != null)
+                    if (item.isPast && !hasReviewed && onWriteReview != null)
                       TextButton.icon(
                         onPressed: onWriteReview,
                         icon: const Icon(Icons.rate_review,
                             color: Colors.amber, size: 18),
-                        label: Text(
-                          'write_review'.tr(),
-                          style: const TextStyle(color: Colors.amber),
-                        ),
+                        label: Text('write_review'.tr(),
+                            style: const TextStyle(color: Colors.amber)),
                       ),
-
-                    /// RESCHEDULE
-                    if (statusLc != 'completed' &&
-                        statusLc != 'canceled' &&
-                        statusLc != 'cancelled')
+                    if (item.isUpcoming)
                       TextButton.icon(
                         onPressed: onReschedule,
                         icon: const Icon(Icons.edit_calendar, size: 18),
                         label: Text('reschedule'.tr()),
                       ),
-
-                    /// CANCEL
-                    if (statusLc != 'canceled' &&
-                        statusLc != 'cancelled' &&
-                        statusLc != 'completed')
+                    if (item.isUpcoming)
                       TextButton.icon(
                         onPressed: onCancel,
                         icon: const Icon(Icons.cancel,
                             color: Colors.red, size: 18),
-                        label: Text(
-                          'cancel'.tr(),
-                          style: const TextStyle(color: Colors.red),
-                        ),
+                        label: Text('cancel'.tr(),
+                            style: const TextStyle(color: Colors.red)),
                       ),
                   ],
                 ),
@@ -1174,26 +1147,247 @@ class _AppointmentCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _placeholder() => Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Icon(Icons.person, size: 36, color: Colors.grey),
+      );
 }
 
-class _CurvedGradientHeader extends StatelessWidget {
-  final Widget child;
-  final double height;
-  const _CurvedGradientHeader(
-      {required this.child, this.height = 180, Key? key})
-      : super(key: key);
+// ── Lab / imaging appointment card ───────────────────────────────────────────
+
+class _LabCard extends StatelessWidget {
+  final PatientAppointmentItem item;
+  final String lang;
+  final VoidCallback onViewDetails;
+  final VoidCallback? onReschedule;
+  final VoidCallback? onCancel;
+
+  const _LabCard({
+    required this.item,
+    required this.lang,
+    required this.onViewDetails,
+    this.onReschedule,
+    this.onCancel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
-      child: Container(
-        height: height,
-        decoration: const BoxDecoration(
-          gradient: PatientAppColors.brandGradient,
+    final statusKey = item.statusKey();
+    final statusColor = item.statusColor();
+    final providerImage = item.providerImage ?? '';
+    final address = item.locationLabel(lang) ?? '';
+    final dateStr = _fmtApptDate(item.appointmentDateTime);
+    final timeStr = _fmtApptTime(item.appointmentDateTime);
+    final isImaging = item.type == PatientAppointmentType.imaging;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF5CC6BA).withOpacity(0.10),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: child,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            // ── header row ──
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: providerImage.isNotEmpty
+                      ? Image.network(
+                          providerImage,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _placeholder(isImaging),
+                        )
+                      : _placeholder(isImaging),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.providerName(lang),
+                              style: blackNormalBoldTextStyle,
+                            ),
+                          ),
+                          _TypeBadge(isImaging: isImaging),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(item.serviceLabel(lang), style: greySmallTextStyle),
+                      if (address.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text('📍 $address', style: greySmallTextStyle),
+                      ],
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month,
+                              size: 16, color: Colors.black54),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text('$dateStr • $timeStr',
+                                style: blackSmallTextStyle),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _StatusChip(
+                    label: 'status.$statusKey'.tr(), color: statusColor),
+              ],
+            ),
+            // ── action row ──
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                TextButton.icon(
+                  onPressed: onViewDetails,
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: Text('view_details'.tr()),
+                ),
+                if (onReschedule != null)
+                  TextButton.icon(
+                    onPressed: onReschedule,
+                    icon: const Icon(Icons.edit_calendar, size: 18),
+                    label: Text('reschedule'.tr()),
+                  ),
+                if (onCancel != null)
+                  TextButton.icon(
+                    onPressed: onCancel,
+                    icon: const Icon(Icons.cancel, color: Colors.red, size: 18),
+                    label: Text('cancel'.tr(),
+                        style: const TextStyle(color: Colors.red)),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _placeholder(bool isImaging) => Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          isImaging ? Icons.image_search : Icons.science,
+          size: 32,
+          color: Colors.grey,
+        ),
+      );
+}
+
+// ── Shared sub-widgets ───────────────────────────────────────────────────────
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatusChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeBadge extends StatelessWidget {
+  final bool isImaging;
+  const _TypeBadge({required this.isImaging});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF5CC6BA).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        isImaging ? 'imaging'.tr() : 'lab'.tr(),
+        style: const TextStyle(
+          color: Color(0xFF5CC6BA),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+// ── File-level date/time helpers (shared by _LabCard and state methods) ──────
+
+String _fmtApptDate(DateTime dt) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+  ];
+  return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+}
+
+String _fmtApptTime(DateTime dt) {
+  final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+  final m = dt.minute.toString().padLeft(2, '0');
+  return '$h:$m ${dt.hour < 12 ? 'AM' : 'PM'}';
 }

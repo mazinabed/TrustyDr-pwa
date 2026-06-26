@@ -30,6 +30,12 @@ class ConfirmLabRequestSheet extends StatefulWidget {
     required this.serviceNameEn,
     required this.serviceNameAr,
     required this.serviceNameKu,
+    this.providerNameEn = '',
+    this.providerNameAr = '',
+    this.providerNameKu = '',
+    this.providerAddress = '',
+    this.providerImage = '',
+    this.providerPhone = '',
   });
 
   final String labId;
@@ -47,6 +53,12 @@ class ConfirmLabRequestSheet extends StatefulWidget {
   final String serviceNameEn;
   final String serviceNameAr;
   final String serviceNameKu;
+  final String providerNameEn;
+  final String providerNameAr;
+  final String providerNameKu;
+  final String providerAddress;
+  final String providerImage;
+  final String providerPhone;
 
   @override
   State<ConfirmLabRequestSheet> createState() => _ConfirmLabRequestSheetState();
@@ -161,6 +173,22 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
           ? 'self'
           : 'family:${_selectedRelationshipKey ?? 'other'}:${resolvedPatientName.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ')}';
 
+      final baghdadLocal =
+          widget.slotStartAt.toUtc().add(const Duration(hours: 3));
+      final dateKey =
+          '${baghdadLocal.year}-${baghdadLocal.month.toString().padLeft(2, '0')}-${baghdadLocal.day.toString().padLeft(2, '0')}';
+
+      final isDuplicate = await _hasDuplicateDiagnosticRequest(
+        patientId: user.uid,
+        patientIdentityKey: patientIdentityKey,
+        dateKey: dateKey,
+      );
+      if (!mounted) return;
+      if (isDuplicate) {
+        setState(() => _duplicateError = 'lab_booking.duplicate_booking'.tr());
+        return;
+      }
+
       await LabRequestService.createScheduledRequest(
         labId: widget.labId,
         centerId: widget.centerId,
@@ -177,6 +205,12 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
         patientIdentityKey: patientIdentityKey,
         patientPhone: resolvedPhone,
         instructions: _notesCtrl.text.trim(),
+        providerNameEn: widget.providerNameEn,
+        providerNameAr: widget.providerNameAr,
+        providerNameKu: widget.providerNameKu,
+        providerAddress: widget.providerAddress,
+        providerImage: widget.providerImage,
+        providerPhone: widget.providerPhone,
       );
 
       if (!mounted) return;
@@ -195,6 +229,29 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<bool> _hasDuplicateDiagnosticRequest({
+    required String patientId,
+    required String patientIdentityKey,
+    required String dateKey,
+  }) async {
+    try {
+      final qs = await FirebaseFirestore.instance
+          .collection('clinical_requests')
+          .where('patientId', isEqualTo: patientId)
+          .where('patientIdentityKey', isEqualTo: patientIdentityKey)
+          .where('source', isEqualTo: 'scheduled')
+          .where('createdByRole', isEqualTo: 'patient')
+          .where('dateKey', isEqualTo: dateKey)
+          .where('partnerStatus',
+              whereIn: ['pendingApproval', 'scheduled', 'checkedIn'])
+          .limit(1)
+          .get();
+      return qs.docs.isNotEmpty;
+    } catch (_) {
+      return false;
     }
   }
 

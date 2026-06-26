@@ -39,6 +39,14 @@ class LabRequestService {
     required String patientIdentityKey,
     String patientPhone = '',
     String instructions = '',
+    // Provider snapshot fields — written once at booking time so
+    // PatientAppointmentItem can display without a runtime join.
+    String providerNameEn = '',
+    String providerNameAr = '',
+    String providerNameKu = '',
+    String providerAddress = '',
+    String providerImage = '',
+    String providerPhone = '',
   }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('NOT_AUTHENTICATED');
@@ -105,6 +113,14 @@ class LabRequestService {
           'slotStartAt': Timestamp.fromDate(slotStartAt),
           'instructions': instructions,
           'createdByRole': 'patient',
+          // Provider snapshot — avoids runtime join in PatientAppointmentItem.
+          'providerName_en': providerNameEn,
+          'providerName_ar': providerNameAr,
+          'providerName_ku': providerNameKu,
+          'providerAddress': providerAddress,
+          'providerImage': providerImage,
+          'providerPhone': providerPhone,
+          'providerKind': serviceGroup,
           'schemaVersion': 1,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),

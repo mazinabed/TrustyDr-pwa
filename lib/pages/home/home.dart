@@ -3118,6 +3118,8 @@ import 'package:trustydr/widgets/announcements_strip.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:trustydr/core/providers/notifications_provider.dart';
+import 'package:trustydr/core/providers/patient_appointments_provider.dart';
+import 'package:trustydr/models/patient_appointment_item.dart';
 
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
@@ -3298,21 +3300,6 @@ class _HomeState extends ConsumerState<Home>
     if (lang == 'ar') return (c['ar'] ?? c['en'])!;
     if (lang == 'ku') return (c['ku'] ?? c['en'])!;
     return c['en']!;
-  }
-
-  String _localizedSpecialtyFromAppointment(Map<String, dynamic> data) {
-    final lang = context.locale.languageCode;
-    if (lang == 'ar' && data['specialtyName_ar'] != null) {
-      return data['specialtyName_ar'].toString();
-    }
-    if (lang == 'ku' && data['specialtyName_ku'] != null) {
-      return data['specialtyName_ku'].toString();
-    }
-    if (data['specialtyName_en'] != null) {
-      return data['specialtyName_en'].toString();
-    }
-    if (data['doctorType'] != null) return data['doctorType'].toString();
-    return '';
   }
 
   void _openLocationSelector() {
@@ -3676,31 +3663,28 @@ class _HomeState extends ConsumerState<Home>
   }
 
   Widget _nextAppointmentCard() {
-    final user = _currentUser;
-    if (user == null) return _noUpcomingCard();
-    return StreamBuilder<QuerySnapshot>(
-      stream: _db
-          .collection('appointments')
-          .where('patientId', isEqualTo: user.uid)
-          .where('status', whereIn: ['pending', 'confirmed'])
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _noUpcomingCard(innerOnly: true);
-        }
-        final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-        DateTime appointmentDate = (data['date'] is Timestamp)
-            ? (data['date'] as Timestamp).toDate()
-            : DateTime.tryParse(data['date'] ?? '') ?? DateTime.now();
+    if (_currentUser == null) return _noUpcomingCard();
+
+    final allAsync = ref.watch(patientAllAppointmentsProvider);
+
+    return allAsync.when(
+      loading: () => _noUpcomingCard(innerOnly: true),
+      error: (_, __) => _noUpcomingCard(innerOnly: true),
+      data: (items) {
+        final upcoming = items.where((i) => i.isUpcoming).toList();
+        if (upcoming.isEmpty) return _noUpcomingCard(innerOnly: true);
+
+        final item = upcoming.first;
         final lang = context.locale.languageCode;
         final intlLocale = lang == 'ku' ? 'ar' : lang;
-        final monthLabel =
-            DateFormat('MMM', intlLocale).format(appointmentDate).toUpperCase();
+        final monthLabel = DateFormat('MMM', intlLocale)
+            .format(item.appointmentDateTime)
+            .toUpperCase();
         final weekdayLabel =
-            DateFormat('EEE', intlLocale).format(appointmentDate);
-        final statusStr = data['status'] ?? '';
+            DateFormat('EEE', intlLocale).format(item.appointmentDateTime);
+        final isDoctor = item.type == PatientAppointmentType.doctor;
+        final itemColor = item.statusColor();
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
@@ -3737,7 +3721,7 @@ class _HomeState extends ConsumerState<Home>
                                 ),
                               ),
                               Text(
-                                appointmentDate.day.toString(),
+                                item.appointmentDateTime.day.toString(),
                                 style: const TextStyle(
                                   color: PatientAppColors.darkNavy,
                                   fontSize: 28,
@@ -3756,7 +3740,6 @@ class _HomeState extends ConsumerState<Home>
                             ],
                           ),
                         ),
-                        // Separator
                         Container(width: 1, color: const Color(0xFFEEEEEE)),
                         // Main content
                         Expanded(
@@ -3765,31 +3748,71 @@ class _HomeState extends ConsumerState<Home>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'doctor_prefix_name'.tr(args: [
-                                    localizedField(data, 'doctorName', context)
-                                  ]),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: PatientAppColors.darkNavy,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
+                                Row(
+                                  children: [
+                                    if (!isDoctor) ...[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 7, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: (item.type ==
+                                                      PatientAppointmentType
+                                                          .imaging
+                                                  ? const Color(0xFF7C3AED)
+                                                  : PatientAppColors.brandTeal)
+                                              .withValues(alpha: 0.12),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          item.type ==
+                                                  PatientAppointmentType.imaging
+                                              ? 'Imaging'
+                                              : 'Lab',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: item.type ==
+                                                    PatientAppointmentType
+                                                        .imaging
+                                                ? const Color(0xFF7C3AED)
+                                                : PatientAppColors.brandTeal,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        isDoctor
+                                            ? 'doctor_prefix_name'.tr(
+                                                args: [item.providerName(lang)])
+                                            : item.providerName(lang),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: PatientAppColors.darkNavy,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(
-                                      Icons.medical_services_outlined,
+                                    Icon(
+                                      isDoctor
+                                          ? Icons.medical_services_outlined
+                                          : Icons.science_outlined,
                                       size: 13,
                                       color: Colors.black45,
                                     ),
                                     const SizedBox(width: 5),
                                     Expanded(
                                       child: Text(
-                                        _localizedSpecialtyFromAppointment(
-                                            data),
+                                        item.serviceLabel(lang),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
@@ -3800,29 +3823,30 @@ class _HomeState extends ConsumerState<Home>
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 3),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.business_outlined,
-                                      size: 13,
-                                      color: Colors.black45,
-                                    ),
-                                    const SizedBox(width: 5),
-                                    Expanded(
-                                      child: Text(
-                                        localizedField(
-                                            data, 'clinicName', context),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          color: Color(0x73000000),
-                                          fontSize: 12,
+                                if (item.locationLabel(lang) != null) ...[
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.business_outlined,
+                                        size: 13,
+                                        color: Colors.black45,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          item.locationLabel(lang)!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Color(0x73000000),
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -3833,9 +3857,7 @@ class _HomeState extends ConsumerState<Home>
                   // Footer: status + CTA
                   Container(
                     decoration: const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFF0F0F0)),
-                      ),
+                      border: Border(top: BorderSide(color: Color(0xFFF0F0F0))),
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
                     child: Row(
@@ -3844,17 +3866,17 @@ class _HomeState extends ConsumerState<Home>
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: _statusColor(statusStr),
+                            color: itemColor,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          _prettyStatus(statusStr),
+                          'status.${item.statusKey()}'.tr(),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: _statusColor(statusStr),
+                            color: itemColor,
                           ),
                         ),
                         const Spacer(),
@@ -3934,30 +3956,6 @@ class _HomeState extends ConsumerState<Home>
         ? card
         : Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16), child: card);
-  }
-
-  String _prettyStatus(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'status.pending'.tr();
-      case 'confirmed':
-        return 'status.confirmed'.tr();
-      default:
-        return status;
-    }
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return PatientAppColors.statusConfirmed;
-      case 'pending':
-        return PatientAppColors.statusPending;
-      case 'cancelled':
-        return PatientAppColors.statusCancelled;
-      default:
-        return PatientAppColors.statusWarning;
-    }
   }
 
   Widget _guestBanner(BuildContext context) => Container(

@@ -26,6 +26,12 @@ class LabTimeSlotPage extends StatefulWidget {
     required this.serviceNameEn,
     required this.serviceNameAr,
     required this.serviceNameKu,
+    this.providerNameEn = '',
+    this.providerNameAr = '',
+    this.providerNameKu = '',
+    this.providerAddress = '',
+    this.providerImage = '',
+    this.providerPhone = '',
   });
 
   final String labId;
@@ -37,6 +43,12 @@ class LabTimeSlotPage extends StatefulWidget {
   final String serviceNameEn;
   final String serviceNameAr;
   final String serviceNameKu;
+  final String providerNameEn;
+  final String providerNameAr;
+  final String providerNameKu;
+  final String providerAddress;
+  final String providerImage;
+  final String providerPhone;
 
   @override
   State<LabTimeSlotPage> createState() => _LabTimeSlotPageState();
@@ -321,6 +333,12 @@ class _LabTimeSlotPageState extends State<LabTimeSlotPage> {
         serviceNameEn: widget.serviceNameEn,
         serviceNameAr: widget.serviceNameAr,
         serviceNameKu: widget.serviceNameKu,
+        providerNameEn: widget.providerNameEn,
+        providerNameAr: widget.providerNameAr,
+        providerNameKu: widget.providerNameKu,
+        providerAddress: widget.providerAddress,
+        providerImage: widget.providerImage,
+        providerPhone: widget.providerPhone,
       ),
     );
 
