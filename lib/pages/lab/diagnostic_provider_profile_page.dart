@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:trustydr/core/providers/doctor_streams_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/lab/lab_time_slot_page.dart';
@@ -145,6 +146,76 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
     final canBook = _selectedServiceKey != null && centerId.isNotEmpty;
 
+    // ── Contact / social row items ─────────────────────────────────────────────
+    final showSocial = d['showSocialLinks'] == true;
+    final rawSocial = d['socialLinks'];
+    final Map<String, String> socialLinks = (showSocial && rawSocial is Map)
+        ? Map<String, String>.fromEntries(rawSocial.entries
+            .where((e) =>
+                e.value is String && (e.value as String).trim().isNotEmpty)
+            .map((e) => MapEntry(e.key.toString(), (e.value as String).trim())))
+        : {};
+
+    Widget contactBtn(
+        Widget icon, String label, Color color, VoidCallback onTap) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: icon,
+            ),
+            const SizedBox(height: 6),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      );
+    }
+
+    final contactItems = <Widget>[];
+
+    if (phone.isNotEmpty) {
+      contactItems.add(contactBtn(
+        const Icon(Icons.call, color: PatientAppColors.statusConfirmed),
+        'call_now'.tr(),
+        PatientAppColors.statusConfirmed,
+        () => launchUrl(Uri.parse('tel:$phone')),
+      ));
+    }
+
+    void addSocial(String key, IconData faIcon, String labelKey, Color color) {
+      final url = socialLinks[key];
+      if (url == null) return;
+      final uri = Uri.tryParse(url);
+      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+        return;
+      }
+      contactItems.add(contactBtn(
+        FaIcon(faIcon, color: color, size: 24),
+        labelKey.tr(),
+        color,
+        () => launchUrl(uri, mode: LaunchMode.externalApplication),
+      ));
+    }
+
+    addSocial('instagram', FontAwesomeIcons.instagram, 'social_instagram',
+        const Color(0xFFE1306C));
+    addSocial('facebook', FontAwesomeIcons.facebook, 'social_facebook',
+        const Color(0xFF1877F2));
+    addSocial(
+        'tiktok', FontAwesomeIcons.tiktok, 'social_tiktok', Colors.black87);
+    addSocial('youtube', FontAwesomeIcons.youtube, 'social_youtube',
+        const Color(0xFFFF0000));
+    addSocial('website', FontAwesomeIcons.globe, 'social_website',
+        PatientAppColors.brandTeal);
+
     return CustomScrollView(
       slivers: [
         // ── Header ───────────────────────────────────────────────────────────
@@ -217,24 +288,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
           ),
         ),
 
-        // ── Phone action button ───────────────────────────────────────────────
-        if (phone.isNotEmpty)
+        // ── Quick contact / social row (call + social platforms) ─────────────
+        if (contactItems.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.only(top: 20, bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _ActionButton(
-                    iconWidget: const Icon(
-                      Icons.call,
-                      color: PatientAppColors.statusConfirmed,
-                    ),
-                    label: 'call_now'.tr(),
-                    color: PatientAppColors.statusConfirmed,
-                    onTap: () => launchUrl(Uri.parse('tel:$phone')),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 12,
+                children: contactItems,
               ),
             ),
           ),
@@ -471,42 +534,6 @@ class _HeaderBadge extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.iconWidget,
-    required this.label,
-    required this.color,
-    this.onTap,
-  });
-
-  final Widget iconWidget;
-  final String label;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: iconWidget,
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 13)),
         ],
       ),
     );
