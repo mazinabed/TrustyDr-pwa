@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/providers/provider_catalog_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/lab/lab_time_slot_page.dart';
+import 'package:trustydr/pages/screens.dart' show LoginScreen;
 import 'package:trustydr/widget/doctor_avatar.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -129,7 +132,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     final providerId = widget.providerId;
     final catalogAsync = ref.watch(providerCatalogProvider(providerId));
 
-    final canBook = _selectedService != null && centerId.isNotEmpty;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isLoggedIn = currentUser != null;
+    final canBook = isLoggedIn && _selectedService != null && centerId.isNotEmpty;
 
     // ── Contact / social row items ─────────────────────────────────────────────
     final showSocial = d['showSocialLinks'] == true;
@@ -461,49 +466,61 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 ),
 
                 ElevatedButton.icon(
-                  onPressed: canBook
-                      ? () {
-                          final svc = _selectedService!;
-                          Navigator.push(
+                  onPressed: !isLoggedIn
+                      ? () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => LabTimeSlotPage(
-                                labId: providerId,
-                                centerId: centerId,
-                                facilityName: facilityName,
-                                imageUrl: imageUrl,
-                                serviceGroup: serviceGroup,
-                                specialtyId: svc.id,
-                                serviceNameEn: svc.nameEn,
-                                serviceNameAr: svc.nameAr,
-                                serviceNameKu: svc.nameKu,
-                                serviceId: svc.id,
-                                subcategory: svc.subcategory,
-                                estimatedDurationMinutes:
-                                    svc.estimatedDurationMinutes,
-                                price: svc.price,
-                                visitType: _visitType,
-                                providerNameEn: widget.data['facilityName_en']
-                                        ?.toString() ??
-                                    facilityName,
-                                providerNameAr: widget.data['facilityName_ar']
-                                        ?.toString() ??
-                                    facilityName,
-                                providerNameKu: widget.data['facilityName_ku']
-                                        ?.toString() ??
-                                    facilityName,
-                                providerAddress:
-                                    (widget.data['facilityAddress'] ?? '')
-                                        .toString(),
-                                providerImage: imageUrl,
-                                providerPhone: phone,
-                              ),
+                            PageTransition(
+                              type: PageTransitionType.rightToLeft,
+                              child: const LoginScreen(),
                             ),
-                          );
-                        }
-                      : null,
+                          )
+                      : canBook
+                          ? () {
+                              final svc = _selectedService!;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LabTimeSlotPage(
+                                    labId: providerId,
+                                    centerId: centerId,
+                                    facilityName: facilityName,
+                                    imageUrl: imageUrl,
+                                    serviceGroup: serviceGroup,
+                                    specialtyId: svc.id,
+                                    serviceNameEn: svc.nameEn,
+                                    serviceNameAr: svc.nameAr,
+                                    serviceNameKu: svc.nameKu,
+                                    serviceId: svc.id,
+                                    subcategory: svc.subcategory,
+                                    estimatedDurationMinutes:
+                                        svc.estimatedDurationMinutes,
+                                    price: svc.price,
+                                    visitType: _visitType,
+                                    providerNameEn:
+                                        widget.data['facilityName_en']
+                                                ?.toString() ??
+                                            facilityName,
+                                    providerNameAr:
+                                        widget.data['facilityName_ar']
+                                                ?.toString() ??
+                                            facilityName,
+                                    providerNameKu:
+                                        widget.data['facilityName_ku']
+                                                ?.toString() ??
+                                            facilityName,
+                                    providerAddress:
+                                        (widget.data['facilityAddress'] ?? '')
+                                            .toString(),
+                                    providerImage: imageUrl,
+                                    providerPhone: phone,
+                                  ),
+                                ),
+                              );
+                            }
+                          : null,
                   icon: const Icon(Icons.calendar_month_rounded),
-                  label: Text('book_appointment'.tr()),
+                  label: Text(
+                      isLoggedIn ? 'book_appointment'.tr() : 'login_to_book'.tr()),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: PatientAppColors.brandTeal,
@@ -517,7 +534,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   ),
                 ),
 
-                if (!canBook &&
+                if (isLoggedIn &&
+                    !canBook &&
                     (catalogAsync.asData?.value.isNotEmpty ?? false) &&
                     _selectedService == null) ...[
                   const SizedBox(height: 8),
