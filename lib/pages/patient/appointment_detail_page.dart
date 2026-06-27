@@ -800,13 +800,15 @@ class _AppointmentDetailPageState extends State<AppointmentDetailPage> {
         final clinicName = localizedField(data, 'clinicName', context);
         final clinicAddress = localizedField(data, 'clinicAddress', context);
 
-// 🔥 NEW TIME (correct)
+        // appointmentAt is the canonical slot-start Timestamp; fall back to
+        // slotStartAt for records written before the field was standardised.
         String formattedTime = '';
-        if (data['slotStartAt'] != null) {
-          final dt = (data['slotStartAt'] as Timestamp).toDate();
+        final Timestamp? apptTs = (data['appointmentAt'] as Timestamp?) ??
+            (data['slotStartAt'] as Timestamp?);
+        if (apptTs != null) {
           formattedTime = DateFormat.yMMMEd(context.locale.languageCode)
               .add_jm()
-              .format(dt);
+              .format(apptTs.toDate());
         }
 
         final province = localizedField(data, 'province', context);

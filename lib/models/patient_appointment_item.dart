@@ -285,6 +285,14 @@ class PatientAppointmentItem {
   }
 
   static DateTime _parseAppointmentDate(Map<String, dynamic> data) {
+    // appointmentAt is the canonical slot-start Timestamp written by the booking
+    // flow. Check it first so the card and detail page always agree.
+    final at = data['appointmentAt'];
+    if (at is Timestamp) return at.toDate();
+    // slotStartAt is used on newer records; fall back for older ones.
+    final slot = data['slotStartAt'];
+    if (slot is Timestamp) return slot.toDate();
+    // date may be a Timestamp or a legacy display string — last-resort fallbacks.
     final d = data['date'];
     if (d is Timestamp) return d.toDate();
     if (d is String && d.isNotEmpty) {
