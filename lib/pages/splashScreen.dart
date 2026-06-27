@@ -346,6 +346,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/pages/public_doctor_profile_page.dart';
+import 'package:trustydr/pages/lab/diagnostic_provider_profile_page.dart';
 import 'package:trustydr/services/database_service.dart';
 // Ensure your DatabaseService and BottomBar imports are here
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
@@ -400,6 +401,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => PublicDoctorProfilePage(doctorId: doctorId),
+            ),
+          );
+        });
+
+        return true;
+      }
+
+      if (path.startsWith('/p/lab/')) {
+        final providerId = path.split('/').last;
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) =>
+                  DiagnosticProviderProfilePage(providerId: providerId),
             ),
           );
         });
