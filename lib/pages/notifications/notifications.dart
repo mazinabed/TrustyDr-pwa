@@ -13,6 +13,8 @@ import 'package:trustydr/core/providers/notifications_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/models/app_notification.dart';
 import 'package:trustydr/pages/patient/appointment_detail_page.dart';
+import 'package:trustydr/pages/patient/lab_appointment_detail_page.dart';
+import 'package:trustydr/models/patient_appointment_item.dart';
 import 'package:trustydr/pages/patient/referral_detail_page.dart';
 import 'package:trustydr/services/push_notification_service.dart';
 import 'package:trustydr/widgets/push_permission_dialog.dart';
@@ -196,6 +198,9 @@ class _NotificationsState extends ConsumerState<Notifications> {
           child: AppointmentDetailPage(appointmentId: notif.appointmentId),
         ),
       );
+    } else if (notif.type == 'lab_appointment' &&
+        notif.clinicalRequestId.isNotEmpty) {
+      _openLabAppointment(context, notif.clinicalRequestId);
     } else if (notif.type == 'lab_referral' &&
         notif.clinicalRequestId.isNotEmpty) {
       Navigator.push(
@@ -205,6 +210,32 @@ class _NotificationsState extends ConsumerState<Notifications> {
           child: ReferralDetailPage(referralId: notif.clinicalRequestId),
         ),
       );
+    }
+  }
+
+  // Fetches the clinical_requests doc and navigates to LabAppointmentDetailPage.
+  // LabAppointmentDetailPage requires a PatientAppointmentItem; all display data
+  // is then streamed from Firestore inside that page, so this is a one-time read.
+  Future<void> _openLabAppointment(
+      BuildContext context, String clinicalRequestId) async {
+    // Capture navigator before the async gap to satisfy use_build_context_synchronously.
+    final nav = Navigator.of(context);
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('clinical_requests')
+          .doc(clinicalRequestId)
+          .get();
+      if (!doc.exists || !mounted) return;
+      final item = PatientAppointmentItem.fromLabRequest(doc.data()!, doc.id);
+      if (!mounted) return;
+      nav.push(
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: LabAppointmentDetailPage(item: item),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[Notifications] _openLabAppointment error: $e');
     }
   }
 }
