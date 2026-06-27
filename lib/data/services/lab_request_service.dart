@@ -34,6 +34,12 @@ class LabRequestService {
     required String serviceNameEn,
     required String serviceNameAr,
     required String serviceNameKu,
+    // Catalog fields — present when booking uses the provider service catalog.
+    // Empty/null for legacy or fallback bookings (isCustom stays true).
+    String serviceId = '',
+    String subcategory = '',
+    int? estimatedDurationMinutes,
+    int? price,
     required String patientId,
     required String patientName,
     required String patientIdentityKey,
@@ -61,15 +67,34 @@ class LabRequestService {
     // Build the snapshotted subTypeItems entry so every reader (doctor portal
     // card, patient results page) can resolve the localized service name
     // without a runtime join back to the specialties collection.
-    final subTypeItems = [
-      {
+    //
+    // When a catalog serviceId is provided, the entry is richer (isCustom=false
+    // + duration/price/subcategory). When absent (legacy fallback), the minimal
+    // shape with isCustom=true is used — all downstream readers support both.
+    final Map<String, Object?> subTypeEntry;
+    if (serviceId.isNotEmpty) {
+      subTypeEntry = {
+        'serviceId': serviceId,
+        'id': serviceId,
+        'isCustom': false,
+        'nameEn': serviceNameEn,
+        'nameAr': serviceNameAr,
+        'nameKu': serviceNameKu,
+        'category': serviceGroup,
+        'subcategory': subcategory,
+        'estimatedDurationMinutes': estimatedDurationMinutes,
+        'price': price,
+      };
+    } else {
+      subTypeEntry = {
         'id': specialtyId,
         'isCustom': true,
         'nameEn': serviceNameEn,
         'nameAr': serviceNameAr,
         'nameKu': serviceNameKu,
-      }
-    ];
+      };
+    }
+    final subTypeItems = [subTypeEntry];
 
     try {
       await _fs.runTransaction((tx) async {
@@ -99,7 +124,7 @@ class LabRequestService {
           // serviceCategory uses the provider's serviceGroup key so the doctor
           // portal can render 'clinical_requests.category_laboratory' etc.
           'serviceCategory': serviceGroup,
-          'subType': serviceGroup,
+          'subType': serviceId.isNotEmpty ? serviceId : serviceGroup,
           'subTypeItems': subTypeItems,
           'assignedRoles': <String>[],
           'status': 'pending',

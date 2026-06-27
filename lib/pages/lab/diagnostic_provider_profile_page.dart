@@ -3,7 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:trustydr/core/providers/doctor_streams_provider.dart';
+import 'package:trustydr/core/providers/provider_catalog_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/lab/lab_time_slot_page.dart';
 import 'package:trustydr/widget/doctor_avatar.dart';
@@ -74,10 +74,7 @@ class _ProfileBody extends ConsumerStatefulWidget {
 }
 
 class _ProfileBodyState extends ConsumerState<_ProfileBody> {
-  String? _selectedServiceKey;
-  String _selectedServiceNameEn = '';
-  String _selectedServiceNameAr = '';
-  String _selectedServiceNameKu = '';
+  ProviderCatalogService? _selectedService;
 
   String _loc(Map<String, dynamic> d, String prefix, String lang) {
     if (lang == 'ar') {
@@ -102,17 +99,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     return 'Clinical Laboratory';
   }
 
-  String _specialtyDisplayName(Map<String, dynamic> data, String lang) {
-    final langMap = (data['lang'] ?? {}) as Map<String, dynamic>?;
-    if (lang == 'ar' && (langMap?['ar'] ?? '').toString().isNotEmpty) {
-      return langMap!['ar'];
-    }
-    if (lang == 'ku' && (langMap?['ku'] ?? '').toString().isNotEmpty) {
-      return langMap!['ku'];
-    }
-    return (data['name_en'] ?? '').toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
@@ -133,18 +119,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     final locationParts = [city, province].where((s) => s.isNotEmpty).toList();
     final locationLine = locationParts.join(', ');
 
-    // Service category chips — filtered from specialties by provider's serviceGroup
-    final specialtiesAsync = ref.watch(specialtiesStreamProvider);
-    final serviceChips = specialtiesAsync.when(
-      data: (snap) => snap.docs.where((doc) {
-        final sg = (doc.data()['serviceGroup'] ?? '').toString();
-        return sg == serviceGroup;
-      }).toList(),
-      loading: () => [],
-      error: (_, __) => [],
-    );
+    // Provider service catalog — reads diagnostic_providers/{id}/services
+    // filtered to isActive + onlineBookingEnabled + not archived.
+    final providerId = (widget.data['providerId'] ?? '').toString();
+    final catalogAsync = ref.watch(providerCatalogProvider(providerId));
 
-    final canBook = _selectedServiceKey != null && centerId.isNotEmpty;
+    final canBook = _selectedService != null && centerId.isNotEmpty;
 
     // ── Contact / social row items ─────────────────────────────────────────────
     final showSocial = d['showSocialLinks'] == true;
@@ -352,95 +332,118 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Service category picker
-                if (serviceChips.isNotEmpty) ...[
-                  Text(
-                    'lab_booking.select_service'.tr(),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
+                // Service picker — loaded from provider catalog
+                catalogAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                          color: PatientAppColors.brandTeal),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: serviceChips.map((doc) {
-                      final docData = doc.data();
-                      final displayName = _specialtyDisplayName(docData, lang);
-                      final isSelected = _selectedServiceKey == doc.id;
-                      return GestureDetector(
-                        onTap: () {
-                          final langMap =
-                              (docData['lang'] ?? {}) as Map<String, dynamic>?;
-                          setState(() {
-                            _selectedServiceKey = doc.id;
-                            _selectedServiceNameEn =
-                                (docData['name_en'] ?? '').toString();
-                            _selectedServiceNameAr =
-                                (langMap?['ar'] ?? '').toString();
-                            _selectedServiceNameKu =
-                                (langMap?['ku'] ?? '').toString();
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? PatientAppColors.brandTeal
-                                : PatientAppColors.brandTeal
-                                    .withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: PatientAppColors.brandTeal
-                                  .withValues(alpha: isSelected ? 1 : 0.3),
-                            ),
-                          ),
-                          child: Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? Colors.white
-                                  : PatientAppColors.brandTeal,
-                            ),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (services) {
+                    if (services.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'lab_booking.no_online_services'.tr(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black45,
                           ),
                         ),
                       );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'lab_booking.select_service'.tr(),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: services.map((svc) {
+                            final isSelected = _selectedService?.id == svc.id;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setState(() => _selectedService = svc),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? PatientAppColors.brandTeal
+                                      : PatientAppColors.brandTeal
+                                          .withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: PatientAppColors.brandTeal
+                                        .withValues(
+                                            alpha: isSelected ? 1 : 0.3),
+                                  ),
+                                ),
+                                child: Text(
+                                  svc.name(lang),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : PatientAppColors.brandTeal,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                ),
 
                 ElevatedButton.icon(
                   onPressed: canBook
                       ? () {
+                          final svc = _selectedService!;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => LabTimeSlotPage(
-                                labId:
-                                    widget.data['providerId']?.toString() ?? '',
+                                labId: providerId,
                                 centerId: centerId,
                                 facilityName: facilityName,
                                 imageUrl: imageUrl,
                                 serviceGroup: serviceGroup,
-                                specialtyId: _selectedServiceKey!,
-                                serviceNameEn: _selectedServiceNameEn,
-                                serviceNameAr: _selectedServiceNameAr,
-                                serviceNameKu: _selectedServiceNameKu,
-                                providerNameEn: widget.data['facilityName_en']
-                                        ?.toString() ??
-                                    facilityName,
-                                providerNameAr: widget.data['facilityName_ar']
-                                        ?.toString() ??
-                                    facilityName,
-                                providerNameKu: widget.data['facilityName_ku']
-                                        ?.toString() ??
-                                    facilityName,
+                                specialtyId: svc.id,
+                                serviceNameEn: svc.nameEn,
+                                serviceNameAr: svc.nameAr,
+                                serviceNameKu: svc.nameKu,
+                                serviceId: svc.id,
+                                subcategory: svc.subcategory,
+                                estimatedDurationMinutes:
+                                    svc.estimatedDurationMinutes,
+                                price: svc.price,
+                                providerNameEn:
+                                    widget.data['facilityName_en']
+                                            ?.toString() ??
+                                        facilityName,
+                                providerNameAr:
+                                    widget.data['facilityName_ar']
+                                            ?.toString() ??
+                                        facilityName,
+                                providerNameKu:
+                                    widget.data['facilityName_ku']
+                                            ?.toString() ??
+                                        facilityName,
                                 providerAddress:
                                     (widget.data['facilityAddress'] ?? '')
                                         .toString(),
@@ -466,22 +469,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   ),
                 ),
 
-                if (!canBook && serviceChips.isEmpty) ...[
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      'coming_soon'.tr(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black45,
-                      ),
-                    ),
-                  ),
-                ],
-
                 if (!canBook &&
-                    serviceChips.isNotEmpty &&
-                    _selectedServiceKey == null) ...[
+                    (catalogAsync.asData?.value.isNotEmpty ?? false) &&
+                    _selectedService == null) ...[
                   const SizedBox(height: 8),
                   Center(
                     child: Text(

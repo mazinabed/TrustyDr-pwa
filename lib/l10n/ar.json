@@ -568,7 +568,8 @@
     "request_scheduled": "تم إرسال الطلب. في انتظار تأكيد المختبر.",
     "no_schedule": "لا يوجد جدول لهذا التاريخ",
     "duplicate_booking": "لديك موعد محجوز بالفعل في هذا التاريخ",
-    "choose_another_time": "اختيار وقت آخر"
+    "choose_another_time": "اختيار وقت آخر",
+    "no_online_services": "لا توجد خدمات متاحة للحجز الإلكتروني"
   },
   "referral": {
     "page_title": "تفاصيل الإحالة",

@@ -36,6 +36,11 @@ class ConfirmLabRequestSheet extends StatefulWidget {
     this.providerAddress = '',
     this.providerImage = '',
     this.providerPhone = '',
+    // Catalog fields — present for catalog-backed bookings; empty for legacy.
+    this.serviceId = '',
+    this.subcategory = '',
+    this.estimatedDurationMinutes,
+    this.price,
   });
 
   final String labId;
@@ -59,6 +64,10 @@ class ConfirmLabRequestSheet extends StatefulWidget {
   final String providerAddress;
   final String providerImage;
   final String providerPhone;
+  final String serviceId;
+  final String subcategory;
+  final int? estimatedDurationMinutes;
+  final int? price;
 
   @override
   State<ConfirmLabRequestSheet> createState() => _ConfirmLabRequestSheetState();
@@ -200,6 +209,10 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
         serviceNameEn: widget.serviceNameEn,
         serviceNameAr: widget.serviceNameAr,
         serviceNameKu: widget.serviceNameKu,
+        serviceId: widget.serviceId,
+        subcategory: widget.subcategory,
+        estimatedDurationMinutes: widget.estimatedDurationMinutes,
+        price: widget.price,
         patientId: user.uid,
         patientName: resolvedPatientName,
         patientIdentityKey: patientIdentityKey,

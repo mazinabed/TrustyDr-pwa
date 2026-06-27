@@ -567,7 +567,8 @@
     "request_scheduled": "Request submitted. Awaiting lab confirmation.",
     "no_schedule": "No schedule available for this date",
     "duplicate_booking": "You already have an appointment booked for this date",
-    "choose_another_time": "Choose Another Time"
+    "choose_another_time": "Choose Another Time",
+    "no_online_services": "No online services available for booking"
   },
   "referral": {
     "page_title": "Referral Details",
