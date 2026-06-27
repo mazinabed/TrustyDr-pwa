@@ -48,7 +48,7 @@ class DiagnosticProviderProfilePage extends ConsumerWidget {
               }
 
               final d = snapshot.data!.data()!;
-              return _ProfileBody(data: d);
+              return _ProfileBody(data: d, providerId: providerId);
             },
           );
 
@@ -65,9 +65,10 @@ class DiagnosticProviderProfilePage extends ConsumerWidget {
 // ─── Profile body ─────────────────────────────────────────────────────────────
 
 class _ProfileBody extends ConsumerStatefulWidget {
-  const _ProfileBody({required this.data});
+  const _ProfileBody({required this.data, required this.providerId});
 
   final Map<String, dynamic> data;
+  final String providerId;
 
   @override
   ConsumerState<_ProfileBody> createState() => _ProfileBodyState();
@@ -122,7 +123,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
     // Provider service catalog — reads diagnostic_providers/{id}/services
     // filtered to isActive + onlineBookingEnabled + not archived.
-    final providerId = (widget.data['providerId'] ?? '').toString();
+    // Uses the URL-level providerId (not the document field) to ensure
+    // the catalog loads even when the public_diagnostic_providers doc
+    // doesn't include a redundant 'providerId' field.
+    final providerId = widget.providerId;
     final catalogAsync = ref.watch(providerCatalogProvider(providerId));
 
     final canBook = _selectedService != null && centerId.isNotEmpty;
@@ -342,7 +346,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                           color: PatientAppColors.brandTeal),
                     ),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, __) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'lab_booking.no_online_services'.tr(),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ),
                   data: (services) {
                     if (services.isEmpty) {
                       return Padding(
