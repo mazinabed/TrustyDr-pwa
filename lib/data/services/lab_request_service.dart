@@ -53,6 +53,14 @@ class LabRequestService {
     String providerAddress = '',
     String providerImage = '',
     String providerPhone = '',
+    // Visit type: 'inPerson' (default) or 'homeVisit'.
+    String visitType = 'inPerson',
+    // Home visit address — snapshotted at booking time; only populated
+    // when visitType == 'homeVisit'.
+    String homeVisitAddress = '',
+    String homeVisitCity = '',
+    String homeVisitProvince = '',
+    String homeVisitAddressNote = '',
   }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('NOT_AUTHENTICATED');
@@ -138,6 +146,14 @@ class LabRequestService {
           'slotStartAt': Timestamp.fromDate(slotStartAt),
           'instructions': instructions,
           'createdByRole': 'patient',
+          'visitType': visitType,
+          // Home visit address snapshot — written only for homeVisit bookings.
+          // Empty strings for inPerson bookings (no conditional needed — reads
+          // check isEmpty before displaying).
+          'homeVisitAddress': homeVisitAddress,
+          'homeVisitCity': homeVisitCity,
+          'homeVisitProvince': homeVisitProvince,
+          'homeVisitAddressNote': homeVisitAddressNote,
           // Provider snapshot — avoids runtime join in PatientAppointmentItem.
           'providerName_en': providerNameEn,
           'providerName_ar': providerNameAr,

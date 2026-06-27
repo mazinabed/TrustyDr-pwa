@@ -75,6 +75,7 @@ class _ProfileBody extends ConsumerStatefulWidget {
 
 class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   ProviderCatalogService? _selectedService;
+  String _visitType = 'inPerson';
 
   String _loc(Map<String, dynamic> d, String prefix, String lang) {
     if (lang == 'ar') {
@@ -373,8 +374,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                           children: services.map((svc) {
                             final isSelected = _selectedService?.id == svc.id;
                             return GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedService = svc),
+                              onTap: () => setState(() {
+                                _selectedService = svc;
+                                _visitType = 'inPerson';
+                              }),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 8),
@@ -405,6 +408,40 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                           }).toList(),
                         ),
                         const SizedBox(height: 16),
+
+                        // Home visit toggle — only shown when the selected
+                        // service supports home visits.
+                        if (_selectedService?.homeVisitAvailable == true) ...[
+                          Text(
+                            'lab_booking.visit_type_label'.tr(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _VisitTypeChip(
+                                label: 'lab_booking.visit_type_in_center'.tr(),
+                                icon: Icons.biotech_rounded,
+                                selected: _visitType == 'inPerson',
+                                onTap: () =>
+                                    setState(() => _visitType = 'inPerson'),
+                              ),
+                              const SizedBox(width: 10),
+                              _VisitTypeChip(
+                                label: 'lab_booking.visit_type_home'.tr(),
+                                icon: Icons.home_outlined,
+                                selected: _visitType == 'homeVisit',
+                                onTap: () =>
+                                    setState(() => _visitType = 'homeVisit'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       ],
                     );
                   },
@@ -432,18 +469,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                 estimatedDurationMinutes:
                                     svc.estimatedDurationMinutes,
                                 price: svc.price,
-                                providerNameEn:
-                                    widget.data['facilityName_en']
-                                            ?.toString() ??
-                                        facilityName,
-                                providerNameAr:
-                                    widget.data['facilityName_ar']
-                                            ?.toString() ??
-                                        facilityName,
-                                providerNameKu:
-                                    widget.data['facilityName_ku']
-                                            ?.toString() ??
-                                        facilityName,
+                                visitType: _visitType,
+                                providerNameEn: widget.data['facilityName_en']
+                                        ?.toString() ??
+                                    facilityName,
+                                providerNameAr: widget.data['facilityName_ar']
+                                        ?.toString() ??
+                                    facilityName,
+                                providerNameKu: widget.data['facilityName_ku']
+                                        ?.toString() ??
+                                    facilityName,
                                 providerAddress:
                                     (widget.data['facilityAddress'] ?? '')
                                         .toString(),
@@ -612,6 +647,59 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VisitTypeChip extends StatelessWidget {
+  const _VisitTypeChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? PatientAppColors.brandIndigo
+              : PatientAppColors.brandIndigo.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: PatientAppColors.brandIndigo
+                .withValues(alpha: selected ? 1 : 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? Colors.white : PatientAppColors.brandIndigo,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : PatientAppColors.brandIndigo,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

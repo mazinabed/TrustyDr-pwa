@@ -2,10 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/core/providers/home_address_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/core/utils/patient_identity_validator.dart';
 import 'package:trustydr/data/services/lab_request_service.dart';
 import 'package:trustydr/models/relationship_option.dart';
+import 'package:trustydr/pages/profile/home_address_page.dart';
 
 class ConfirmLabRequestSheet extends StatefulWidget {
   const ConfirmLabRequestSheet({
@@ -41,6 +44,8 @@ class ConfirmLabRequestSheet extends StatefulWidget {
     this.subcategory = '',
     this.estimatedDurationMinutes,
     this.price,
+    // visitType: 'inPerson' (default) or 'homeVisit'.
+    this.visitType = 'inPerson',
   });
 
   final String labId;
@@ -68,6 +73,7 @@ class ConfirmLabRequestSheet extends StatefulWidget {
   final String subcategory;
   final int? estimatedDurationMinutes;
   final int? price;
+  final String visitType;
 
   @override
   State<ConfirmLabRequestSheet> createState() => _ConfirmLabRequestSheetState();
@@ -86,10 +92,14 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
   bool _profileNameMissing = false;
   String? _duplicateError;
 
+  HomeAddress? _homeAddress;
+  bool _homeAddressChecked = false;
+
   @override
   void initState() {
     super.initState();
     _checkProfileName();
+    if (widget.visitType == 'homeVisit') _checkHomeAddress();
   }
 
   @override
@@ -97,6 +107,31 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
     _patientNameCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkHomeAddress() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final raw = snap.data()?['homeAddress'];
+      HomeAddress? addr;
+      if (raw is Map) {
+        addr = HomeAddress.fromMap(Map<String, dynamic>.from(raw));
+        if (addr.isEmpty) addr = null;
+      }
+      if (!mounted) return;
+      setState(() {
+        _homeAddress = addr;
+        _homeAddressChecked = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _homeAddressChecked = true);
+    }
   }
 
   Future<void> _checkProfileName() async {
@@ -157,6 +192,14 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
       if (!PatientIdentityValidator.isValidName(profileName)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('booking.profile_name_missing'.tr())),
+        );
+        return;
+      }
+
+      if (widget.visitType == 'homeVisit' && _homeAddress == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('lab_booking.home_visit_address_required'.tr())),
         );
         return;
       }
@@ -224,6 +267,11 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
         providerAddress: widget.providerAddress,
         providerImage: widget.providerImage,
         providerPhone: widget.providerPhone,
+        visitType: widget.visitType,
+        homeVisitAddress: _homeAddress?.full ?? '',
+        homeVisitCity: _homeAddress?.city ?? '',
+        homeVisitProvince: _homeAddress?.province ?? '',
+        homeVisitAddressNote: _homeAddress?.note ?? '',
       );
 
       if (!mounted) return;
@@ -438,6 +486,133 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
                 const SizedBox(height: 16),
               ],
 
+              // ── Home visit address section ───────────────────────────────
+              if (widget.visitType == 'homeVisit') ...[
+                if (!_homeAddressChecked)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: LinearProgressIndicator(
+                        color: PatientAppColors.brandIndigo),
+                  )
+                else if (_homeAddress == null)
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.orange.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.home_outlined,
+                                color: Colors.orange.shade700, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'lab_booking.home_visit_no_address'.tr(),
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.orange.shade800,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push<bool>(
+                                context,
+                                PageTransition(
+                                  type: PageTransitionType.rightToLeft,
+                                  child: const HomeAddressPage(),
+                                ),
+                              );
+                              if (result == true) await _checkHomeAddress();
+                            },
+                            icon: const Icon(Icons.add_location_alt_outlined),
+                            label:
+                                Text('lab_booking.home_visit_add_address'.tr()),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.orange.shade700,
+                              side: BorderSide(color: Colors.orange.shade400),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.green.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.home_outlined,
+                            color: Colors.green.shade700, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'lab_booking.home_visit_address_label'.tr(),
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${_homeAddress!.full}, ${_homeAddress!.city}, ${_homeAddress!.province}',
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.black87),
+                              ),
+                              if (_homeAddress!.note.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _homeAddress!.note,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final result = await Navigator.push<bool>(
+                              context,
+                              PageTransition(
+                                type: PageTransitionType.rightToLeft,
+                                child: const HomeAddressPage(),
+                              ),
+                            );
+                            if (result == true) await _checkHomeAddress();
+                          },
+                          child: Text('edit'.tr(),
+                              style: TextStyle(
+                                  color: PatientAppColors.brandIndigo)),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+
               // ── Who is this for ──────────────────────────────────────────
               Text(
                 'who_is_this_for'.tr(),
@@ -541,7 +716,11 @@ class _ConfirmLabRequestSheetState extends State<ConfirmLabRequestSheet> {
 
               // ── Submit / choose-another-time button ──────────────────────
               ElevatedButton(
-                onPressed: _submitting || _profileNameMissing
+                onPressed: _submitting ||
+                        _profileNameMissing ||
+                        (widget.visitType == 'homeVisit' &&
+                            _homeAddressChecked &&
+                            _homeAddress == null)
                     ? null
                     : _duplicateError != null
                         ? () => Navigator.pop(context)

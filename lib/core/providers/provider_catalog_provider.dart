@@ -15,6 +15,7 @@ class ProviderCatalogService {
     required this.subcategory,
     required this.estimatedDurationMinutes,
     this.price,
+    this.homeVisitAvailable = false,
   });
 
   final String id;
@@ -25,9 +26,9 @@ class ProviderCatalogService {
   final String subcategory;
   final int estimatedDurationMinutes;
   final int? price;
+  final bool homeVisitAvailable;
 
-  factory ProviderCatalogService.fromMap(
-      String id, Map<String, dynamic> d) {
+  factory ProviderCatalogService.fromMap(String id, Map<String, dynamic> d) {
     return ProviderCatalogService(
       id: id,
       nameEn: (d['name_en'] ?? '').toString(),
@@ -35,9 +36,9 @@ class ProviderCatalogService {
       nameKu: (d['name_ku'] ?? '').toString(),
       category: (d['category'] ?? '').toString(),
       subcategory: (d['subcategory'] ?? '').toString(),
-      estimatedDurationMinutes:
-          (d['estimatedDurationMinutes'] as int?) ?? 30,
+      estimatedDurationMinutes: (d['estimatedDurationMinutes'] as int?) ?? 30,
       price: d['price'] as int?,
+      homeVisitAvailable: (d['homeVisitAvailable'] as bool?) ?? false,
     );
   }
 
@@ -56,8 +57,7 @@ class ProviderCatalogService {
 ///
 /// Returns [] when [providerId] is empty (no unnecessary reads).
 final providerCatalogProvider = FutureProvider.family
-    .autoDispose<List<ProviderCatalogService>, String>(
-        (ref, providerId) async {
+    .autoDispose<List<ProviderCatalogService>, String>((ref, providerId) async {
   if (providerId.isEmpty) return [];
   final snap = await FirebaseFirestore.instance
       .collection('diagnostic_providers')

@@ -569,7 +569,27 @@
     "no_schedule": "لا يوجد جدول لهذا التاريخ",
     "duplicate_booking": "لديك موعد محجوز بالفعل في هذا التاريخ",
     "choose_another_time": "اختيار وقت آخر",
-    "no_online_services": "لا توجد خدمات متاحة للحجز الإلكتروني"
+    "no_online_services": "لا توجد خدمات متاحة للحجز الإلكتروني",
+    "visit_type_label": "نوع الزيارة",
+    "visit_type_in_center": "في المركز",
+    "visit_type_home": "زيارة منزلية",
+    "home_visit_no_address": "يرجى إضافة عنوانك المنزلي قبل حجز زيارة منزلية.",
+    "home_visit_add_address": "إضافة عنوان منزلي",
+    "home_visit_address_label": "عنوان الزيارة المنزلية",
+    "home_visit_address_required": "العنوان المنزلي مطلوب لحجوزات الزيارة المنزلية"
+  },
+  "home_address": {
+    "section_title": "العنوان المنزلي",
+    "card_label": "عنواني المنزلي",
+    "not_set": "غير محدد",
+    "title": "العنوان المنزلي",
+    "subtitle": "يُستخدم عنوانك للزيارات المنزلية",
+    "province": "المحافظة",
+    "city": "المدينة / الحي",
+    "full_address": "العنوان الكامل",
+    "note": "ملاحظة العنوان (اختياري)",
+    "save": "حفظ العنوان",
+    "required_fields_error": "يرجى تعبئة المحافظة والمدينة والعنوان الكامل"
   },
   "referral": {
     "page_title": "تفاصيل الإحالة",

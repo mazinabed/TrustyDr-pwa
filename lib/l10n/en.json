@@ -568,7 +568,27 @@
     "no_schedule": "No schedule available for this date",
     "duplicate_booking": "You already have an appointment booked for this date",
     "choose_another_time": "Choose Another Time",
-    "no_online_services": "No online services available for booking"
+    "no_online_services": "No online services available for booking",
+    "visit_type_label": "Visit Type",
+    "visit_type_in_center": "In Center",
+    "visit_type_home": "Home Visit",
+    "home_visit_no_address": "Please add your home address before booking a home visit.",
+    "home_visit_add_address": "Add Home Address",
+    "home_visit_address_label": "Home Visit Address",
+    "home_visit_address_required": "Home address is required for home visit bookings"
+  },
+  "home_address": {
+    "section_title": "Home Address",
+    "card_label": "My Home Address",
+    "not_set": "Not set",
+    "title": "Home Address",
+    "subtitle": "Your address is used for home visit bookings",
+    "province": "Province",
+    "city": "City / Area",
+    "full_address": "Full Address",
+    "note": "Address Note (optional)",
+    "save": "Save Address",
+    "required_fields_error": "Please fill in Province, City, and Full Address"
   },
   "referral": {
     "page_title": "Referral Details",

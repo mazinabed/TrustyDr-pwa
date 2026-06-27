@@ -37,6 +37,10 @@ class LabTimeSlotPage extends StatefulWidget {
     this.subcategory = '',
     this.estimatedDurationMinutes,
     this.price,
+    // visitType: 'inPerson' (default) or 'homeVisit'.
+    // When 'homeVisit', the schedule query adds a visitType filter so only
+    // home-visit-enabled schedules are matched.
+    this.visitType = 'inPerson',
   });
 
   final String labId;
@@ -58,6 +62,7 @@ class LabTimeSlotPage extends StatefulWidget {
   final String subcategory;
   final int? estimatedDurationMinutes;
   final int? price;
+  final String visitType;
 
   @override
   State<LabTimeSlotPage> createState() => _LabTimeSlotPageState();
@@ -138,16 +143,20 @@ class _LabTimeSlotPageState extends State<LabTimeSlotPage> {
     try {
       final weekday = _selectedDay.weekday;
       // doctorId = labId: lab schedules use the lab's own ID in the doctorId field.
-      // NO visitType filter — labs don't set visitType on schedules.
-      final qs = await _fs
+      // For homeVisit, filter by visitType so only home-visit schedules match.
+      // For inPerson (default), no visitType filter preserves backward compat
+      // with existing lab schedules that don't have a visitType field.
+      var query = _fs
           .collection('schedules')
           .where('centerId', isEqualTo: widget.centerId)
           .where('doctorId', isEqualTo: widget.labId)
           .where('dayOfWeek', isEqualTo: weekday)
           .where('status', isEqualTo: 'published')
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
+          .where('isActive', isEqualTo: true);
+      if (widget.visitType == 'homeVisit') {
+        query = query.where('visitType', isEqualTo: 'homeVisit');
+      }
+      final qs = await query.limit(1).get();
 
       if (qs.docs.isEmpty) {
         setState(() {
@@ -352,6 +361,7 @@ class _LabTimeSlotPageState extends State<LabTimeSlotPage> {
         subcategory: widget.subcategory,
         estimatedDurationMinutes: widget.estimatedDurationMinutes,
         price: widget.price,
+        visitType: widget.visitType,
       ),
     );
 
@@ -441,13 +451,46 @@ class _LabTimeSlotPageState extends State<LabTimeSlotPage> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          _localizedServiceName,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: PatientAppColors.brandTeal,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              _localizedServiceName,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: PatientAppColors.brandTeal,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (widget.visitType == 'homeVisit') ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border:
+                                      Border.all(color: Colors.orange.shade400),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.home_outlined,
+                                        size: 12,
+                                        color: Colors.orange.shade700),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'lab_booking.visit_type_home'.tr(),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.orange.shade700,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),

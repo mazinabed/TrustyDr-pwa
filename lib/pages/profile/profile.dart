@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/constant/constant.dart' hide blackColor;
 import 'package:trustydr/core/providers/health_profile_provider.dart';
+import 'package:trustydr/core/providers/home_address_provider.dart';
 import 'package:trustydr/pages/contact_us_page.dart';
 import 'package:trustydr/pages/faq_page.dart';
 import 'package:trustydr/pages/help_support.dart';
 import 'package:trustydr/pages/legal_disclaimer_page.dart';
 import 'package:trustydr/pages/privacy_policy_page.dart';
+import 'package:trustydr/pages/profile/home_address_page.dart';
 import 'package:trustydr/pages/screens.dart';
 import 'package:trustydr/pages/terms_conditions_page.dart';
 import 'package:trustydr/services/database_service.dart';
@@ -388,6 +390,8 @@ class _ProfileState extends State<Profile> {
                                 const SizedBox(height: 16),
                                 _HealthInfoSectionCard(uid: user.uid),
                                 const SizedBox(height: 16),
+                                _HomeAddressSectionCard(uid: user.uid),
+                                const SizedBox(height: 16),
                                 _sectionCard(
                                   title: tr('about_app'),
                                   items: [
@@ -665,6 +669,103 @@ class _ActionItem {
     required this.label,
     required this.onTap,
   });
+}
+
+class _HomeAddressSectionCard extends ConsumerWidget {
+  final String uid;
+  const _HomeAddressSectionCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final addrAsync = ref.watch(homeAddressProvider);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr('home_address.section_title'), style: blackHeadingTextStyle),
+          const SizedBox(height: 8),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => Navigator.push(
+              context,
+              PageTransition(
+                type: PageTransitionType.rightToLeft,
+                child: const HomeAddressPage(),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          width: 0.25, color: PatientAppColors.brandIndigo),
+                      color:
+                          PatientAppColors.brandIndigo.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.home_outlined,
+                        size: 22, color: PatientAppColors.brandIndigo),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tr('home_address.card_label'),
+                            style: blackNormalBoldTextStyle),
+                        const SizedBox(height: 2),
+                        addrAsync.when(
+                          data: (addr) => Text(
+                            addr != null
+                                ? '${addr.city}, ${addr.province}'
+                                : tr('home_address.not_set'),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: addr != null
+                                  ? PatientAppColors.brandIndigo
+                                  : Colors.grey.shade600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          loading: () => const SizedBox(
+                            height: 12,
+                            width: 80,
+                            child: LinearProgressIndicator(),
+                          ),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios,
+                      size: 14, color: Colors.black54),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _HealthInfoSectionCard extends ConsumerWidget {
