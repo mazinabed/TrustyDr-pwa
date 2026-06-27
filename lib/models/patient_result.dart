@@ -16,7 +16,7 @@ class PatientSubTypeItem {
   });
 
   String displayName(String lang) {
-    if (!isCustom) return id;
+    if (!isCustom) return resolveTestKeyLabel(id, lang);
     if (lang == 'ar' && (nameAr?.isNotEmpty ?? false)) return nameAr!;
     if (lang == 'ku' && (nameKu?.isNotEmpty ?? false)) return nameKu!;
     return nameEn ?? id;
@@ -60,7 +60,7 @@ class PatientResultItem {
   });
 
   String displayName(String lang) {
-    if (!isCustom) return id;
+    if (!isCustom) return resolveTestKeyLabel(id, lang);
     if (lang == 'ar' && (nameAr?.isNotEmpty ?? false)) return nameAr!;
     if (lang == 'ku' && (nameKu?.isNotEmpty ?? false)) return nameKu!;
     return nameEn ?? id;
@@ -148,6 +148,10 @@ class PatientResult {
   final String? resultNote;
   final bool releaseResultNote;
   final int attachmentCount;
+  // Provider/lab name — read from existing Firestore fields (no schema change)
+  final String providerNameEn;
+  final String providerNameAr;
+  final String providerNameKu;
 
   const PatientResult({
     required this.id,
@@ -161,6 +165,9 @@ class PatientResult {
     this.resultNote,
     required this.releaseResultNote,
     required this.attachmentCount,
+    this.providerNameEn = '',
+    this.providerNameAr = '',
+    this.providerNameKu = '',
   });
 
   factory PatientResult.fromDoc(
@@ -195,6 +202,83 @@ class PatientResult {
       resultNote: releaseResultNote ? d['resultNote'] as String? : null,
       releaseResultNote: releaseResultNote,
       attachmentCount: (d['attachmentCount'] as int?) ?? 0,
+      // Prefer providerName_* (patient self-booked), fall back to partnerName_* (doctor-referred)
+      providerNameEn:
+          (d['providerName_en'] ?? d['partnerName_en'] ?? '').toString(),
+      providerNameAr:
+          (d['providerName_ar'] ?? d['partnerName_ar'] ?? '').toString(),
+      providerNameKu:
+          (d['providerName_ku'] ?? d['partnerName_ku'] ?? '').toString(),
     );
   }
+
+  String providerName(String lang) {
+    if (lang == 'ar' && providerNameAr.isNotEmpty) return providerNameAr;
+    if (lang == 'ku') {
+      if (providerNameKu.isNotEmpty) return providerNameKu;
+      if (providerNameAr.isNotEmpty) return providerNameAr;
+    }
+    return providerNameEn;
+  }
+}
+
+// ── Test-key label resolver ───────────────────────────────────────────────────
+// Maps well-known non-custom test IDs to localized readable labels.
+// Unknown keys fall back to title-cased underscore-replaced English.
+
+const _testKeyLabels = <String, Map<String, String>>{
+  'weight': {
+    'en': 'Weight',
+    'ar': 'الوزن',
+    'ku': 'کێشی',
+  },
+  'height': {
+    'en': 'Height',
+    'ar': 'الطول',
+    'ku': 'بەرزی',
+  },
+  'bmi': {
+    'en': 'BMI',
+    'ar': 'مؤشر كتلة الجسم',
+    'ku': 'پێوانەی کتلەی جەسەد',
+  },
+  'vision_test': {
+    'en': 'Vision Test',
+    'ar': 'فحص النظر',
+    'ku': 'تاقیکردنەوەی بینین',
+  },
+  'eye_pressure': {
+    'en': 'Eye Pressure',
+    'ar': 'ضغط العين',
+    'ku': 'پشافتنی چاو',
+  },
+  'hearing_test': {
+    'en': 'Hearing Test',
+    'ar': 'فحص السمع',
+    'ku': 'تاقیکردنەوەی بیستن',
+  },
+  'range_of_motion': {
+    'en': 'Range of Motion',
+    'ar': 'نطاق الحركة',
+    'ku': 'ئەندازەی جووڵەوە',
+  },
+  'other_measurement': {
+    'en': 'Other Measurement',
+    'ar': 'قياس آخر',
+    'ku': 'پێوانەیەکی تر',
+  },
+};
+
+String resolveTestKeyLabel(String id, String lang) {
+  final entry = _testKeyLabels[id];
+  if (entry != null) {
+    if (lang == 'ar') return entry['ar']!;
+    if (lang == 'ku') return entry['ku'] ?? entry['ar'] ?? entry['en']!;
+    return entry['en']!;
+  }
+  // Unknown key: replace underscores with spaces and title-case each word.
+  return id
+      .split('_')
+      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+      .join(' ');
 }

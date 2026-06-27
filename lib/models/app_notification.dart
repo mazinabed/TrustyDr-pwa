@@ -17,6 +17,7 @@ class AppNotification {
   final String bodyEn;
   final String bodyAr;
   final String bodyKu;
+  final String clinicalRequestId;
   final bool isRead;
   final bool dismissed;
   final DateTime createdAt;
@@ -38,6 +39,7 @@ class AppNotification {
     required this.bodyEn,
     required this.bodyAr,
     required this.bodyKu,
+    this.clinicalRequestId = '',
     required this.isRead,
     this.dismissed = false,
     required this.createdAt,
@@ -61,6 +63,7 @@ class AppNotification {
       bodyEn: (d['bodyEn'] ?? '').toString(),
       bodyAr: (d['bodyAr'] ?? '').toString(),
       bodyKu: (d['bodyKu'] ?? '').toString(),
+      clinicalRequestId: (d['clinicalRequestId'] ?? '').toString(),
       isRead: (d['isRead'] as bool?) ?? false,
       dismissed: (d['dismissed'] as bool?) ?? false,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),

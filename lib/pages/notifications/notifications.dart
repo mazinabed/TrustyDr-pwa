@@ -13,6 +13,7 @@ import 'package:trustydr/core/providers/notifications_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/models/app_notification.dart';
 import 'package:trustydr/pages/patient/appointment_detail_page.dart';
+import 'package:trustydr/pages/patient/referral_detail_page.dart';
 import 'package:trustydr/services/push_notification_service.dart';
 import 'package:trustydr/widgets/push_permission_dialog.dart';
 
@@ -193,6 +194,15 @@ class _NotificationsState extends ConsumerState<Notifications> {
         PageTransition(
           type: PageTransitionType.rightToLeft,
           child: AppointmentDetailPage(appointmentId: notif.appointmentId),
+        ),
+      );
+    } else if (notif.type == 'lab_referral' &&
+        notif.clinicalRequestId.isNotEmpty) {
+      Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: ReferralDetailPage(referralId: notif.clinicalRequestId),
         ),
       );
     }

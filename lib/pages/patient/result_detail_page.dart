@@ -6,6 +6,7 @@ import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/core/providers/patient_results_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/models/patient_result.dart';
+import 'package:trustydr/pages/patient/result_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ResultDetailPage extends ConsumerWidget {
@@ -19,6 +20,11 @@ class ResultDetailPage extends ConsumerWidget {
     final attachmentsAsync =
         ref.watch(patientResultAttachmentsProvider(result.id));
 
+    final providerDisplay = result.providerName(lang).isNotEmpty
+        ? result.providerName(lang)
+        : result.serviceCategory;
+    final dateDisplay = formatResultDate(result, lang);
+
     return Scaffold(
       backgroundColor: PatientAppColors.surface,
       appBar: AppBar(
@@ -28,7 +34,8 @@ class ResultDetailPage extends ConsumerWidget {
         title: Text(
           'my_results'.tr(),
           style: appBarTitleTextStyle.copyWith(
-              color: PatientAppColors.brandIndigo),
+            color: PatientAppColors.brandIndigo,
+          ),
         ),
       ),
       body: ListView(
@@ -39,113 +46,135 @@ class ResultDetailPage extends ConsumerWidget {
           100,
         ),
         children: [
+          // ── Provider header card ────────────────────────────────────────────
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.center,
-                      decoration: const BoxDecoration(
-                        gradient: PatientAppColors.brandGradient,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.science_outlined,
-                          size: 22, color: Colors.white),
-                    ),
+                    ResultCategoryIcon(serviceCategory: result.serviceCategory),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (result.serviceCategory.isNotEmpty)
-                            Text(result.serviceCategory,
-                                style: blackHeadingTextStyle),
-                          if (result.subTypeItems.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              result.subTypeItems
-                                  .map((e) => e.displayName(lang))
-                                  .where((s) => s.isNotEmpty)
-                                  .join(' • '),
-                              style: greySmallTextStyle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          if (result.doctorName.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '${'doctor_prefix'.tr()} ${result.doctorName}',
-                              style: const TextStyle(
-                                color: PatientAppColors.brandIndigo,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                          Text(
+                            providerDisplay,
+                            style: blackHeadingTextStyle.copyWith(fontSize: 17),
+                          ),
+                          const SizedBox(height: 5),
+                          ResultCategoryChip(
+                              serviceCategory: result.serviceCategory),
                         ],
                       ),
                     ),
                   ],
                 ),
-                if (result.dateKey.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 16, color: Colors.black54),
-                      const SizedBox(width: 6),
-                      Text(result.dateKey, style: greySmallTextStyle),
-                    ],
+                if (result.doctorName.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  _InfoRow(
+                    icon: Icons.person_outline,
+                    label: 'result_ordered_by'.tr(),
+                    value: 'doctor_prefix_name'.tr(args: [result.doctorName]),
+                  ),
+                ],
+                if (dateDisplay.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _InfoRow(
+                    icon: Icons.calendar_today_outlined,
+                    label: 'result_released'.tr(),
+                    value: dateDisplay,
                   ),
                 ],
               ],
             ),
           ),
+
+          // ── Tests card ──────────────────────────────────────────────────────
+          if (result.subTypeItems.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionHeader(
+                    icon: isImagingCategory(result.serviceCategory)
+                        ? Icons.image_search_outlined
+                        : Icons.checklist_outlined,
+                    label: 'result_tests'.tr(),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: result.subTypeItems
+                        .map((e) => e.displayName(lang))
+                        .where((s) => s.isNotEmpty)
+                        .map((s) => ResultTestChip(label: s))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Test results table ──────────────────────────────────────────────
           if (result.resultItems.isNotEmpty) ...[
             const SizedBox(height: 14),
             _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('notes'.tr(), style: blackHeadingTextStyle),
-                  const SizedBox(height: 8),
-                  ...result.resultItems.map(
-                    (item) => _resultRow(
-                      item.displayName(lang),
-                      item.valueDisplay,
-                      item.unit,
-                    ),
+                  _SectionHeader(
+                    icon: Icons.assignment_turned_in_outlined,
+                    label: 'result_test_results'.tr(),
                   ),
+                  const Divider(height: 20, color: Color(0xFFEEEEEE)),
+                  ...List.generate(result.resultItems.length, (i) {
+                    return Column(
+                      children: [
+                        if (i > 0)
+                          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                        _ResultItemRow(item: result.resultItems[i], lang: lang),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
           ],
+
+          // ── Doctor note card ────────────────────────────────────────────────
           if (result.doctorNote != null && result.doctorNote!.isNotEmpty) ...[
             const SizedBox(height: 14),
             _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.note_outlined,
-                          color: PatientAppColors.brandIndigo, size: 20),
-                      const SizedBox(width: 6),
-                      Text('result_doctor_note'.tr(),
-                          style: blackHeadingTextStyle),
-                    ],
+                  _SectionHeader(
+                    icon: Icons.medical_information_outlined,
+                    label: 'result_doctor_note'.tr(),
                   ),
-                  const SizedBox(height: 8),
-                  Text(result.doctorNote!, style: blackNormalTextStyle),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color:
+                          PatientAppColors.brandIndigo.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        Text(result.doctorNote!, style: blackNormalTextStyle),
+                  ),
                 ],
               ),
             ),
           ],
+
+          // ── Lab note card ───────────────────────────────────────────────────
           if (result.releaseResultNote &&
               result.resultNote != null &&
               result.resultNote!.isNotEmpty) ...[
@@ -154,45 +183,53 @@ class ResultDetailPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.notes_outlined,
-                          color: PatientAppColors.brandIndigo, size: 20),
-                      const SizedBox(width: 6),
-                      Text('notes'.tr(), style: blackHeadingTextStyle),
-                    ],
+                  _SectionHeader(
+                    icon: Icons.notes_outlined,
+                    label: 'result_lab_note'.tr(),
                   ),
-                  const SizedBox(height: 8),
-                  Text(result.resultNote!, style: blackNormalTextStyle),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: PatientAppColors.pageBackground,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child:
+                        Text(result.resultNote!, style: blackNormalTextStyle),
+                  ),
                 ],
               ),
             ),
           ],
+
+          // ── Attachments card ────────────────────────────────────────────────
           const SizedBox(height: 14),
           _card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.attach_file,
-                        color: PatientAppColors.brandIndigo, size: 20),
-                    const SizedBox(width: 6),
-                    Text('result_attachments'.tr(),
-                        style: blackHeadingTextStyle),
-                  ],
+                _SectionHeader(
+                  icon: Icons.attach_file_outlined,
+                  label: 'result_attachments'.tr(),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 attachmentsAsync.when(
-                  loading: () => const CircularProgressIndicator(
-                    color: PatientAppColors.brandIndigo,
-                    strokeWidth: 2,
+                  loading: () => const SizedBox(
+                    height: 32,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: PatientAppColors.brandIndigo,
+                        strokeWidth: 2,
+                      ),
+                    ),
                   ),
                   error: (_, __) =>
                       Text('error_generic'.tr(), style: greySmallTextStyle),
                   data: (attachments) {
                     if (attachments.isEmpty) {
-                      return Text('no_results'.tr(), style: greySmallTextStyle);
+                      return Text('result_no_attachments'.tr(),
+                          style: greySmallTextStyle);
                     }
                     return Column(
                       children: attachments
@@ -208,52 +245,130 @@ class ResultDetailPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _card({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: child,
+// ── Card helper ───────────────────────────────────────────────────────────────
+
+Widget _card({required Widget child}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: whiteColor,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0A000000),
+          blurRadius: 12,
+        ),
+      ],
+    ),
+    child: child,
+  );
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SectionHeader({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: PatientAppColors.brandIndigo, size: 20),
+        const SizedBox(width: 8),
+        Text(label, style: blackHeadingTextStyle),
+      ],
     );
   }
+}
 
-  Widget _resultRow(String name, String value, String? unit) {
+// ── Info row (label + value with leading icon) ────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: Colors.grey.shade500),
+        const SizedBox(width: 6),
+        SizedBox(
+          width: 96,
+          child: Text(label, style: greySmallBoldTextStyle),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: blackNormalTextStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Result item row (test name + value + optional per-item note) ──────────────
+
+class _ResultItemRow extends StatelessWidget {
+  final PatientResultItem item;
+  final String lang;
+  const _ResultItemRow({required this.item, required this.lang});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item.displayName(lang);
     final displayValue =
-        unit != null && unit.isNotEmpty ? '$value $unit' : value;
+        (item.unit?.isNotEmpty ?? false) && item.valueDisplay.isNotEmpty
+            ? '${item.valueDisplay} ${item.unit}'
+            : item.valueDisplay;
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(name, style: greySmallBoldTextStyle),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(name, style: greySmallBoldTextStyle),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  displayValue,
+                  style: blackNormalTextStyle.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              displayValue,
-              style: blackNormalTextStyle,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          if (item.note?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 3),
+            Text(item.note!, style: greySmallTextStyle),
+          ],
         ],
       ),
     );
   }
 }
 
+// ── Attachment tile ───────────────────────────────────────────────────────────
+
 class _AttachmentTile extends StatefulWidget {
   final PatientAttachment attachment;
-
   const _AttachmentTile({required this.attachment});
 
   @override
@@ -291,30 +406,52 @@ class _AttachmentTileState extends State<_AttachmentTile> {
 
   @override
   Widget build(BuildContext context) {
+    final isPdf = widget.attachment.mimeType.contains('pdf');
     final isImage = widget.attachment.mimeType.startsWith('image/');
-    final icon = isImage ? Icons.image_outlined : Icons.picture_as_pdf_outlined;
+    final iconData =
+        isImage ? Icons.image_outlined : Icons.picture_as_pdf_outlined;
+    final iconColor = isPdf
+        ? const Color(0xFFE53935)
+        : isImage
+            ? PatientAppColors.brandTeal
+            : PatientAppColors.brandIndigo;
 
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: PatientAppColors.brandIndigo),
-      title: Text(
-        widget.attachment.fileName,
-        style: blackNormalTextStyle,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      decoration: BoxDecoration(
+        color: PatientAppColors.pageBackground,
+        borderRadius: BorderRadius.circular(10),
       ),
-      trailing: _loading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: PatientAppColors.brandIndigo,
-              ),
-            )
-          : const Icon(Icons.open_in_new,
-              size: 18, color: PatientAppColors.brandIndigo),
-      onTap: _open,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(iconData, color: iconColor, size: 20),
+        ),
+        title: Text(
+          widget.attachment.fileName,
+          style: blackNormalTextStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: _loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: PatientAppColors.brandIndigo,
+                ),
+              )
+            : Icon(Icons.open_in_new, size: 18, color: Colors.grey.shade500),
+        onTap: _open,
+      ),
     );
   }
 }

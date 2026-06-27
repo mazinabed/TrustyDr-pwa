@@ -10,6 +10,7 @@ import 'package:trustydr/models/patient_result.dart';
 import 'package:trustydr/pages/patient/result_detail_page.dart';
 import 'package:trustydr/pages/screens.dart' show LoginScreen;
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
+import 'package:trustydr/pages/patient/result_widgets.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class MyResultsPage extends ConsumerWidget {
@@ -153,18 +154,26 @@ class MyResultsPage extends ConsumerWidget {
   }
 }
 
+// ── Result card ───────────────────────────────────────────────────────────────
+
 class _ResultCard extends StatelessWidget {
   final PatientResult result;
-
   const _ResultCard({required this.result});
 
   @override
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
-    final subtypeNames = result.subTypeItems
+
+    final providerDisplay = result.providerName(lang).isNotEmpty
+        ? result.providerName(lang)
+        : result.serviceCategory;
+
+    final tests = result.subTypeItems
         .map((e) => e.displayName(lang))
         .where((s) => s.isNotEmpty)
-        .join(' • ');
+        .toList();
+
+    final dateDisplay = formatResultDate(result, lang);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -192,77 +201,132 @@ class _ResultCard extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    gradient: PatientAppColors.brandGradient,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.science_outlined,
-                      size: 22, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (result.serviceCategory.isNotEmpty)
-                        Text(result.serviceCategory,
-                            style: blackNormalBoldTextStyle),
-                      if (subtypeNames.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(subtypeNames,
-                            style: greySmallTextStyle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        '${'doctor_prefix'.tr()} ${result.doctorName}',
-                        style: greySmallTextStyle,
-                      ),
-                      if (result.dateKey.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(result.dateKey, style: greySmallTextStyle),
-                      ],
-                    ],
-                  ),
-                ),
-                if (result.attachmentCount > 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color:
-                          PatientAppColors.brandIndigo.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.attach_file,
-                            size: 14, color: PatientAppColors.brandIndigo),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${result.attachmentCount}',
-                          style: const TextStyle(
-                            color: PatientAppColors.brandIndigo,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                // Header row: icon + provider name + category chip + attachment badge
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ResultCategoryIcon(serviceCategory: result.serviceCategory),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            providerDisplay,
+                            style: blackNormalBoldTextStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          ResultCategoryChip(
+                              serviceCategory: result.serviceCategory),
+                        ],
+                      ),
                     ),
-                  ),
+                    if (result.attachmentCount > 0) ...[
+                      const SizedBox(width: 8),
+                      _AttachmentBadge(count: result.attachmentCount),
+                    ],
+                  ],
+                ),
+
+                // Test chips (max 2 visible + overflow count)
+                if (tests.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _TestChipsRow(tests: tests, maxVisible: 2),
+                ],
+
+                // Doctor + date footer
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (result.doctorName.isNotEmpty) ...[
+                      Icon(Icons.person_outline,
+                          size: 13, color: Colors.grey.shade500),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          'doctor_prefix_name'.tr(args: [result.doctorName]),
+                          style: greySmallTextStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ] else
+                      const Spacer(),
+                    if (dateDisplay.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Icon(Icons.calendar_today_outlined,
+                          size: 12, color: Colors.grey.shade400),
+                      const SizedBox(width: 3),
+                      Text(
+                        dateDisplay,
+                        style: greySmallTextStyle.copyWith(fontSize: 11),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── List-only widgets ─────────────────────────────────────────────────────────
+
+class _TestChipsRow extends StatelessWidget {
+  final List<String> tests;
+  final int maxVisible;
+  const _TestChipsRow({required this.tests, required this.maxVisible});
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = tests.take(maxVisible).toList();
+    final overflow = tests.length - maxVisible;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        ...visible.map((t) => ResultTestChip(label: t)),
+        if (overflow > 0) ResultTestChip(label: '+$overflow', isOverflow: true),
+      ],
+    );
+  }
+}
+
+class _AttachmentBadge extends StatelessWidget {
+  final int count;
+  const _AttachmentBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: PatientAppColors.brandIndigo.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.attach_file,
+              size: 14, color: PatientAppColors.brandIndigo),
+          const SizedBox(width: 2),
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: PatientAppColors.brandIndigo,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
