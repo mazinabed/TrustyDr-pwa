@@ -134,7 +134,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
     final currentUser = FirebaseAuth.instance.currentUser;
     final isLoggedIn = currentUser != null;
-    final canBook = isLoggedIn && _selectedService != null && centerId.isNotEmpty;
+    final canBook =
+        isLoggedIn && _selectedService != null && centerId.isNotEmpty;
 
     // ── Contact / social row items ─────────────────────────────────────────────
     final showSocial = d['showSocialLinks'] == true;
@@ -496,18 +497,18 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                         svc.estimatedDurationMinutes,
                                     price: svc.price,
                                     visitType: _visitType,
-                                    providerNameEn:
-                                        widget.data['facilityName_en']
-                                                ?.toString() ??
-                                            facilityName,
-                                    providerNameAr:
-                                        widget.data['facilityName_ar']
-                                                ?.toString() ??
-                                            facilityName,
-                                    providerNameKu:
-                                        widget.data['facilityName_ku']
-                                                ?.toString() ??
-                                            facilityName,
+                                    providerNameEn: widget
+                                            .data['facilityName_en']
+                                            ?.toString() ??
+                                        facilityName,
+                                    providerNameAr: widget
+                                            .data['facilityName_ar']
+                                            ?.toString() ??
+                                        facilityName,
+                                    providerNameKu: widget
+                                            .data['facilityName_ku']
+                                            ?.toString() ??
+                                        facilityName,
                                     providerAddress:
                                         (widget.data['facilityAddress'] ?? '')
                                             .toString(),
@@ -519,8 +520,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                             }
                           : null,
                   icon: const Icon(Icons.calendar_month_rounded),
-                  label: Text(
-                      isLoggedIn ? 'book_appointment'.tr() : 'login_to_book'.tr()),
+                  label: Text(isLoggedIn
+                      ? 'book_appointment'.tr()
+                      : 'login_to_book'.tr()),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     backgroundColor: PatientAppColors.brandTeal,
