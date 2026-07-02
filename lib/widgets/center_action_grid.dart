@@ -174,20 +174,36 @@ class ActionItem {
 class CenterActionGrid extends StatelessWidget {
   final List<ActionItem> items;
 
-  const CenterActionGrid({super.key, required this.items});
+  // isCollapsed: future scroll-collapse wire. Pass true to hide the grid.
+  // Currently always false — wire to a scroll listener when ready.
+  final bool isCollapsed;
+
+  const CenterActionGrid({
+    super.key,
+    required this.items,
+    this.isCollapsed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isCollapsed) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 3,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1.3,
-        children: items.map(_buildTile).toList(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 4 columns when there is enough room; 3 on very narrow devices.
+          final use4 = constraints.maxWidth >= 300;
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: use4 ? 4 : 3,
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 8,
+            childAspectRatio: use4 ? 0.85 : 1.1,
+            children: items.map(_buildTile).toList(),
+          );
+        },
       ),
     );
   }
@@ -211,21 +227,21 @@ class CenterActionGrid extends StatelessWidget {
           onTap: item.onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
                     gradient: PatientAppColors.brandGradient,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(item.icon, size: 20, color: Colors.white),
+                  child: Icon(item.icon, size: 18, color: Colors.white),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 7),
                 Text(
                   item.label,
                   textAlign: TextAlign.center,
@@ -233,9 +249,9 @@ class CenterActionGrid extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: PatientAppColors.darkNavy,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    height: 1.3,
+                    height: 1.2,
                   ),
                 ),
               ],

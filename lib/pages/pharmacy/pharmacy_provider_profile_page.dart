@@ -123,6 +123,11 @@ class _PharmacyProfileBody extends StatelessWidget {
     final phone = data['phone']?.toString() ?? '';
     final imageUrl = data['imageUrl']?.toString() ?? '';
 
+    final rating = (data['ratingAverage'] is num)
+        ? (data['ratingAverage'] as num).toDouble()
+        : 0.0;
+    final ratingCount = (data['ratingCount'] ?? 0) as int;
+
     final locationParts = [city, province].where((s) => s.isNotEmpty).toList();
     final locationLine = locationParts.join(', ');
 
@@ -153,7 +158,7 @@ class _PharmacyProfileBody extends StatelessWidget {
               child: icon,
             ),
             const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(label, style: const TextStyle(fontSize: 13)),
           ],
         ),
       );
@@ -211,11 +216,16 @@ class _PharmacyProfileBody extends StatelessWidget {
       'sunday',
     ];
 
+    final bool hasInfo = facilityName.isNotEmpty ||
+        phone.isNotEmpty ||
+        address.isNotEmpty ||
+        locationLine.isNotEmpty;
+
     return CustomScrollView(
       slivers: [
         // ── Header ─────────────────────────────────────────────────────────────
         SliverAppBar(
-          expandedHeight: 260,
+          expandedHeight: 280,
           pinned: true,
           backgroundColor: PatientAppColors.brandTeal,
           leading: BackButton(
@@ -263,6 +273,33 @@ class _PharmacyProfileBody extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (rating > 0 || ratingCount > 0) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.star_rounded,
+                              color: Colors.amber, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '($ratingCount ${'reviews'.tr()})',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -286,13 +323,27 @@ class _PharmacyProfileBody extends StatelessWidget {
           ),
 
         // ── Provider info card ──────────────────────────────────────────────
-        if (address.isNotEmpty || locationLine.isNotEmpty)
+        if (hasInfo)
           SliverToBoxAdapter(
             child: _ModernCard(
               title: 'provider_info'.tr(),
               icon: Icons.info_outline_rounded,
               child: Column(
                 children: [
+                  if (facilityName.isNotEmpty)
+                    _InfoRow(
+                      icon: Icons.local_pharmacy_rounded,
+                      text: facilityName,
+                    ),
+                  if (facilityName.isNotEmpty && phone.isNotEmpty)
+                    const Divider(height: 1, indent: 28, endIndent: 0),
+                  if (phone.isNotEmpty)
+                    _InfoRow(
+                      icon: Icons.phone_outlined,
+                      text: phone,
+                    ),
+                  if (phone.isNotEmpty && address.isNotEmpty)
+                    const Divider(height: 1, indent: 28, endIndent: 0),
                   if (address.isNotEmpty)
                     _InfoRow(
                       icon: Icons.location_on_rounded,
@@ -310,6 +361,11 @@ class _PharmacyProfileBody extends StatelessWidget {
             ),
           ),
 
+            // ── Services card ───────────────────────────────────────────────────
+        SliverToBoxAdapter(
+          child: _PharmacyServicesCard(data: data),
+        ),
+
         // ── Operation hours card ────────────────────────────────────────────
         if (operationHours != null && operationHours.isNotEmpty)
           SliverToBoxAdapter(
@@ -317,31 +373,55 @@ class _PharmacyProfileBody extends StatelessWidget {
               title: 'pharmacy_operation_hours'.tr(),
               icon: Icons.access_time_rounded,
               child: Column(
-                children: dayOrder.map((day) {
-                  final entry = operationHours[day];
-                  final isOpen = entry is Map && entry['isOpen'] == true;
+                children: dayOrder.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final day = entry.value;
+                  final raw = operationHours[day];
+                  final isOpen = raw is Map && raw['isOpen'] == true;
                   final open =
-                      entry is Map ? (entry['open']?.toString() ?? '') : '';
+                      raw is Map ? (raw['open']?.toString() ?? '') : '';
                   final close =
-                      entry is Map ? (entry['close']?.toString() ?? '') : '';
+                      raw is Map ? (raw['close']?.toString() ?? '') : '';
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
+                  return Container(
+                    margin: EdgeInsets.only(
+                      top: i == 0 ? 0 : 4,
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: isOpen
+                          ? PatientAppColors.brandTeal.withValues(alpha: 0.05)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Row(
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            _dayName(day, lang),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isOpen
+                                ? PatientAppColors.statusConfirmed
+                                : Colors.black26,
                           ),
                         ),
                         Expanded(
                           flex: 3,
+                          child: Text(
+                            _dayName(day, lang),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight:
+                                  isOpen ? FontWeight.w600 : FontWeight.w400,
+                              color: isOpen ? Colors.black87 : Colors.black45,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 4,
                           child: isOpen
                               ? Text(
                                   '$open – $close',
@@ -354,8 +434,8 @@ class _PharmacyProfileBody extends StatelessWidget {
                               : Text(
                                   'pharmacy_closed'.tr(),
                                   style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black45,
+                                    fontSize: 12,
+                                    color: Colors.black38,
                                   ),
                                 ),
                         ),
@@ -369,6 +449,103 @@ class _PharmacyProfileBody extends StatelessWidget {
 
         const SliverToBoxAdapter(child: SizedBox(height: 40)),
       ],
+    );
+  }
+}
+
+// ─── Pharmacy services card ───────────────────────────────────────────────────
+
+const _serviceKeyMap = <String, String>{
+  'prescription': 'pharmacy_service_prescription',
+  'otc': 'pharmacy_service_otc',
+  'medicalSupplies': 'pharmacy_service_medicalSupplies',
+  'babyCare': 'pharmacy_service_babyCare',
+  'beautyPersonalCare': 'pharmacy_service_beautyPersonalCare',
+  'delivery': 'pharmacy_service_delivery',
+  'other': 'pharmacy_service_other',
+};
+
+class _PharmacyServicesCard extends StatelessWidget {
+  const _PharmacyServicesCard({required this.data});
+
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final raw = data['pharmacyServices'];
+    final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final active = _serviceKeyMap.entries
+        .where((e) => map[e.key] == true)
+        .toList();
+
+    return _ModernCard(
+      title: 'pharmacy_services'.tr(),
+      icon: Icons.medical_services_outlined,
+      child: active.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_pharmacy_outlined,
+                      size: 40,
+                      color: Colors.black.withValues(alpha: 0.12),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'pharmacy_services_placeholder'.tr(),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black38,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: active
+                  .map(
+                    (e) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: PatientAppColors.brandTeal
+                            .withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: PatientAppColors.brandTeal
+                              .withValues(alpha: 0.30),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.local_pharmacy_outlined,
+                            size: 13,
+                            color: PatientAppColors.brandTeal,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            e.value.tr(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: PatientAppColors.brandTeal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
     );
   }
 }

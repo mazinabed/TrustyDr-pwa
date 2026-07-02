@@ -3520,15 +3520,13 @@ class _HomeState extends ConsumerState<Home>
               CenterActionGrid(
                 items: [
                   ActionItem(
-                    icon: Icons.local_hospital,
-                    label: 'medical_centers'.tr(),
+                    icon: Icons.calendar_month_outlined,
+                    label: 'my_appointments'.tr(),
                     onTap: () => Navigator.push(
-                      context,
-                      PageTransition(
-                        type: PageTransitionType.rightToLeft,
-                        child: const CentersScreen(),
-                      ),
-                    ),
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyAppointmentsPage(showBack: true))),
                   ),
                   ActionItem(
                     icon: Icons.people_outline,
@@ -3540,13 +3538,15 @@ class _HomeState extends ConsumerState<Home>
                             child: const MyDoctorsPage())),
                   ),
                   ActionItem(
-                    icon: Icons.calendar_month_outlined,
-                    label: 'my_appointments'.tr(),
+                    icon: Icons.local_hospital,
+                    label: 'medical_centers'.tr(),
                     onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                            type: PageTransitionType.rightToLeft,
-                            child: const MyAppointmentsPage(showBack: true))),
+                      context,
+                      PageTransition(
+                        type: PageTransitionType.rightToLeft,
+                        child: const CentersScreen(),
+                      ),
+                    ),
                   ),
                   ActionItem(
                     icon: Icons.category_outlined,
@@ -3556,15 +3556,6 @@ class _HomeState extends ConsumerState<Home>
                         PageTransition(
                             type: PageTransitionType.rightToLeft,
                             child: const SpecialityScreen())),
-                  ),
-                  ActionItem(
-                    icon: Icons.science_outlined,
-                    label: 'my_results'.tr(),
-                    onTap: () => Navigator.push(
-                        context,
-                        PageTransition(
-                            type: PageTransitionType.rightToLeft,
-                            child: const MyResultsPage())),
                   ),
                   ActionItem(
                     icon: Icons.biotech_outlined,
@@ -3583,6 +3574,23 @@ class _HomeState extends ConsumerState<Home>
                         PageTransition(
                             type: PageTransitionType.rightToLeft,
                             child: const PharmaciesScreen())),
+                  ),
+                  ActionItem(
+                    icon: Icons.science_outlined,
+                    label: 'my_results'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyResultsPage())),
+                  ),
+                  ActionItem(
+                    icon: Icons.medication_outlined,
+                    label: 'my_prescriptions'.tr(),
+                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('my_prescriptions_coming_soon'.tr())),
+                    ),
                   ),
                 ],
               ),
