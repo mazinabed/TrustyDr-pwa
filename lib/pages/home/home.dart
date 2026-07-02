@@ -3575,6 +3575,15 @@ class _HomeState extends ConsumerState<Home>
                             type: PageTransitionType.rightToLeft,
                             child: const LaboratoriesScreen())),
                   ),
+                  ActionItem(
+                    icon: Icons.local_pharmacy_outlined,
+                    label: 'pharmacies'.tr(),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const PharmaciesScreen())),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),

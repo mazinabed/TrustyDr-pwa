@@ -18,6 +18,8 @@ export 'patient/my_doctors_page.dart';
 export 'patient/my_results_page.dart';
 export 'patient/result_detail_page.dart';
 export 'lab/laboratories_screen.dart';
+export 'pharmacy/pharmacies_screen.dart';
+export 'pharmacy/pharmacy_provider_profile_page.dart';
 export 'patient/recommendations_page.dart';
 export 'about/about_us.dart';
 export 'profile/edit_profile.dart';
