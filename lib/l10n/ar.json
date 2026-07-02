@@ -606,6 +606,11 @@
     "status_checked_in": "تم تسجيل الحضور",
     "status_in_progress": "قيد المعالجة",
     "status_completed": "مكتملة",
+    "status_preparing": "قيد التحضير",
+    "status_ready_for_pickup": "جاهز للاستلام",
+    "status_dispensed": "تم الصرف",
+    "prescription_attachments": "الوصفة الطبية",
+    "no_prescription_attachments": "لا توجد مرفقات",
     "results_pending": "النتائج غير متاحة بعد",
     "results_pending_body": "ستظهر نتائجك هنا بمجرد إصدارها من قِبَل طبيبك.",
     "urgency_label": "الأولوية"

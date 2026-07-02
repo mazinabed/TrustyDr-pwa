@@ -1,10 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/core/providers/patient_referral_provider.dart';
+import 'package:trustydr/core/providers/patient_results_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/models/patient_referral_request.dart';
+import 'package:trustydr/models/patient_result.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReferralDetailPage extends ConsumerWidget {
   final String referralId;
@@ -40,13 +44,18 @@ class ReferralDetailPage extends ConsumerWidget {
   }
 }
 
-class _ReferralBody extends StatelessWidget {
+class _ReferralBody extends ConsumerWidget {
   final PatientReferralRequest referral;
   final String lang;
   const _ReferralBody({required this.referral, required this.lang});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPharmacy = referral.serviceGroup == 'pharmacy';
+    final attachmentsAsync = isPharmacy
+        ? ref.watch(patientResultAttachmentsProvider(referral.id))
+        : const AsyncData(<PatientAttachment>[]);
+
     return ListView(
       padding: EdgeInsets.fromLTRB(
         fixPadding * 1.6,
@@ -60,7 +69,8 @@ class _ReferralBody extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ProviderAvatar(imageUrl: referral.partnerImage),
+              _ProviderAvatar(
+                  imageUrl: referral.partnerImage, isPharmacy: isPharmacy),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -207,8 +217,51 @@ class _ReferralBody extends StatelessWidget {
 
         const SizedBox(height: 14),
 
-        // ── Results notice ────────────────────────────────────────────────────
-        if (!referral.isReleased)
+        // ── Prescription attachments (pharmacy only) ──────────────────────────
+        if (isPharmacy) ...[
+          _card(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SectionHeader(
+                  icon: Icons.attach_file_outlined,
+                  label: 'referral.prescription_attachments'.tr(),
+                ),
+                const SizedBox(height: 10),
+                attachmentsAsync.when(
+                  loading: () => const SizedBox(
+                    height: 32,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: PatientAppColors.brandIndigo,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                  error: (_, __) =>
+                      Text('error_generic'.tr(), style: greySmallTextStyle),
+                  data: (attachments) {
+                    if (attachments.isEmpty) {
+                      return Text(
+                        'referral.no_prescription_attachments'.tr(),
+                        style: greySmallTextStyle,
+                      );
+                    }
+                    return Column(
+                      children: attachments
+                          .map((a) => _RxAttachmentTile(attachment: a))
+                          .toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // ── Results notice (lab only) ─────────────────────────────────────────
+        if (!isPharmacy && !referral.isReleased)
           _card(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,6 +367,13 @@ class _StatusTimeline extends StatelessWidget {
   }
 
   static List<_Step> _buildSteps(PatientReferralRequest r) {
+    if (r.serviceGroup == 'pharmacy') {
+      return _buildPharmacySteps(r);
+    }
+    return _buildLabSteps(r);
+  }
+
+  static List<_Step> _buildLabSteps(PatientReferralRequest r) {
     final ps = r.partnerStatus;
     final st = r.status;
 
@@ -349,6 +409,42 @@ class _StatusTimeline extends StatelessWidget {
         label: 'referral.status_completed'.tr(),
         done: completedDone,
         active: completedDone,
+      ),
+    ];
+  }
+
+  static List<_Step> _buildPharmacySteps(PatientReferralRequest r) {
+    final ps = r.partnerStatus;
+    const ordered = ['sent', 'received', 'preparing', 'ready', 'dispensed'];
+    final idx = ordered.indexOf(ps);
+
+    bool reached(String step) => idx >= ordered.indexOf(step);
+
+    return [
+      _Step(
+        label: 'referral.status_sent'.tr(),
+        done: true,
+        active: ps == 'sent',
+      ),
+      _Step(
+        label: 'referral.status_received'.tr(),
+        done: reached('received'),
+        active: ps == 'received',
+      ),
+      _Step(
+        label: 'referral.status_preparing'.tr(),
+        done: reached('preparing'),
+        active: ps == 'preparing',
+      ),
+      _Step(
+        label: 'referral.status_ready_for_pickup'.tr(),
+        done: reached('ready'),
+        active: ps == 'ready',
+      ),
+      _Step(
+        label: 'referral.status_dispensed'.tr(),
+        done: reached('dispensed'),
+        active: ps == 'dispensed',
       ),
     ];
   }
@@ -450,10 +546,14 @@ class _SectionHeader extends StatelessWidget {
 
 class _ProviderAvatar extends StatelessWidget {
   final String imageUrl;
-  const _ProviderAvatar({required this.imageUrl});
+  final bool isPharmacy;
+  const _ProviderAvatar({required this.imageUrl, this.isPharmacy = false});
 
   @override
   Widget build(BuildContext context) {
+    final fallback = isPharmacy
+        ? const Icon(Icons.local_pharmacy, size: 32, color: Colors.grey)
+        : const Icon(Icons.biotech, size: 32, color: Colors.grey);
     return Container(
       height: 64,
       width: 64,
@@ -467,19 +567,102 @@ class _ProviderAvatar extends StatelessWidget {
               child: Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const _LabIcon(),
+                errorBuilder: (_, __, ___) => fallback,
               ),
             )
-          : const _LabIcon(),
+          : fallback,
     );
   }
 }
 
-class _LabIcon extends StatelessWidget {
-  const _LabIcon();
+// ── Prescription attachment tile ──────────────────────────────────────────────
+// Reuses the same open-in-browser pattern as result_detail_page.dart.
+
+class _RxAttachmentTile extends StatefulWidget {
+  final PatientAttachment attachment;
+  const _RxAttachmentTile({required this.attachment});
+
+  @override
+  State<_RxAttachmentTile> createState() => _RxAttachmentTileState();
+}
+
+class _RxAttachmentTileState extends State<_RxAttachmentTile> {
+  bool _loading = false;
+
+  Future<void> _open() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      final url = await FirebaseStorage.instance
+          .ref(widget.attachment.storagePath)
+          .getDownloadURL();
+      final uri = Uri.parse(url);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('error_generic'.tr())),
+          );
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('error_generic'.tr())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(Icons.biotech, size: 32, color: Colors.grey);
+    final isPdf = widget.attachment.mimeType.contains('pdf');
+    final isImage = widget.attachment.mimeType.startsWith('image/');
+    final iconData =
+        isImage ? Icons.image_outlined : Icons.picture_as_pdf_outlined;
+    final iconColor = isPdf
+        ? const Color(0xFFE53935)
+        : isImage
+            ? PatientAppColors.brandTeal
+            : PatientAppColors.brandIndigo;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      decoration: BoxDecoration(
+        color: PatientAppColors.pageBackground,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(iconData, color: iconColor, size: 20),
+        ),
+        title: Text(
+          widget.attachment.fileName,
+          style: blackNormalTextStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: _loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: PatientAppColors.brandIndigo,
+                ),
+              )
+            : Icon(Icons.open_in_new, size: 18, color: Colors.grey.shade500),
+        onTap: _open,
+      ),
+    );
   }
 }

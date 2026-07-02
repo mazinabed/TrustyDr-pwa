@@ -210,6 +210,15 @@ class _NotificationsState extends ConsumerState<Notifications> {
           child: ReferralDetailPage(referralId: notif.clinicalRequestId),
         ),
       );
+    } else if ((notif.type == 'rx_referral' || notif.type == 'rx_status') &&
+        notif.clinicalRequestId.isNotEmpty) {
+      Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: ReferralDetailPage(referralId: notif.clinicalRequestId),
+        ),
+      );
     }
   }
 

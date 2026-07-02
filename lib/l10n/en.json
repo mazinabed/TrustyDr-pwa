@@ -605,6 +605,11 @@
     "status_checked_in": "Checked In",
     "status_in_progress": "In Progress",
     "status_completed": "Completed",
+    "status_preparing": "Preparing",
+    "status_ready_for_pickup": "Ready for Pickup",
+    "status_dispensed": "Dispensed",
+    "prescription_attachments": "Prescription",
+    "no_prescription_attachments": "No documents uploaded",
     "results_pending": "Results not yet available",
     "results_pending_body": "Your results will appear here once your doctor releases them.",
     "urgency_label": "Urgency"

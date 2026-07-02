@@ -605,6 +605,11 @@
     "status_checked_in": "تۆماربوون تەواو بوو",
     "status_in_progress": "لە ئەنجامدانداە",
     "status_completed": "تەواو بوو",
+    "status_preparing": "ئامادەکردن",
+    "status_ready_for_pickup": "ئامادەی وەرگرتنە",
+    "status_dispensed": "دابەشکرا",
+    "prescription_attachments": "نوسخەی پزیشکی",
+    "no_prescription_attachments": "هیچ هاوپێچێک بارنەکراوە",
     "results_pending": "ئەنجامەکان هێشتا بەردەست نین",
     "results_pending_body": "ئەنجامەکانت ئێرە دەردەکەون کاتێک دکتۆرەکەت ئازادیان بدات.",
     "urgency_label": "پێشینەی داواکاری"
