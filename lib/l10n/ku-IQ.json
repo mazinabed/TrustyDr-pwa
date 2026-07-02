@@ -173,6 +173,7 @@
   "my_results": "ئەنجامەکانم",
   "my_prescriptions": "ڕێنوێنەکانم",
   "my_prescriptions_coming_soon": "ڕێنوێنەکان بەزوویی دێت",
+  "no_prescriptions": "هیچ ڕێنوێنێک نییە هێشتا",
   "result_doctor_note": "تێبینی پزیشک",
   "result_attachments": "پەیوەستکراوەکان",
   "result_tests": "تاقیکردنەوەکان",
@@ -628,7 +629,8 @@
     "no_prescription_attachments": "هیچ هاوپێچێک بارنەکراوە",
     "results_pending": "ئەنجامەکان هێشتا بەردەست نین",
     "results_pending_body": "ئەنجامەکانت ئێرە دەردەکەون کاتێک دکتۆرەکەت ئازادیان بدات.",
-    "urgency_label": "پێشینەی داواکاری"
+    "urgency_label": "پێشینەی داواکاری",
+    "prescription_date": "بەرواری نوسخەی پزیشکی"
   },
   "lang": {
     "Arabic": "عەرەبی",

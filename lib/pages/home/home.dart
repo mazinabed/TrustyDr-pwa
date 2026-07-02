@@ -3587,10 +3587,11 @@ class _HomeState extends ConsumerState<Home>
                   ActionItem(
                     icon: Icons.medication_outlined,
                     label: 'my_prescriptions'.tr(),
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('my_prescriptions_coming_soon'.tr())),
-                    ),
+                    onTap: () => Navigator.push(
+                        context,
+                        PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MyPrescriptionsPage())),
                   ),
                 ],
               ),

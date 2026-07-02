@@ -127,6 +127,13 @@ class _ReferralBody extends ConsumerWidget {
                 _row(referral.centerName(lang),
                     label: 'referral.center_label'.tr()),
               ],
+              if (isPharmacy && referral.createdAt != null) ...[
+                const SizedBox(height: 6),
+                _row(
+                  DateFormat('d MMM yyyy').format(referral.createdAt!),
+                  label: 'referral.prescription_date'.tr(),
+                ),
+              ],
             ],
           ),
         ),

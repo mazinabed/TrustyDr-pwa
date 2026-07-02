@@ -180,6 +180,7 @@
   "my_results": "My Results",
   "my_prescriptions": "My Prescriptions",
   "my_prescriptions_coming_soon": "Prescriptions coming soon",
+  "no_prescriptions": "No prescriptions yet",
   "result_doctor_note": "Doctor's Note",
   "result_attachments": "Attachments",
   "result_tests": "Tests",
@@ -628,7 +629,8 @@
     "no_prescription_attachments": "No documents uploaded",
     "results_pending": "Results not yet available",
     "results_pending_body": "Your results will appear here once your doctor releases them.",
-    "urgency_label": "Urgency"
+    "urgency_label": "Urgency",
+    "prescription_date": "Prescription date"
   },
   "lang": {
     "Arabic": "Arabic",

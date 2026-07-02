@@ -174,6 +174,7 @@
   "my_results": "نتائجي",
   "my_prescriptions": "وصفاتي",
   "my_prescriptions_coming_soon": "الوصفات الطبية قريباً",
+  "no_prescriptions": "لا توجد وصفات بعد",
   "result_doctor_note": "ملاحظة الطبيب",
   "result_attachments": "المرفقات",
   "result_tests": "الفحوصات",
@@ -629,7 +630,8 @@
     "no_prescription_attachments": "لا توجد مرفقات",
     "results_pending": "النتائج غير متاحة بعد",
     "results_pending_body": "ستظهر نتائجك هنا بمجرد إصدارها من قِبَل طبيبك.",
-    "urgency_label": "الأولوية"
+    "urgency_label": "الأولوية",
+    "prescription_date": "تاريخ الوصفة"
   },
   "lang": {
     "Arabic": "العربية",

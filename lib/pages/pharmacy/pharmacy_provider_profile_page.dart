@@ -361,7 +361,7 @@ class _PharmacyProfileBody extends StatelessWidget {
             ),
           ),
 
-            // ── Services card ───────────────────────────────────────────────────
+        // ── Services card ───────────────────────────────────────────────────
         SliverToBoxAdapter(
           child: _PharmacyServicesCard(data: data),
         ),
@@ -473,10 +473,10 @@ class _PharmacyServicesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final raw = data['pharmacyServices'];
-    final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-    final active = _serviceKeyMap.entries
-        .where((e) => map[e.key] == true)
-        .toList();
+    final map =
+        raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final active =
+        _serviceKeyMap.entries.where((e) => map[e.key] == true).toList();
 
     return _ModernCard(
       title: 'pharmacy_services'.tr(),
@@ -515,8 +515,8 @@ class _PharmacyServicesCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: PatientAppColors.brandTeal
-                            .withValues(alpha: 0.10),
+                        color:
+                            PatientAppColors.brandTeal.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: PatientAppColors.brandTeal

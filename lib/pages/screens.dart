@@ -16,6 +16,7 @@ export 'patient/patient_directory.dart';
 export 'patient/my_appointments_page.dart';
 export 'patient/my_doctors_page.dart';
 export 'patient/my_results_page.dart';
+export 'patient/my_prescriptions_page.dart';
 export 'patient/result_detail_page.dart';
 export 'lab/laboratories_screen.dart';
 export 'pharmacy/pharmacies_screen.dart';
