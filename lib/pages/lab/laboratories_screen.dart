@@ -219,7 +219,9 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
   Widget _providerList(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> labDocs,
   ) {
-    // Map: specialty doc ID → serviceGroup ('laboratory' | 'imaging')
+    // Map: specialty doc ID → serviceGroup ('laboratory' | 'imaging').
+    // Used only as a fallback for providers with coarse specialty_key values
+    // (pre-backfill docs). Exact specialty_key matching is the primary path.
     final specGroupMap = {
       for (final doc in labDocs)
         doc.id: (doc.data()['serviceGroup'] ?? '').toString(),
@@ -234,13 +236,34 @@ class _LaboratoriesScreenState extends ConsumerState<LaboratoriesScreen> {
         final filtered = docs.where((doc) {
           final d = doc.data();
 
-          // 1. If a category chip is selected, filter by providerKind.
+          // 1. If a specialty chip is selected, filter providers.
+          //
+          // Primary path: exact specialty_key match (set by the sanitizer from
+          // the provider's onboarding specialty selection).
+          //
+          // Fallback path: providers whose public doc still carries a coarse key
+          // ('laboratory' or 'imaging') from before the sanitizer fix was deployed.
+          // For those, fall back to providerKind group matching so imaging vs lab
+          // distinction still works. This path disappears once the
+          // publish_diagnostic_providers.js backfill is run.
           if (_selectedLabKey.isNotEmpty) {
-            final selectedGroup = specGroupMap[_selectedLabKey] ?? '';
-            if (selectedGroup.isNotEmpty) {
-              final kind =
-                  (d['providerKind'] ?? d['serviceGroup'] ?? '').toString();
-              if (kind != selectedGroup) return false;
+            final providerSpecialtyKey = (d['specialty_key'] ?? '').toString();
+            final isCoarseKey = providerSpecialtyKey == 'laboratory' ||
+                providerSpecialtyKey == 'imaging' ||
+                providerSpecialtyKey.isEmpty;
+
+            if (!isCoarseKey) {
+              // Provider has a specific specialty assigned — require exact match.
+              // Never fall back to showing all providers in the same group.
+              if (providerSpecialtyKey != _selectedLabKey) return false;
+            } else {
+              // Coarse key — preserve imaging/lab group distinction only.
+              final selectedGroup = specGroupMap[_selectedLabKey] ?? '';
+              if (selectedGroup.isNotEmpty) {
+                final kind =
+                    (d['providerKind'] ?? d['serviceGroup'] ?? '').toString();
+                if (kind != selectedGroup) return false;
+              }
             }
           }
 
