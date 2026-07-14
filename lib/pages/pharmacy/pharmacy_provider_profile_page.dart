@@ -3,7 +3,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:page_transition/page_transition.dart';
+import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_store_page.dart';
 import 'package:trustydr/widget/doctor_avatar.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,7 +49,7 @@ class PharmacyProviderProfilePage extends ConsumerWidget {
               }
 
               final d = snapshot.data!.data()!;
-              return _PharmacyProfileBody(data: d);
+              return _PharmacyProfileBody(providerId: providerId, data: d);
             },
           );
 
@@ -63,8 +66,9 @@ class PharmacyProviderProfilePage extends ConsumerWidget {
 // ─── Profile body ─────────────────────────────────────────────────────────────
 
 class _PharmacyProfileBody extends StatelessWidget {
-  const _PharmacyProfileBody({required this.data});
+  const _PharmacyProfileBody({required this.providerId, required this.data});
 
+  final String providerId;
   final Map<String, dynamic> data;
 
   String _loc(String prefix, String lang) {
@@ -322,6 +326,19 @@ class _PharmacyProfileBody extends StatelessWidget {
             ),
           ),
 
+        // ── Visit Store (Patient Marketplace, Phase 1C, browse-only) ────────
+        // A single targeted call per profile view (never per list card —
+        // see marketplace_providers.dart) decides whether this button shows
+        // at all: it only appears once the store's catalog is confirmed
+        // non-empty. Riverpod's family caching means tapping through to the
+        // Store page right after does not re-fetch.
+        SliverToBoxAdapter(
+          child: _VisitStoreSection(
+            providerId: providerId,
+            storeName: facilityName,
+          ),
+        ),
+
         // ── Provider info card ──────────────────────────────────────────────
         if (hasInfo)
           SliverToBoxAdapter(
@@ -546,6 +563,65 @@ class _PharmacyServicesCard extends StatelessWidget {
                   )
                   .toList(),
             ),
+    );
+  }
+}
+
+// ─── Visit Store (Patient Marketplace, Phase 1C, browse-only) ─────────────────
+
+class _VisitStoreSection extends ConsumerWidget {
+  const _VisitStoreSection({required this.providerId, required this.storeName});
+
+  final String providerId;
+  final String storeName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orgId = pharmacyOrgIdFromProviderId(providerId);
+    final catalogAsync = ref.watch(marketplaceCatalogProvider(orgId));
+
+    return catalogAsync.when(
+      data: (catalog) {
+        if (catalog.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PatientAppColors.brandTeal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: const Icon(Icons.storefront_rounded),
+              label: Text(
+                'marketplace_visit_store'.tr(),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.fade,
+                  duration: const Duration(milliseconds: 400),
+                  child: MarketplaceStorePage(
+                    providerId: providerId,
+                    orgId: orgId,
+                    storeName: storeName,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

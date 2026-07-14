@@ -3120,6 +3120,7 @@ import 'package:flutter/services.dart';
 import 'package:trustydr/core/providers/notifications_provider.dart';
 import 'package:trustydr/core/providers/patient_appointments_provider.dart';
 import 'package:trustydr/models/patient_appointment_item.dart';
+import 'package:trustydr/pages/marketplace/marketplace_landing_page.dart';
 
 class Home extends ConsumerStatefulWidget {
   const Home({super.key});
@@ -3595,7 +3596,9 @@ class _HomeState extends ConsumerState<Home>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              _marketplaceBanner(),
+              const SizedBox(height: 8),
               _nextAppointmentCard(),
               const SizedBox(height: 16),
               const AnnouncementsStrip(),
@@ -3678,6 +3681,85 @@ class _HomeState extends ConsumerState<Home>
     }
 
     return (data[base] ?? '').toString();
+  }
+
+  // Full-width Commerce entry point (Patient Marketplace, Phase 1C) —
+  // deliberately generic wording ("Enter Stores" / medicines, health
+  // supplies, care and beauty) since Commerce will later include more than
+  // just pharmacies. Sits beneath the healthcare action grid, never inside
+  // it — this is a different product surface (ecommerce), not another
+  // healthcare-directory tile.
+  Widget _marketplaceBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          PageTransition(
+            type: PageTransitionType.rightToLeft,
+            child: const MarketplaceLandingPage(),
+          ),
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: PatientAppColors.brandGradient,
+            borderRadius: BorderRadius.circular(PatientAppColors.radiusCard),
+            boxShadow: PatientAppColors.shadowCard,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'marketplace_enter_stores'.tr(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'marketplace_banner_subtitle'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _nextAppointmentCard() {

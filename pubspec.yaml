@@ -40,7 +40,14 @@ dependencies:
   riverpod_annotation: ^3.0.2
 
   # --- Firebase ---
-  firebase_core: ^4.1.1
+  # firebase_core pinned below 4.4.0 deliberately: starting somewhere in the
+  # 4.4.x-4.9.x range, firebase_core requires firebase_core_platform_interface
+  # 7.x, a currently-broken upstream release line ("Type 'FirebasePlugin' not
+  # found" at compile time — see firebase/flutterfire#18437 and #18438,
+  # opened 2026-07-13, unresolved). 4.1.1-4.3.x are confirmed on the
+  # known-good firebase_core_platform_interface ^6.0.2. Remove this upper
+  # bound once FlutterFire ships a fix.
+  firebase_core: ">=4.1.1 <4.4.0"
   firebase_auth: ^6.1.0
   cloud_firestore: ^6.0.2
   firebase_messaging: ^16.0.2
@@ -60,6 +67,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
 
   intl: any
+  cloud_functions: ^6.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

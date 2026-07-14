@@ -1,0 +1,406 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/providers/marketplace_providers.dart';
+import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_tree_nav.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
+import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
+import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
+import 'package:trustydr/pages/marketplace/marketplace_sort.dart';
+import 'package:trustydr/widgets/trustydr_curved_header.dart';
+import 'package:trustydr/widgets/web_scaffold_container.dart';
+
+/// Full cross-store Products browse (Patient Marketplace, Phase 1C,
+/// browse-only) — a proper ecommerce product-list page: result count,
+/// Categories/Filters, Sort, and a responsive grid. Mobile opens category
+/// navigation as a near-full-height bottom sheet; wide screens show a
+/// persistent sidebar instead (left in LTR, right in RTL, via ambient
+/// Directionality — no manual side-swapping logic needed).
+///
+/// Watches [marketplaceBrowseProvider] directly (same shared, already-
+/// fetched data every other Marketplace screen watches) rather than taking
+/// a data snapshot as a constructor param — this is what lets "Load More"
+/// (bumping [marketplaceProductsLimitProvider]) refresh this page in place,
+/// and keeps every "open the Products page" call site (5 of them across the
+/// landing page) simple: just pass which category to start filtered on.
+class MarketplaceProductsPage extends ConsumerStatefulWidget {
+  const MarketplaceProductsPage({super.key, this.initialCategoryEngineId});
+
+  final String? initialCategoryEngineId;
+
+  @override
+  ConsumerState<MarketplaceProductsPage> createState() =>
+      _MarketplaceProductsPageState();
+}
+
+class _MarketplaceProductsPageState
+    extends ConsumerState<MarketplaceProductsPage> {
+  String _searchQuery = '';
+  String? _categoryFilterEngineId;
+  MarketplaceProductSort _sort = MarketplaceProductSort.recommended;
+
+  static const double _desktopBreakpoint = 900;
+  static const double _sidebarWidth = 220;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryFilterEngineId = widget.initialCategoryEngineId;
+  }
+
+  Future<void> _openSort() async {
+    final picked = await showMarketplaceSortSheet(context, _sort);
+    if (picked != null) setState(() => _sort = picked);
+  }
+
+  Future<void> _openCategorySheetMobile(
+    List<MarketplaceCategory> categories,
+    Map<String, int> categoryCounts,
+  ) async {
+    final picked = await showModalBottomSheet<Object?>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.85,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'marketplace_categories'.tr(),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: MarketplaceCategoryTreeNav(
+                  categories: categories,
+                  selectedEngineId: _categoryFilterEngineId,
+                  productCountByCategoryId: categoryCounts,
+                  onSelect: (id) =>
+                      Navigator.pop(context, id ?? _CategoryNavCleared()),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    if (picked is _CategoryNavCleared) {
+      setState(() => _categoryFilterEngineId = null);
+    } else if (picked is String) {
+      setState(() => _categoryFilterEngineId = picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final browseAsync = ref.watch(marketplaceBrowseProvider);
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: browseAsync.when(
+        data: (data) => _buildBody(context, data),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: PatientAppColors.brandTeal),
+        ),
+        error: (err, __) => Center(
+          child: Text(
+            err is MarketplaceAuthRequiredException
+                ? 'marketplace_login_required'.tr()
+                : 'error_generic'.tr(),
+            style: const TextStyle(color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, MarketplaceBrowseData data) {
+    final lang = context.locale.languageCode;
+    final categoryCounts =
+        computeCategoryProductCounts(data.categories, data.products);
+
+    var products = data.products;
+    String pageTitle = 'marketplace_tab_products'.tr();
+    if (_categoryFilterEngineId != null) {
+      final descendantIds =
+          descendantCategoryIds(data.categories, _categoryFilterEngineId!);
+      products = products
+          .where((p) => descendantIds.contains(p.categoryEngineId))
+          .toList();
+      final match = data.categories
+          .where((c) => c.engineId == _categoryFilterEngineId)
+          .toList();
+      if (match.isNotEmpty) pageTitle = match.first.localizedName(lang);
+    }
+    if (_searchQuery.trim().length >= 2) {
+      final q = _searchQuery.trim().toLowerCase();
+      products = products
+          .where((p) =>
+              p.localizedName(lang).toLowerCase().contains(q) ||
+              (p.brandName ?? '').toLowerCase().contains(q))
+          .toList();
+    }
+    products = sortMarketplaceProducts(products, _sort, lang);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
+
+        Widget grid = products.isEmpty
+            ? Center(
+                child: Text(
+                  'marketplace_no_products_found'.tr(),
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              )
+            : Column(
+                children: [
+                  Expanded(
+                    child: MarketplaceProductGrid(
+                        products: products, showStoreName: true),
+                  ),
+                  if (data.hasMoreProducts) _LoadMoreButton(ref: ref),
+                ],
+              );
+
+        Widget resultArea = Column(
+          children: [
+            _ResultHeader(
+              count: products.length,
+              sortLabel: _sort.l10nKey.tr(),
+              showCategoriesButton: !isDesktop,
+              onCategoriesTap: () =>
+                  _openCategorySheetMobile(data.categories, categoryCounts),
+              onSortTap: _openSort,
+            ),
+            Expanded(child: grid),
+          ],
+        );
+
+        Widget body;
+        if (isDesktop) {
+          body = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: _sidebarWidth,
+                child: Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: SizedBox(
+                    height: 560,
+                    child: MarketplaceCategoryTreeNav(
+                      categories: data.categories,
+                      selectedEngineId: _categoryFilterEngineId,
+                      productCountByCategoryId: categoryCounts,
+                      onSelect: (id) =>
+                          setState(() => _categoryFilterEngineId = id),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: resultArea),
+            ],
+          );
+        } else {
+          body = resultArea;
+        }
+
+        Widget content = Column(
+          children: [
+            TrustyDrCurvedHeader(title: pageTitle, showBack: true, height: 120),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: MarketplaceSearchBar(
+                hintText: 'marketplace_search_products'.tr(),
+                onChanged: (val) => setState(() => _searchQuery = val),
+              ),
+            ),
+            if (_categoryFilterEngineId != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Chip(
+                    label: Text(pageTitle),
+                    onDeleted: () =>
+                        setState(() => _categoryFilterEngineId = null),
+                    backgroundColor:
+                        PatientAppColors.brandTeal.withValues(alpha: 0.12),
+                    labelStyle: const TextStyle(
+                      color: PatientAppColors.brandTeal,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    deleteIconColor: PatientAppColors.brandTeal,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: isDesktop ? 16 : 0),
+                child: body,
+              ),
+            ),
+          ],
+        );
+        if (constraints.maxWidth >= 768) {
+          content = WebScaffoldContainer(child: content);
+        }
+        return content;
+      },
+    );
+  }
+}
+
+class _LoadMoreButton extends StatelessWidget {
+  const _LoadMoreButton({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: OutlinedButton(
+        onPressed: () =>
+            ref.read(marketplaceProductsLimitProvider.notifier).loadMore(),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: PatientAppColors.brandTeal,
+          side: const BorderSide(color: PatientAppColors.brandTeal),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        ),
+        child: Text('marketplace_load_more'.tr()),
+      ),
+    );
+  }
+}
+
+class _ResultHeader extends StatelessWidget {
+  const _ResultHeader({
+    required this.count,
+    required this.sortLabel,
+    required this.showCategoriesButton,
+    required this.onCategoriesTap,
+    required this.onSortTap,
+  });
+
+  final int count;
+  final String sortLabel;
+  final bool showCategoriesButton;
+  final VoidCallback onCategoriesTap;
+  final VoidCallback onSortTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'marketplace_product_count'
+                  .tr(namedArgs: {'count': count.toString()}),
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+          ),
+          if (showCategoriesButton) ...[
+            _HeaderChipButton(
+              icon: Icons.category_outlined,
+              label: 'marketplace_categories'.tr(),
+              onTap: onCategoriesTap,
+            ),
+            const SizedBox(width: 8),
+          ],
+          _HeaderChipButton(
+            icon: Icons.swap_vert_rounded,
+            label: sortLabel,
+            onTap: onSortTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderChipButton extends StatelessWidget {
+  const _HeaderChipButton(
+      {required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+        ),
+        constraints: const BoxConstraints(maxWidth: 140),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: PatientAppColors.brandTeal),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sentinel distinguishing "user tapped All Products" (clear filter) from
+/// "sheet dismissed without a choice" (null) when popping the mobile
+/// category bottom sheet.
+class _CategoryNavCleared {}
