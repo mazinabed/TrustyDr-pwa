@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
@@ -24,8 +25,10 @@ class MarketplaceAllCategoriesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
-    final topLevel = categories.where((c) => c.parentEngineId == null).toList()
-      ..sort((a, b) => a.sequence.compareTo(b.sequence));
+    final topLevel = categories
+        .where((c) => c.parentCategoryKey == null)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -53,8 +56,15 @@ class MarketplaceAllCategoriesPage extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       onTap: () {
-                        onCategorySelected(null);
+                        // Pop THIS page first, then notify the caller — the
+                        // caller's callback typically pushes a new route
+                        // (e.g. MarketplaceProductsPage). Calling pop() AFTER
+                        // that push would pop the just-pushed route right
+                        // back off instead of this page, since pop() always
+                        // targets the navigator's current top regardless of
+                        // which route logically "should" be removed.
                         Navigator.pop(context);
+                        onCategorySelected(null);
                       },
                     ),
                     const Divider(height: 1),
@@ -64,8 +74,8 @@ class MarketplaceAllCategoriesPage extends StatelessWidget {
                         allCategories: categories,
                         lang: lang,
                         onCategorySelected: (id) {
-                          onCategorySelected(id);
                           Navigator.pop(context);
+                          onCategorySelected(id);
                         },
                       ),
                     ),
@@ -100,20 +110,22 @@ class _CategoryExpansionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final children = allCategories
-        .where((c) => c.parentEngineId == category.engineId)
+        .where((c) => c.parentCategoryKey == category.categoryKey)
         .toList()
-      ..sort((a, b) => a.sequence.compareTo(b.sequence));
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     if (children.isEmpty) {
       return ListTile(
-        leading: const Icon(Icons.category_outlined, color: Colors.black45),
+        leading: Icon(marketplaceCategoryIcon(category.iconKey),
+            color: Colors.black45),
         title: Text(category.localizedName(lang)),
-        onTap: () => onCategorySelected(category.engineId),
+        onTap: () => onCategorySelected(category.categoryKey),
       );
     }
 
     return ExpansionTile(
-      leading: const Icon(Icons.category_outlined, color: Colors.black45),
+      leading: Icon(marketplaceCategoryIcon(category.iconKey),
+          color: Colors.black45),
       title: Text(
         category.localizedName(lang),
         style: const TextStyle(fontWeight: FontWeight.w600),
@@ -128,14 +140,14 @@ class _CategoryExpansionTile extends StatelessWidget {
               color: Colors.black54,
             ),
           ),
-          onTap: () => onCategorySelected(category.engineId),
+          onTap: () => onCategorySelected(category.categoryKey),
         ),
         ...children.map(
           (sub) => ListTile(
             contentPadding:
                 const EdgeInsetsDirectional.only(start: 32, end: 16),
             title: Text(sub.localizedName(lang)),
-            onTap: () => onCategorySelected(sub.engineId),
+            onTap: () => onCategorySelected(sub.categoryKey),
           ),
         ),
       ],

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_store_card.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
@@ -30,6 +31,12 @@ class _MarketplaceStoresPageState extends State<MarketplaceStoresPage> {
       if (names.length >= 2) break;
     }
     return names.isEmpty ? null : names.join(' · ');
+  }
+
+  int _categoryCountFor(String orgId) {
+    return distinctCategoryCount(
+      widget.data.products.where((p) => p.orgId == orgId).toList(),
+    );
   }
 
   @override
@@ -90,6 +97,8 @@ class _MarketplaceStoresPageState extends State<MarketplaceStoresPage> {
                                   store: stores[i],
                                   categorySummary: _categorySummaryFor(
                                       stores[i].orgId, lang),
+                                  categoryCount:
+                                      _categoryCountFor(stores[i].orgId),
                                 ),
                               ),
                             );
@@ -101,13 +110,14 @@ class _MarketplaceStoresPageState extends State<MarketplaceStoresPage> {
                               crossAxisCount: crossAxisCount,
                               mainAxisSpacing: 14,
                               crossAxisSpacing: 14,
-                              mainAxisExtent: 210,
+                              mainAxisExtent: 238,
                             ),
                             itemCount: stores.length,
                             itemBuilder: (context, i) => MarketplaceStoreCard(
                               store: stores[i],
                               categorySummary:
                                   _categorySummaryFor(stores[i].orgId, lang),
+                              categoryCount: _categoryCountFor(stores[i].orgId),
                             ),
                           );
                         },

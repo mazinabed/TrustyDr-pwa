@@ -4,27 +4,28 @@ import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 
-/// Shared hierarchical category navigation — real `parentEngineId` tree,
-/// "All Products" at the top, expandable top-level categories with their
-/// subcategories, selected-item highlight, optional per-category product
-/// counts (computed once by the caller from already-fetched data, never a
-/// per-category backend call). Used both as the mobile bottom-sheet/drawer
-/// content and as the desktop persistent sidebar's content — same widget,
-/// different container. Scrolls internally, so it scales to dozens of
+/// Shared hierarchical category navigation — real `parentCategoryKey` tree
+/// (Shared Marketplace Category Engine, 2026-07-14), "All Products" at the
+/// top, expandable top-level categories with their subcategories,
+/// selected-item highlight, optional per-category product counts (computed
+/// once by the caller from already-fetched data, never a per-category
+/// backend call). Used both as the mobile bottom-sheet/drawer content and as
+/// the desktop persistent sidebar's content — same widget, different
+/// container. Scrolls internally, so it scales to dozens of
 /// categories/subcategories without needing a redesign.
 class MarketplaceCategoryTreeNav extends StatefulWidget {
   const MarketplaceCategoryTreeNav({
     super.key,
     required this.categories,
-    required this.selectedEngineId,
+    required this.selectedCategoryKey,
     required this.onSelect,
-    this.productCountByCategoryId,
+    this.productCountByCategoryKey,
   });
 
   final List<MarketplaceCategory> categories;
-  final String? selectedEngineId;
+  final String? selectedCategoryKey;
   final ValueChanged<String?> onSelect;
-  final Map<String, int>? productCountByCategoryId;
+  final Map<String, int>? productCountByCategoryKey;
 
   @override
   State<MarketplaceCategoryTreeNav> createState() =>
@@ -40,12 +41,12 @@ class _MarketplaceCategoryTreeNavState
     super.initState();
     // Auto-expand the branch containing the currently-selected category so
     // it's visible on open, not hidden behind a collapsed parent.
-    if (widget.selectedEngineId != null) {
+    if (widget.selectedCategoryKey != null) {
       final selected = widget.categories
-          .where((c) => c.engineId == widget.selectedEngineId)
+          .where((c) => c.categoryKey == widget.selectedCategoryKey)
           .toList();
-      if (selected.isNotEmpty && selected.first.parentEngineId != null) {
-        _expanded.add(selected.first.parentEngineId!);
+      if (selected.isNotEmpty && selected.first.parentCategoryKey != null) {
+        _expanded.add(selected.first.parentCategoryKey!);
       }
     }
   }
@@ -54,33 +55,33 @@ class _MarketplaceCategoryTreeNavState
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
     final topLevel = widget.categories
-        .where((c) => c.parentEngineId == null)
+        .where((c) => c.parentCategoryKey == null)
         .toList()
-      ..sort((a, b) => a.sequence.compareTo(b.sequence));
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       children: [
         _NavTile(
           label: 'marketplace_all_products'.tr(),
-          selected: widget.selectedEngineId == null,
+          selected: widget.selectedCategoryKey == null,
           onTap: () => widget.onSelect(null),
         ),
         const Divider(height: 1),
         ...topLevel.map((top) {
           final children = widget.categories
-              .where((c) => c.parentEngineId == top.engineId)
+              .where((c) => c.parentCategoryKey == top.categoryKey)
               .toList()
-            ..sort((a, b) => a.sequence.compareTo(b.sequence));
-          final isExpanded = _expanded.contains(top.engineId);
-          final count = widget.productCountByCategoryId?[top.engineId];
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          final isExpanded = _expanded.contains(top.categoryKey);
+          final count = widget.productCountByCategoryKey?[top.categoryKey];
 
           if (children.isEmpty) {
             return _NavTile(
               label: top.localizedName(lang),
-              selected: widget.selectedEngineId == top.engineId,
+              selected: widget.selectedCategoryKey == top.categoryKey,
               trailingCount: count,
-              onTap: () => widget.onSelect(top.engineId),
+              onTap: () => widget.onSelect(top.categoryKey),
             );
           }
 
@@ -89,16 +90,16 @@ class _MarketplaceCategoryTreeNavState
             children: [
               _NavTile(
                 label: top.localizedName(lang),
-                selected: widget.selectedEngineId == top.engineId,
+                selected: widget.selectedCategoryKey == top.categoryKey,
                 trailingCount: count,
                 expandable: true,
                 expanded: isExpanded,
-                onTap: () => widget.onSelect(top.engineId),
+                onTap: () => widget.onSelect(top.categoryKey),
                 onExpandTap: () => setState(() {
                   if (isExpanded) {
-                    _expanded.remove(top.engineId);
+                    _expanded.remove(top.categoryKey);
                   } else {
-                    _expanded.add(top.engineId);
+                    _expanded.add(top.categoryKey);
                   }
                 }),
               ),
@@ -106,11 +107,11 @@ class _MarketplaceCategoryTreeNavState
                 ...children.map(
                   (sub) => _NavTile(
                     label: sub.localizedName(lang),
-                    selected: widget.selectedEngineId == sub.engineId,
+                    selected: widget.selectedCategoryKey == sub.categoryKey,
                     trailingCount:
-                        widget.productCountByCategoryId?[sub.engineId],
+                        widget.productCountByCategoryKey?[sub.categoryKey],
                     indent: true,
-                    onTap: () => widget.onSelect(sub.engineId),
+                    onTap: () => widget.onSelect(sub.categoryKey),
                   ),
                 ),
             ],
@@ -212,9 +213,10 @@ Map<String, int> computeCategoryProductCounts(
 ) {
   final result = <String, int>{};
   for (final c in categories) {
-    final ids = descendantCategoryIds(categories, c.engineId);
-    result[c.engineId] =
-        products.where((p) => ids.contains(p.categoryEngineId)).length;
+    final keys = descendantCategoryKeys(categories, c.categoryKey);
+    result[c.categoryKey] = products
+        .where((p) => p.categoryKeys.any((k) => keys.contains(k)))
+        .length;
   }
   return result;
 }

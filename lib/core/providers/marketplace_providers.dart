@@ -4,23 +4,22 @@
 // a Healthcare-owned callable — never Commerce, never Odoo, directly (see
 // doctor_functions/functions/commerce/getActiveMarketplaceStores.js and
 // getMarketplaceCatalog.js for the full server-side contract).
+//
+// PUBLIC BROWSE (2026-07-15): both callables below are deliberately
+// unauthenticated on the backend now (the `request.auth` gate was removed
+// from both Healthcare functions), matching TrustyDr's existing healthcare
+// discovery model — guests can browse the full public Marketplace, and
+// authentication is required only for protected actions (cart, checkout,
+// orders, prescriptions, saved addresses, payments), never merely to see
+// it. These providers used to wait for `authStateProvider.future` and throw
+// a `MarketplaceAuthRequiredException` when no user was present — removed
+// entirely, not worked around, since the actual fix belonged on the
+// backend's auth gate, not a client-side guard hiding it. See
+// marketplace_widgets.dart's `ensureMarketplaceLogin()` for the reusable
+// tap-time login gate protected actions should use instead.
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/app_location_provider.dart';
-import 'package:trustydr/core/providers/auth_provider.dart';
-
-/// Thrown by marketplace providers when Firebase Auth has finished
-/// resolving and there is no signed-in user — distinct from a network/server
-/// error so the UI can render a controlled "please log in" state instead of
-/// a generic error or (worse) an indefinite spinner. The backend's
-/// request.auth requirement is never weakened to work around this — every
-/// call is gated to only fire once a real user is confirmed present.
-class MarketplaceAuthRequiredException implements Exception {
-  const MarketplaceAuthRequiredException();
-}
 
 const String kPharmacyOrgIdPrefix = 'hc_pharmacy_';
 
@@ -116,6 +115,35 @@ class MarketplaceStore {
       _localizeWithKuField(provinceEn, provinceAr, provinceKu, lang);
 }
 
+/// One of a product's assigned categories, as embedded on the product doc
+/// (denormalized at sync time — a small, bounded set per product, not
+/// worth a second lookup against the global categories collection).
+/// [categoryKey] is the Shared Marketplace Category Engine's stable identity
+/// (2026-07-14 milestone) — [engineId] (the raw Odoo numeric id) survives
+/// only for reference/debugging and must never be used for filtering.
+class MarketplaceCategoryRef {
+  const MarketplaceCategoryRef({
+    required this.engineId,
+    required this.categoryKey,
+    required this.nameEn,
+    required this.nameAr,
+  });
+
+  final String engineId;
+  final String? categoryKey;
+  final String nameEn;
+  final String nameAr;
+
+  factory MarketplaceCategoryRef.fromMap(Map<String, dynamic> m) {
+    return MarketplaceCategoryRef(
+      engineId: m['engineId']?.toString() ?? '',
+      categoryKey: m['categoryKey']?.toString(),
+      nameEn: m['name_en']?.toString() ?? '',
+      nameAr: m['name_ar']?.toString() ?? '',
+    );
+  }
+}
+
 class MarketplaceProduct {
   const MarketplaceProduct({
     required this.orgId,
@@ -126,6 +154,9 @@ class MarketplaceProduct {
     required this.descriptionEn,
     required this.descriptionAr,
     required this.brandName,
+    required this.categoryEngineIds,
+    required this.categoryKeys,
+    required this.categories,
     required this.categoryEngineId,
     required this.categoryNameEn,
     required this.categoryNameAr,
@@ -147,6 +178,18 @@ class MarketplaceProduct {
   final String? descriptionEn;
   final String? descriptionAr;
   final String? brandName;
+  // ALL assigned category ids — a product appears under every category it
+  // belongs to (never duplicated as separate cards).
+  // [categoryEngineId]/[categoryNameEn]/[categoryNameAr] (singular, first
+  // entry) survive only as a breadcrumb-display convenience.
+  //
+  // Shared Marketplace Category Engine (2026-07-14): [categoryKeys] is the
+  // stable identity that filtering/search/category-browsing must check
+  // membership against now — never [categoryEngineIds] (raw Odoo numeric
+  // ids), which survives only for reference/debugging.
+  final List<String> categoryEngineIds;
+  final List<String> categoryKeys;
+  final List<MarketplaceCategoryRef> categories;
   final String? categoryEngineId;
   final String? categoryNameEn;
   final String? categoryNameAr;
@@ -160,6 +203,7 @@ class MarketplaceProduct {
   final String? storeNameKu;
 
   factory MarketplaceProduct.fromMap(Map<String, dynamic> m) {
+    final rawCategories = m['categories'];
     return MarketplaceProduct(
       orgId: m['orgId']?.toString() ?? '',
       engineId: m['engineId']?.toString() ?? '',
@@ -169,6 +213,18 @@ class MarketplaceProduct {
       descriptionEn: m['description_en']?.toString(),
       descriptionAr: m['description_ar']?.toString(),
       brandName: m['brandName']?.toString(),
+      categoryEngineIds: (m['categoryEngineIds'] is List)
+          ? (m['categoryEngineIds'] as List).map((e) => e.toString()).toList()
+          : const [],
+      categoryKeys: (m['categoryKeys'] is List)
+          ? (m['categoryKeys'] as List).map((e) => e.toString()).toList()
+          : const [],
+      categories: (rawCategories is List)
+          ? rawCategories
+              .map((e) => MarketplaceCategoryRef.fromMap(
+                  Map<String, dynamic>.from(e as Map)))
+              .toList()
+          : const [],
       categoryEngineId: m['categoryEngineId']?.toString(),
       categoryNameEn: m['categoryName_en']?.toString(),
       categoryNameAr: m['categoryName_ar']?.toString(),
@@ -194,12 +250,21 @@ class MarketplaceProduct {
     return _localizeNoKu(en, ar, lang);
   }
 
+  /// Breadcrumb/display-only single category name (first assigned). Never
+  /// use for filtering — see [categoryEngineIds].
   String? localizedCategoryName(String lang) {
     final en = categoryNameEn ?? '';
     final ar = categoryNameAr ?? '';
     if (en.isEmpty && ar.isEmpty) return null;
     return _localizeNoKu(en, ar, lang);
   }
+
+  /// Every assigned category's localized name — for a product detail page
+  /// or anywhere that should show the full set, not just the primary one.
+  List<String> localizedCategoryNames(String lang) => categories
+      .map((c) => _localizeNoKu(c.nameEn, c.nameAr, lang))
+      .where((n) => n.isNotEmpty)
+      .toList();
 
   /// Store name is only present on cross-store results (Products tab) —
   /// null when this product came from a single-store catalog fetch, where
@@ -229,32 +294,61 @@ class MarketplaceProduct {
   }
 }
 
+/// Shared Marketplace Category Engine (2026-07-14) — sourced from Commerce's
+/// marketplace_category_definitions (never Odoo, never the legacy
+/// marketplace_categories mirror). [categoryKey] is the permanent, stable
+/// identity every filter/navigation/hierarchy operation in this app must use
+/// — [odooCategoryId] survives only for reference, never for filtering.
 class MarketplaceCategory {
   const MarketplaceCategory({
-    required this.engineId,
+    required this.categoryKey,
+    required this.parentCategoryKey,
+    required this.level,
     required this.nameEn,
     required this.nameAr,
-    required this.parentEngineId,
-    required this.sequence,
+    required this.nameKu,
+    required this.iconKey,
+    required this.sortOrder,
+    required this.featured,
+    required this.odooCategoryId,
   });
 
-  final String engineId;
+  final String categoryKey;
+  final String? parentCategoryKey;
+  final int level;
   final String nameEn;
   final String nameAr;
-  final String? parentEngineId;
-  final int sequence;
+  final String nameKu;
+  final String? iconKey;
+  final int sortOrder;
+  final bool featured;
+  final String? odooCategoryId;
 
   factory MarketplaceCategory.fromMap(Map<String, dynamic> m) {
     return MarketplaceCategory(
-      engineId: m['engineId']?.toString() ?? '',
+      categoryKey: m['categoryKey']?.toString() ?? '',
+      parentCategoryKey: m['parentCategoryKey']?.toString(),
+      level: (m['level'] is num) ? (m['level'] as num).toInt() : 0,
       nameEn: m['name_en']?.toString() ?? '',
       nameAr: m['name_ar']?.toString() ?? '',
-      parentEngineId: m['parentEngineId']?.toString(),
-      sequence: (m['sequence'] is num) ? (m['sequence'] as num).toInt() : 0,
+      nameKu: m['name_ku']?.toString() ?? '',
+      iconKey: m['iconKey']?.toString(),
+      sortOrder: (m['sortOrder'] is num) ? (m['sortOrder'] as num).toInt() : 0,
+      featured: m['featured'] == true,
+      odooCategoryId: m['odooCategoryId']?.toString(),
     );
   }
 
-  String localizedName(String lang) => _localizeNoKu(nameEn, nameAr, lang);
+  // Categories, unlike products, DO have a real (if partially populated)
+  // name_ku from the Category Engine — falls back to Arabic (never a blank
+  // string) when a specific category hasn't been translated yet, matching
+  // the taxonomy's own documented translation-coverage gaps.
+  String localizedName(String lang) {
+    if (lang == 'ku' && nameKu.isNotEmpty) return nameKu;
+    if (lang == 'ku' && nameAr.isNotEmpty) return nameAr;
+    if (lang == 'ar' && nameAr.isNotEmpty) return nameAr;
+    return nameEn.isNotEmpty ? nameEn : nameAr;
+  }
 }
 
 class MarketplaceCatalog {
@@ -320,31 +414,13 @@ Map<String, dynamic> _asStringKeyedMap(Object? raw) {
   return const {};
 }
 
-// TEMPORARY diagnostic logging for the marketplace-callable 401 bug — never
-// logs the ID token itself, only uid + a success/failure boolean + the
-// FirebaseApp identity, so it's safe to leave on briefly during live
-// verification. Remove once the auth-gating fix above is confirmed stable.
-Future<void> _logMarketplaceAuthDiagnostics(User user) async {
-  final app = Firebase.app();
-  debugPrint(
-    '[marketplace][auth-debug] firebaseApp=${app.name} '
-    'projectId=${app.options.projectId} uid=${user.uid}',
-  );
-  try {
-    final token = await user.getIdToken();
-    debugPrint(
-      '[marketplace][auth-debug] getIdToken() succeeded=${token != null && token.isNotEmpty}',
-    );
-  } catch (e) {
-    debugPrint('[marketplace][auth-debug] getIdToken() FAILED: $e');
-  }
-}
-
 /// Marketplace browse data (Stores + cross-store Products + global
 /// Categories) for the currently selected province/city — powers all three
 /// Marketplace landing-page tabs from one call. Reuses [appLocationProvider]
 /// (the same location state the existing pharmacy discovery screen watches)
-/// rather than introducing a second location system.
+/// rather than introducing a second location system. Loads identically for
+/// guests and logged-in patients (public browse, 2026-07-15) — no auth wait,
+/// no auth-required error path.
 final marketplaceBrowseProvider =
     FutureProvider.autoDispose<MarketplaceBrowseData>((ref) async {
   final location = ref.watch(appLocationProvider);
@@ -353,23 +429,6 @@ final marketplaceBrowseProvider =
       location.provinceKey.isEmpty) {
     return MarketplaceBrowseData.empty;
   }
-
-  // Wait for Firebase Auth's session restoration to actually finish before
-  // ever attempting the call. On Flutter Web, currentUser can be briefly
-  // null immediately after page load while the persisted session is
-  // restored asynchronously from IndexedDB — splashScreen.dart routes to
-  // Home without waiting for that, so a naive `FirebaseAuth.instance.
-  // currentUser` read here could easily be null even for a genuinely
-  // logged-in user, sending the callable with no ID token and drawing a
-  // 401 the backend is correctly right to issue (request.auth enforcement
-  // stays exactly as-is — this fix belongs entirely on the client side).
-  // `ref.watch` (not `ref.read`) on `.future` means this provider also
-  // re-runs automatically once a real auth state arrives.
-  final user = await ref.watch(authStateProvider.future);
-  if (user == null) {
-    throw const MarketplaceAuthRequiredException();
-  }
-  await _logMarketplaceAuthDiagnostics(user);
 
   final productsLimit = ref.watch(marketplaceProductsLimitProvider);
 
@@ -415,14 +474,10 @@ final marketplaceBrowseProvider =
 /// A single store's catalog (products + categories), keyed by Commerce
 /// orgId. Used both by the Store page and, on the pharmacy profile page, as
 /// the single targeted call that decides whether "Visit Store" appears.
+/// Loads identically for guests and logged-in patients (public browse,
+/// 2026-07-15).
 final marketplaceCatalogProvider = FutureProvider.autoDispose
     .family<MarketplaceCatalog, String>((ref, orgId) async {
-  final user = await ref.watch(authStateProvider.future);
-  if (user == null) {
-    throw const MarketplaceAuthRequiredException();
-  }
-  await _logMarketplaceAuthDiagnostics(user);
-
   final callable =
       FirebaseFunctions.instance.httpsCallable('getMarketplaceCatalog');
   final result = await callable.call<Map<String, dynamic>>(<String, dynamic>{

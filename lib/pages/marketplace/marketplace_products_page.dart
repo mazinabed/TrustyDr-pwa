@@ -25,9 +25,9 @@ import 'package:trustydr/widgets/web_scaffold_container.dart';
 /// and keeps every "open the Products page" call site (5 of them across the
 /// landing page) simple: just pass which category to start filtered on.
 class MarketplaceProductsPage extends ConsumerStatefulWidget {
-  const MarketplaceProductsPage({super.key, this.initialCategoryEngineId});
+  const MarketplaceProductsPage({super.key, this.initialCategoryKey});
 
-  final String? initialCategoryEngineId;
+  final String? initialCategoryKey;
 
   @override
   ConsumerState<MarketplaceProductsPage> createState() =>
@@ -37,7 +37,7 @@ class MarketplaceProductsPage extends ConsumerStatefulWidget {
 class _MarketplaceProductsPageState
     extends ConsumerState<MarketplaceProductsPage> {
   String _searchQuery = '';
-  String? _categoryFilterEngineId;
+  String? _categoryFilterKey;
   MarketplaceProductSort _sort = MarketplaceProductSort.recommended;
 
   static const double _desktopBreakpoint = 900;
@@ -46,7 +46,7 @@ class _MarketplaceProductsPageState
   @override
   void initState() {
     super.initState();
-    _categoryFilterEngineId = widget.initialCategoryEngineId;
+    _categoryFilterKey = widget.initialCategoryKey;
   }
 
   Future<void> _openSort() async {
@@ -92,8 +92,8 @@ class _MarketplaceProductsPageState
               Expanded(
                 child: MarketplaceCategoryTreeNav(
                   categories: categories,
-                  selectedEngineId: _categoryFilterEngineId,
-                  productCountByCategoryId: categoryCounts,
+                  selectedCategoryKey: _categoryFilterKey,
+                  productCountByCategoryKey: categoryCounts,
                   onSelect: (id) =>
                       Navigator.pop(context, id ?? _CategoryNavCleared()),
                 ),
@@ -105,9 +105,9 @@ class _MarketplaceProductsPageState
     );
     if (!mounted) return;
     if (picked is _CategoryNavCleared) {
-      setState(() => _categoryFilterEngineId = null);
+      setState(() => _categoryFilterKey = null);
     } else if (picked is String) {
-      setState(() => _categoryFilterEngineId = picked);
+      setState(() => _categoryFilterKey = picked);
     }
   }
 
@@ -122,11 +122,11 @@ class _MarketplaceProductsPageState
         loading: () => const Center(
           child: CircularProgressIndicator(color: PatientAppColors.brandTeal),
         ),
+        // Public browse (2026-07-15) — see marketplace_landing_page.dart's
+        // matching comment.
         error: (err, __) => Center(
           child: Text(
-            err is MarketplaceAuthRequiredException
-                ? 'marketplace_login_required'.tr()
-                : 'error_generic'.tr(),
+            'error_generic'.tr(),
             style: const TextStyle(color: Colors.grey),
           ),
         ),
@@ -141,14 +141,15 @@ class _MarketplaceProductsPageState
 
     var products = data.products;
     String pageTitle = 'marketplace_tab_products'.tr();
-    if (_categoryFilterEngineId != null) {
-      final descendantIds =
-          descendantCategoryIds(data.categories, _categoryFilterEngineId!);
+    if (_categoryFilterKey != null) {
+      final descendantKeys =
+          descendantCategoryKeys(data.categories, _categoryFilterKey!);
       products = products
-          .where((p) => descendantIds.contains(p.categoryEngineId))
+          .where(
+              (p) => p.categoryKeys.any((key) => descendantKeys.contains(key)))
           .toList();
       final match = data.categories
-          .where((c) => c.engineId == _categoryFilterEngineId)
+          .where((c) => c.categoryKey == _categoryFilterKey)
           .toList();
       if (match.isNotEmpty) pageTitle = match.first.localizedName(lang);
     }
@@ -222,10 +223,9 @@ class _MarketplaceProductsPageState
                     height: 560,
                     child: MarketplaceCategoryTreeNav(
                       categories: data.categories,
-                      selectedEngineId: _categoryFilterEngineId,
-                      productCountByCategoryId: categoryCounts,
-                      onSelect: (id) =>
-                          setState(() => _categoryFilterEngineId = id),
+                      selectedCategoryKey: _categoryFilterKey,
+                      productCountByCategoryKey: categoryCounts,
+                      onSelect: (id) => setState(() => _categoryFilterKey = id),
                     ),
                   ),
                 ),
@@ -249,15 +249,14 @@ class _MarketplaceProductsPageState
                 onChanged: (val) => setState(() => _searchQuery = val),
               ),
             ),
-            if (_categoryFilterEngineId != null)
+            if (_categoryFilterKey != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: Chip(
                     label: Text(pageTitle),
-                    onDeleted: () =>
-                        setState(() => _categoryFilterEngineId = null),
+                    onDeleted: () => setState(() => _categoryFilterKey = null),
                     backgroundColor:
                         PatientAppColors.brandTeal.withValues(alpha: 0.12),
                     labelStyle: const TextStyle(
