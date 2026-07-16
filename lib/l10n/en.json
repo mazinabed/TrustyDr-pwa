@@ -231,6 +231,7 @@
   "marketplace_checkout_delivery_fee_label": "Delivery fee",
   "marketplace_checkout_total_label": "Total",
   "marketplace_checkout_free": "Free",
+  "marketplace_checkout_free_over_threshold": "Free above {amount}",
   "marketplace_checkout_profile_incomplete_error": "Please complete your profile name before placing an order.",
   "marketplace_place_order": "Place Order",
   "marketplace_order_placed": "Order {name} placed",

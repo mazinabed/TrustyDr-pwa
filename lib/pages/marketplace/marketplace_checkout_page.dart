@@ -27,6 +27,7 @@ class _DeliveryMethod {
     required this.nameAr,
     required this.nameKu,
     required this.fee,
+    required this.freeOverThreshold,
   });
 
   /// Null for pickup (no Odoo delivery.carrier — the Phase-1
@@ -37,6 +38,11 @@ class _DeliveryMethod {
   final String nameAr;
   final String nameKu;
   final double fee;
+
+  /// Odoo's delivery.carrier free_over/amount, null when no free-above-
+  /// threshold rule is configured. Same display-only estimate rule as
+  /// [fee] — the authoritative amount is always recomputed server-side.
+  final double? freeOverThreshold;
 
   bool get isPickup => carrierEngineId == null;
 
@@ -53,7 +59,39 @@ class _DeliveryMethod {
         nameAr: m['name_ar']?.toString() ?? '',
         nameKu: m['name_ku']?.toString() ?? '',
         fee: (m['fee'] is num) ? (m['fee'] as num).toDouble() : 0,
+        freeOverThreshold: (m['freeOverThreshold'] is num)
+            ? (m['freeOverThreshold'] as num).toDouble()
+            : null,
       );
+}
+
+/// Mirrors Odoo's free-above-threshold rule (createPatientOrder,
+/// odooDriver.ts) for the pre-submit display estimate only — the
+/// authoritative amount always comes from the confirmed order.
+double _effectiveFee(_DeliveryMethod m, double subtotal) {
+  if (m.isPickup) return 0;
+  final threshold = m.freeOverThreshold;
+  if (threshold != null && subtotal >= threshold) return 0;
+  return m.fee;
+}
+
+String _formatAmount(double amount, String? currency) {
+  final formatted =
+      amount.toStringAsFixed(amount.truncateToDouble() == amount ? 0 : 2);
+  return currency == null ? formatted : '$formatted $currency'.trim();
+}
+
+String _deliveryFeeSubtitle(
+    _DeliveryMethod m, double subtotal, String? currency) {
+  final effective = _effectiveFee(m, subtotal);
+  if (effective == 0) return 'marketplace_checkout_free'.tr();
+  final base = _formatAmount(m.fee, currency);
+  final threshold = m.freeOverThreshold;
+  if (threshold == null) return base;
+  final hint = 'marketplace_checkout_free_over_threshold'.tr(namedArgs: {
+    'amount': _formatAmount(threshold, currency),
+  });
+  return '$base · $hint';
 }
 
 /// Fetches the pickup + real Odoo delivery.carrier list once per checkout
@@ -81,6 +119,7 @@ final _deliveryMethodsProvider =
         nameAr: 'الاستلام من المتجر',
         nameKu: 'وەرگرتن لە فرۆشگا',
         fee: 0,
+        freeOverThreshold: null,
       ),
     ];
   }
@@ -323,7 +362,11 @@ class _MarketplaceCheckoutPageState
     final currency =
         cart.items.isNotEmpty ? cart.items.first.currencyName : null;
     final subtotal = cart.estimatedSubtotal;
-    final deliveryFee = isDelivery ? (selectedMethod.fee) : 0.0;
+    // Mirrors the free-above-threshold rule Odoo applies server-side
+    // (createPatientOrder, odooDriver.ts) purely for this pre-submit
+    // estimate — the real amount always comes from the confirmed order.
+    final deliveryFee =
+        isDelivery ? _effectiveFee(selectedMethod, subtotal) : 0.0;
     final total = subtotal + deliveryFee;
 
     return Form(
@@ -377,12 +420,9 @@ class _MarketplaceCheckoutPageState
               children: loadedMethods
                   .map((m) => _DeliveryOptionTile(
                         label: m.localizedName(lang),
-                        subtitle: m.isPickup || m.fee == 0
-                            ? (m.isPickup
-                                ? null
-                                : 'marketplace_checkout_free'.tr())
-                            : '${m.fee.toStringAsFixed(m.fee.truncateToDouble() == m.fee ? 0 : 2)} ${currency ?? ''}'
-                                .trim(),
+                        subtitle: m.isPickup
+                            ? null
+                            : _deliveryFeeSubtitle(m, subtotal, currency),
                         selected: _selectedCarrierEngineId == m.carrierEngineId,
                         onTap: () => setState(
                             () => _selectedCarrierEngineId = m.carrierEngineId),
