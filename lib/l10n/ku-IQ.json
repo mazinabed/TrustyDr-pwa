@@ -223,6 +223,7 @@
   "marketplace_order_status_preparing": "ئامادەکردن",
   "marketplace_order_status_completed": "تەواوبوو",
   "marketplace_cancel_order": "هەڵوەشاندنەوەی داواکاری",
+  "marketplace_contact_pharmacy_to_cancel": "بۆ هەڵوەشاندنەوە پەیوەندی بە دەرمانخانەوە بکە",
   "marketplace_order_cancelled": "داواکاری هەڵوەشێنرایەوە",
   "marketplace_category_count": "{count} پۆل",
   "marketplace_featured_stores": "فرۆشگە تایبەتەکان",

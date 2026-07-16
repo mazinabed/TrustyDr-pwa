@@ -230,6 +230,7 @@
   "marketplace_order_status_preparing": "Preparing",
   "marketplace_order_status_completed": "Completed",
   "marketplace_cancel_order": "Cancel Order",
+  "marketplace_contact_pharmacy_to_cancel": "Contact the pharmacy to cancel",
   "marketplace_order_cancelled": "Order cancelled",
   "marketplace_category_count": "{count} categories",
   "marketplace_featured_stores": "Featured Stores",

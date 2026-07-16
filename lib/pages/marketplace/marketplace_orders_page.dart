@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -71,24 +70,14 @@ class MarketplaceOrdersPage extends ConsumerWidget {
   }
 }
 
-class _OrderCard extends ConsumerStatefulWidget {
+class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.doc, required this.orderId});
 
   final Map<String, dynamic> doc;
   final String orderId;
 
-  @override
-  ConsumerState<_OrderCard> createState() => _OrderCardState();
-}
-
-class _OrderCardState extends ConsumerState<_OrderCard> {
-  bool _cancelling = false;
-
   // Thin, patient-facing label over the locally-cached status only — no
   // per-order live Odoo read just to render a list (low-read architecture).
-  // The real, live picking-state boundary is enforced server-side, in
-  // cancelMarketplaceOrder itself, every time a cancellation is actually
-  // attempted — never re-derived here.
   String _statusLabelKey(String localStatus) {
     switch (localStatus) {
       case 'pending':
@@ -104,41 +93,10 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
     }
   }
 
-  // Optimistic only — a confirmed order MAY still be past the real
-  // fulfillment boundary; cancelMarketplaceOrder re-verifies live against
-  // Odoo on every call and rejects with a clear error if it's too late
-  // (surfaced via the catch block below), rather than this list
-  // pre-computing a live picking state per order just to decide whether to
-  // show the button.
-  bool _cancellable(String localStatus) => localStatus == 'confirmed';
-
-  Future<void> _cancel() async {
-    setState(() => _cancelling = true);
-    try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('cancelMarketplaceOrder');
-      await callable.call<Map<String, dynamic>>(
-          <String, dynamic>{'orderId': widget.orderId});
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('marketplace_order_cancelled'.tr())),
-      );
-    } on FirebaseFunctionsException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(e.message ?? 'marketplace_checkout_generic_error'.tr())),
-      );
-    } finally {
-      if (mounted) setState(() => _cancelling = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final order = Map<String, dynamic>.from(widget.doc['order'] as Map? ?? {});
-    final localStatus = (widget.doc['status'] ?? '').toString();
+    final order = Map<String, dynamic>.from(doc['order'] as Map? ?? {});
+    final localStatus = (doc['status'] ?? '').toString();
     final name = (order['name'] ?? '').toString();
     final amountTotal = order['amountTotal'];
     final currencyName = (order['currencyName'] ?? '').toString();
@@ -162,7 +120,7 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(name.isNotEmpty ? name : widget.orderId.substring(0, 8),
+              Text(name.isNotEmpty ? name : orderId.substring(0, 8),
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w700)),
               Container(
@@ -187,20 +145,27 @@ class _OrderCardState extends ConsumerState<_OrderCard> {
             Text('$amountTotal $currencyName'.trim(),
                 style: const TextStyle(fontSize: 13, color: Colors.black54)),
           ],
-          if (_cancellable(localStatus)) ...[
+          // Patient self-cancellation is intentionally NOT wired to
+          // cancelMarketplaceOrder here (2026-07-16): a real Odoo issue
+          // means sale.order.action_cancel() does not reliably flip the
+          // order's own state even when the backend correctly refuses to
+          // report a false success (see doctor_functions'
+          // cancelMarketplaceOrder — it now safely errors rather than
+          // lying, but a genuine self-service cancel still can't be
+          // guaranteed to work end-to-end). Show a contact-the-pharmacy
+          // notice instead of a non-functional or misleading button until
+          // that root cause is resolved.
+          if (localStatus == 'confirmed') ...[
             const SizedBox(height: 10),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton(
-                onPressed: _cancelling ? null : _cancel,
-                child: _cancelling
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : Text('marketplace_cancel_order'.tr(),
-                        style: const TextStyle(color: Colors.redAccent)),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(Icons.info_outline, size: 14, color: Colors.black38),
+                const SizedBox(width: 4),
+                Text('marketplace_contact_pharmacy_to_cancel'.tr(),
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black45)),
+              ],
             ),
           ],
         ],

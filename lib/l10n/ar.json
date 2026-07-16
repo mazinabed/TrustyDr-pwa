@@ -224,6 +224,7 @@
   "marketplace_order_status_preparing": "قيد التحضير",
   "marketplace_order_status_completed": "مكتمل",
   "marketplace_cancel_order": "إلغاء الطلب",
+  "marketplace_contact_pharmacy_to_cancel": "تواصل مع الصيدلية للإلغاء",
   "marketplace_order_cancelled": "تم إلغاء الطلب",
   "marketplace_category_count": "{count} فئة",
   "marketplace_featured_stores": "متاجر مميزة",
