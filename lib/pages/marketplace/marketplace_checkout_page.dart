@@ -308,17 +308,20 @@ class _MarketplaceCheckoutPageState
   ) {
     final lang = context.locale.languageCode;
     final methods = deliveryMethodsAsync.value ?? const <_DeliveryMethod>[];
-    final selected = methods.where((m) => m.carrierEngineId == _selectedCarrierEngineId
-        || (m.carrierEngineId == null && _selectedCarrierEngineId == null)).toList();
+    final selected = methods
+        .where((m) =>
+            m.carrierEngineId == _selectedCarrierEngineId ||
+            (m.carrierEngineId == null && _selectedCarrierEngineId == null))
+        .toList();
     final selectedMethod = selected.isNotEmpty ? selected.first : null;
     final isDelivery = selectedMethod != null && !selectedMethod.isPickup;
-    final storeName =
-        (lang == 'ar' ? cart.storeNameAr : cart.storeNameEn) ??
-            cart.storeNameEn ??
-            cart.storeNameAr ??
-            '';
+    final storeName = (lang == 'ar' ? cart.storeNameAr : cart.storeNameEn) ??
+        cart.storeNameEn ??
+        cart.storeNameAr ??
+        '';
 
-    final currency = cart.items.isNotEmpty ? cart.items.first.currencyName : null;
+    final currency =
+        cart.items.isNotEmpty ? cart.items.first.currencyName : null;
     final subtotal = cart.estimatedSubtotal;
     final deliveryFee = isDelivery ? (selectedMethod.fee) : 0.0;
     final total = subtotal + deliveryFee;
@@ -375,7 +378,9 @@ class _MarketplaceCheckoutPageState
                   .map((m) => _DeliveryOptionTile(
                         label: m.localizedName(lang),
                         subtitle: m.isPickup || m.fee == 0
-                            ? (m.isPickup ? null : 'marketplace_checkout_free'.tr())
+                            ? (m.isPickup
+                                ? null
+                                : 'marketplace_checkout_free'.tr())
                             : '${m.fee.toStringAsFixed(m.fee.truncateToDouble() == m.fee ? 0 : 2)} ${currency ?? ''}'
                                 .trim(),
                         selected: _selectedCarrierEngineId == m.carrierEngineId,
@@ -405,15 +410,15 @@ class _MarketplaceCheckoutPageState
           if (isDelivery) ...[
             const SizedBox(height: 20),
             Text('marketplace_checkout_delivery_address_section'.tr(),
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.w700)),
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             TextFormField(
               controller: _provinceController,
               decoration: InputDecoration(
                 labelText: 'marketplace_checkout_province_label'.tr(),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -426,8 +431,8 @@ class _MarketplaceCheckoutPageState
               controller: _cityController,
               decoration: InputDecoration(
                 labelText: 'marketplace_checkout_city_label'.tr(),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -441,8 +446,8 @@ class _MarketplaceCheckoutPageState
               maxLines: 2,
               decoration: InputDecoration(
                 labelText: 'marketplace_checkout_address_label'.tr(),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -455,8 +460,8 @@ class _MarketplaceCheckoutPageState
               controller: _noteController,
               decoration: InputDecoration(
                 labelText: 'marketplace_checkout_address_note_label'.tr(),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -477,8 +482,9 @@ class _MarketplaceCheckoutPageState
               children: [
                 _SummaryRow(
                   label: 'marketplace_checkout_subtotal_label'.tr(),
-                  value: '${subtotal.toStringAsFixed(subtotal.truncateToDouble() == subtotal ? 0 : 2)} ${currency ?? ''}'
-                      .trim(),
+                  value:
+                      '${subtotal.toStringAsFixed(subtotal.truncateToDouble() == subtotal ? 0 : 2)} ${currency ?? ''}'
+                          .trim(),
                 ),
                 const SizedBox(height: 6),
                 _SummaryRow(
@@ -493,8 +499,9 @@ class _MarketplaceCheckoutPageState
                 const Divider(height: 20),
                 _SummaryRow(
                   label: 'marketplace_checkout_total_label'.tr(),
-                  value: '${total.toStringAsFixed(total.truncateToDouble() == total ? 0 : 2)} ${currency ?? ''}'
-                      .trim(),
+                  value:
+                      '${total.toStringAsFixed(total.truncateToDouble() == total ? 0 : 2)} ${currency ?? ''}'
+                          .trim(),
                   bold: true,
                 ),
               ],

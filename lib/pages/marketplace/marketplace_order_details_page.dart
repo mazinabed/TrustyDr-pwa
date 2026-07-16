@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -16,22 +18,48 @@ import 'package:trustydr/widgets/web_scaffold_container.dart';
 /// (getMarketplaceOrderStatus) is layered on top ONLY on this single-order
 /// details screen — appropriate here (one document, patient-initiated),
 /// never done from the list page (low-read architecture).
+///
+/// A single-document `.doc().snapshots()` needs no composite index (unlike
+/// the order-list page's query), so it isn't exposed to that specific
+/// failure mode — but the same "never wipe an already-loaded screen on a
+/// transient refresh error" rule still applies, so errors keep the last
+/// good snapshot instead of flipping the page to "not found."
 final _orderDetailsProvider = StreamProvider.autoDispose
     .family<DocumentSnapshot<Map<String, dynamic>>?, String>((ref, orderId) {
   final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return const Stream.empty();
-  return FirebaseFirestore.instance
+  if (user == null) return Stream.value(null);
+
+  final controller =
+      StreamController<DocumentSnapshot<Map<String, dynamic>>?>();
+  DocumentSnapshot<Map<String, dynamic>>? lastGood;
+
+  final subscription = FirebaseFirestore.instance
       .collection('marketplace_orders')
       .doc(orderId)
-      .snapshots();
+      .snapshots()
+      .listen(
+    (snap) {
+      lastGood = snap;
+      if (!controller.isClosed) controller.add(snap);
+    },
+    onError: (Object error, StackTrace stack) {
+      debugPrint(
+          '[marketplace_order_details] live refresh failed (${error.runtimeType}); keeping last known snapshot.');
+      if (!controller.isClosed) controller.add(lastGood);
+    },
+  );
+  ref.onDispose(() {
+    subscription.cancel();
+    controller.close();
+  });
+  return controller.stream;
 });
 
 /// Live Odoo state/pickingState — read once per page visit, only for a
 /// 'confirmed' order. Failure degrades to showing the locally-cached status
 /// only (never blocks the rest of the page from rendering).
-final _liveStatusProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>?, String>(
-        (ref, orderId) async {
+final _liveStatusProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>?, String>((ref, orderId) async {
   try {
     final callable =
         FirebaseFunctions.instance.httpsCallable('getMarketplaceOrderStatus');
@@ -103,14 +131,34 @@ class _OrderDetailsBody extends ConsumerWidget {
     return d.toStringAsFixed(d.truncateToDouble() == d ? 0 : 2);
   }
 
+  /// Safe numeric coercion — `as num?` throws on a non-null, non-num value
+  /// (a real risk for a legacy/malformed document); `is num` never does.
+  num? _num(dynamic v) => v is num ? v : null;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    try {
+      return _buildBody(context, ref);
+    } catch (e) {
+      // One malformed/legacy order must not crash the whole page — log
+      // sanitized (error type + orderId only, never field contents) and
+      // fall back to a minimal, still-useful view.
+      debugPrint(
+          '[marketplace_order_details] failed to render order $orderId: ${e.runtimeType}');
+      return Center(child: Text('marketplace_order_details_not_found'.tr()));
+    }
+  }
+
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
     final lang = context.locale.languageCode;
-    final order = Map<String, dynamic>.from(data['order'] as Map? ?? {});
+    final orderRaw = data['order'];
+    final order =
+        orderRaw is Map ? Map<String, dynamic>.from(orderRaw) : const {};
     final localStatus = (data['status'] ?? '').toString();
     final isDelivery = data['deliveryCarrierEngineId'] != null;
-    final deliveryAddress = data['deliveryAddress'] is Map
-        ? Map<String, dynamic>.from(data['deliveryAddress'] as Map)
+    final deliveryAddressRaw = data['deliveryAddress'];
+    final deliveryAddress = deliveryAddressRaw is Map
+        ? Map<String, dynamic>.from(deliveryAddressRaw)
         : null;
     final storeName = lang == 'ar'
         ? ((data['storeNameAr'] ?? data['storeNameEn']) ?? '').toString()
@@ -122,9 +170,12 @@ class _OrderDetailsBody extends ConsumerWidget {
             .format(createdAt.toDate())
         : '';
     final currencyName = (order['currencyName'] ?? '').toString();
-    final lines = order['lines'] is List
-        ? List<Map<String, dynamic>>.from(
-            (order['lines'] as List).map((e) => Map<String, dynamic>.from(e as Map)))
+    final linesRaw = order['lines'];
+    final lines = linesRaw is List
+        ? linesRaw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
         : const <Map<String, dynamic>>[];
     final liveStatusAsync = localStatus == 'confirmed'
         ? ref.watch(_liveStatusProvider(orderId))
@@ -153,8 +204,8 @@ class _OrderDetailsBody extends ConsumerWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: PatientAppColors.brandTeal.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(8),
@@ -172,12 +223,14 @@ class _OrderDetailsBody extends ConsumerWidget {
               if (storeName.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(storeName,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                    style:
+                        const TextStyle(fontSize: 13, color: Colors.black54)),
               ],
               if (createdAtText.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(createdAtText,
-                    style: const TextStyle(fontSize: 12, color: Colors.black45)),
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black45)),
               ],
               const SizedBox(height: 8),
               Row(
@@ -226,7 +279,7 @@ class _OrderDetailsBody extends ConsumerWidget {
                                     fontSize: 12.5, color: Colors.black54)),
                             const SizedBox(width: 10),
                             Text(
-                              '${_fmt(l['priceTotal'] as num?)} $currencyName'
+                              '${_fmt(_num(l['priceTotal']))} $currencyName'
                                   .trim(),
                               style: const TextStyle(
                                   fontSize: 13.5, fontWeight: FontWeight.w600),
@@ -248,21 +301,22 @@ class _OrderDetailsBody extends ConsumerWidget {
           child: Column(
             children: [
               _row('marketplace_checkout_subtotal_label'.tr(),
-                  '${_fmt(order['amountUntaxed'] as num?)} $currencyName'.trim()),
+                  '${_fmt(_num(order['amountUntaxed']))} $currencyName'.trim()),
               const SizedBox(height: 6),
               _row('marketplace_order_details_tax_label'.tr(),
-                  '${_fmt(order['amountTax'] as num?)} $currencyName'.trim()),
+                  '${_fmt(_num(order['amountTax']))} $currencyName'.trim()),
               const SizedBox(height: 6),
               _row(
                 'marketplace_checkout_delivery_fee_label'.tr(),
                 order['deliveryAmount'] != null
-                    ? '${_fmt(order['deliveryAmount'] as num?)} $currencyName'.trim()
+                    ? '${_fmt(_num(order['deliveryAmount']))} $currencyName'
+                        .trim()
                     : 'marketplace_checkout_free'.tr(),
               ),
               const Divider(height: 20),
               _row(
                 'marketplace_checkout_total_label'.tr(),
-                '${_fmt(order['amountTotal'] as num?)} $currencyName'.trim(),
+                '${_fmt(_num(order['amountTotal']))} $currencyName'.trim(),
                 bold: true,
               ),
             ],
@@ -320,8 +374,8 @@ class _OrderDetailsBody extends ConsumerWidget {
                 if ((deliveryAddress['note'] ?? '').toString().isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text((deliveryAddress['note'] ?? '').toString(),
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black45)),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black45)),
                 ],
               ],
             ),
@@ -349,20 +403,24 @@ class _OrderDetailsBody extends ConsumerWidget {
           liveStatusAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-            data: (live) => live == null
-                ? const SizedBox.shrink()
-                : Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      '${live['state'] ?? ''} · ${live['pickingState'] ?? ''}'
-                          .trim(),
-                      style: const TextStyle(fontSize: 13, color: Colors.black54),
-                    ),
-                  ),
+            data: (live) {
+              final labelKey = _liveStatusLabelKey(
+                (live?['state'])?.toString(),
+                (live?['pickingState'])?.toString(),
+              );
+              if (labelKey == null) return const SizedBox.shrink();
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  labelKey.tr(),
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                ),
+              );
+            },
           ),
         ],
         const SizedBox(height: 20),
@@ -396,6 +454,33 @@ class _OrderDetailsBody extends ConsumerWidget {
       default:
         return 'marketplace_order_status_preparing';
     }
+  }
+
+  // Maps Odoo's own native sale.order.state + stock.picking.state (Odoo 17
+  // — no 'done' state on sale.order; the delivery/fulfillment signal lives
+  // entirely on the picking) to a LOCALIZED supplementary label — never
+  // raw Odoo strings shown to the patient. This is purely supplementary
+  // detail layered on top of the primary, always-localized status badge
+  // above (driven by our own `status` field); it never changes Active/Past
+  // bucketing. Verified against odooDriver.ts's own getSalesOrderStatus
+  // (reads sale.order.state + the first linked stock.picking.state) rather
+  // than guessed. Both pickup and delivery orders get a stock.picking on
+  // confirmation (Odoo creates one for any stockable product regardless of
+  // delivery carrier) — pickup vs delivery is distinguished by the
+  // separate is_delivery order line + partner_shipping_id, not by picking
+  // presence, so this mapping intentionally does not vary by isDelivery.
+  String? _liveStatusLabelKey(String? state, String? pickingState) {
+    if (state == 'cancel') return 'marketplace_live_status_cancelled';
+    if (state == 'sale') {
+      if (pickingState == 'done') return 'marketplace_live_status_fulfilled';
+      if (pickingState == 'assigned') return 'marketplace_live_status_ready';
+      // null/draft/waiting/confirmed all mean stock hasn't been fully
+      // reserved/handed over yet — still "being prepared."
+      return 'marketplace_live_status_preparing';
+    }
+    // draft/sent (pre-confirmation) never reaches the patient — every
+    // order created by createPatientOrder is action_confirm'd immediately.
+    return null;
   }
 
   Widget _row(String label, String value, {bool bold = false}) {
