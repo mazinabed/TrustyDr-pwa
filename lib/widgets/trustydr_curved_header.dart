@@ -91,12 +91,21 @@ import 'package:trustydr/core/theme/patient_app_colors.dart';
 class TrustyDrCurvedHeader extends StatelessWidget {
   final String title;
   final bool showBack;
+  // Optional, purely presentational — defaults to null so every existing
+  // caller across the app is completely unaffected. Rendered next to the
+  // back button (never touching the opposite/logo edge), so adding it
+  // never displaces this widget's own branding placement. Milestone 6
+  // (Marketplace persistent Cart action) is this parameter's only caller
+  // today; kept generic (not Marketplace-specific) since this file is
+  // shared infrastructure used by many non-Marketplace screens.
+  final Widget? trailing;
 
   const TrustyDrCurvedHeader({
     super.key,
     required this.title,
     this.showBack = true,
     required int height, // kept as requested
+    this.trailing,
   });
 
   @override
@@ -130,35 +139,53 @@ class TrustyDrCurvedHeader extends StatelessWidget {
               ),
 
               // ───────── Center: Title ─────────
-              Center(
-                child: Text(
-                  title, // Used the variable title
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.4,
+              // Horizontal padding + ellipsis added alongside Milestone 6's
+              // optional `trailing` slot: a longer title (e.g. a category
+              // name on the Marketplace Products page) must never overlap
+              // the back button/trailing icons on a narrow screen — safe
+              // and inert for every existing short-title caller too.
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: sideWidth + (trailing != null ? 40 : 0),
+                ),
+                child: Center(
+                  child: Text(
+                    title, // Used the variable title
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.4,
+                    ),
                   ),
                 ),
               ),
 
-              // ───────── Back Button (Kept your logic) ─────────
+              // ───────── Back Button (Kept your logic) + optional trailing ─────────
               Positioned(
                 // In EN: left is 0. In AR: right is 0.
                 left: isRtl ? null : 0,
                 right: isRtl ? 0 : null,
-                child: SizedBox(
-                  width: sideWidth,
-                  child: showBack
-                      ? IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        )
-                      : const SizedBox.shrink(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: sideWidth,
+                      child: showBack
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    if (trailing != null) trailing!,
+                  ],
                 ),
               ),
             ],

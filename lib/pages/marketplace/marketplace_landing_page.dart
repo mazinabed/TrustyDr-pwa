@@ -6,6 +6,7 @@ import 'package:trustydr/core/providers/app_location_provider.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_all_categories_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
@@ -54,6 +55,7 @@ class _MarketplaceLandingPageState
                 title: 'marketplace_enter_stores'.tr(),
                 showBack: true,
                 height: 120,
+                trailing: const MarketplaceCartAction(compact: true),
               ),
               const SizedBox(height: 12),
               Padding(

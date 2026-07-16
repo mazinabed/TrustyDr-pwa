@@ -5,6 +5,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/login_signup/login.dart';
+import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_store_card.dart'
     show MarketplaceBannerGradient, MarketplaceLogoFallback;
@@ -250,6 +251,16 @@ class MarketplaceStoreHeader extends StatelessWidget {
                 child: SafeArea(
                   bottom: false,
                   child: _BackButton(),
+                ),
+              ),
+              PositionedDirectional(
+                top: 12,
+                end: 12,
+                child: SafeArea(
+                  bottom: false,
+                  child: MarketplaceCartAction(
+                    chipBackground: Colors.black.withValues(alpha: 0.28),
+                  ),
                 ),
               ),
               PositionedDirectional(

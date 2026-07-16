@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
@@ -40,6 +41,7 @@ class MarketplaceAllCategoriesPage extends StatelessWidget {
                 title: 'marketplace_all_categories'.tr(),
                 showBack: true,
                 height: 110,
+                trailing: const MarketplaceCartAction(compact: true),
               ),
               const SizedBox(height: 8),
               Expanded(

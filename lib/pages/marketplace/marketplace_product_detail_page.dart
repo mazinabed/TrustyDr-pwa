@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/marketplace_cart_provider.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
@@ -241,6 +242,12 @@ class _ProductDetailBody extends StatelessWidget {
             color: Colors.black87,
             onPressed: () => Navigator.pop(context),
           ),
+          actions: const [
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: 4),
+              child: MarketplaceCartAction(iconColor: Colors.black87),
+            ),
+          ],
           flexibleSpace: FlexibleSpaceBar(
             background: url.startsWith('http')
                 ? Container(

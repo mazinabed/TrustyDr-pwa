@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_tree_nav.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
@@ -240,7 +241,12 @@ class _MarketplaceProductsPageState
 
         Widget content = Column(
           children: [
-            TrustyDrCurvedHeader(title: pageTitle, showBack: true, height: 120),
+            TrustyDrCurvedHeader(
+              title: pageTitle,
+              showBack: true,
+              height: 120,
+              trailing: const MarketplaceCartAction(compact: true),
+            ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
