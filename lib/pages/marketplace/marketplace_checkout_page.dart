@@ -1,46 +1,64 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:trustydr/core/providers/marketplace_cart_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
-import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
-/// One delivery option Odoo actually offers, as returned by
-/// getMarketplaceDeliveryMethods (a thin relay to Commerce's own
-/// delivery.carrier read — see doctor_functions/functions/commerce/
-/// marketplaceCheckout.js). fixedPrice is DISPLAY-ONLY here too: the
-/// authoritative fee is whatever Odoo computes again at order-confirm time
-/// (placeMarketplaceOrderForHealthcare re-reads the carrier's own
-/// fixed_price live, never trusting this cached copy).
+/// One delivery option Odoo (or the synthetic pickup entry) actually offers,
+/// as returned by getMarketplaceDeliveryMethods (a thin relay to Commerce's
+/// own delivery.carrier read, PLUS a synthesized pickup entry — see
+/// doctor_functions/functions/commerce/marketplaceCheckout.js's own
+/// DELIVERY_METHOD_LABELS/getMarketplaceDeliveryMethods). `fee` is
+/// DISPLAY-ONLY here too: the authoritative fee is whatever Odoo computes
+/// again at order-confirm time (placeMarketplaceOrderForHealthcare re-reads
+/// the carrier's own fixed_price live, never trusting this cached copy).
+/// Labels are fixed, reviewed EN/AR/KU strings keyed by [deliveryType] —
+/// never derived from inspecting Odoo's raw English carrier name.
 class _DeliveryMethod {
   const _DeliveryMethod({
-    required this.engineId,
-    required this.name,
-    required this.fixedPrice,
+    required this.carrierEngineId,
+    required this.deliveryType,
+    required this.nameEn,
+    required this.nameAr,
+    required this.nameKu,
+    required this.fee,
   });
 
-  final String engineId;
-  final String name;
-  final double? fixedPrice;
+  /// Null for pickup (no Odoo delivery.carrier — the Phase-1
+  /// no-carrier-selected checkout path).
+  final String? carrierEngineId;
+  final String deliveryType; // 'pickup' | 'delivery'
+  final String nameEn;
+  final String nameAr;
+  final String nameKu;
+  final double fee;
+
+  bool get isPickup => carrierEngineId == null;
+
+  String localizedName(String lang) {
+    if (lang == 'ar') return nameAr;
+    if (lang == 'ku') return nameKu;
+    return nameEn;
+  }
 
   factory _DeliveryMethod.fromMap(Map<String, dynamic> m) => _DeliveryMethod(
-        engineId: m['engineId']?.toString() ?? '',
-        name: m['name']?.toString() ?? '',
-        fixedPrice: (m['fixedPrice'] is num)
-            ? (m['fixedPrice'] as num).toDouble()
-            : null,
+        carrierEngineId: m['carrierEngineId']?.toString(),
+        deliveryType: m['deliveryType']?.toString() ?? 'delivery',
+        nameEn: m['name_en']?.toString() ?? '',
+        nameAr: m['name_ar']?.toString() ?? '',
+        nameKu: m['name_ku']?.toString() ?? '',
+        fee: (m['fee'] is num) ? (m['fee'] as num).toDouble() : 0,
       );
 }
 
-/// Fetches Odoo's real delivery.carrier list once per checkout visit. A
-/// failure here (e.g. the relay isn't reachable) degrades to "pickup only"
-/// rather than blocking checkout entirely — delivery selection is an
-/// enhancement to the order, not a precondition for placing one.
+/// Fetches the pickup + real Odoo delivery.carrier list once per checkout
+/// visit. A failure here (e.g. the relay isn't reachable) degrades to a
+/// pickup-only default rather than blocking checkout entirely.
 final _deliveryMethodsProvider =
     FutureProvider.autoDispose<List<_DeliveryMethod>>((ref) async {
   try {
@@ -52,12 +70,63 @@ final _deliveryMethodsProvider =
     return raw
         .map(
             (e) => _DeliveryMethod.fromMap(Map<String, dynamic>.from(e as Map)))
-        .where((m) => m.engineId.isNotEmpty)
         .toList();
   } catch (_) {
-    // Pickup-only degradation — see class header comment.
-    return const [];
+    // Pickup-only degradation — see provider header comment.
+    return const [
+      _DeliveryMethod(
+        carrierEngineId: null,
+        deliveryType: 'pickup',
+        nameEn: 'Store Pickup',
+        nameAr: 'الاستلام من المتجر',
+        nameKu: 'وەرگرتن لە فرۆشگا',
+        fee: 0,
+      ),
+    ];
   }
+});
+
+/// The authenticated patient's real profile, resolved server-side
+/// (getMarketplaceCheckoutProfile — doctor_functions/functions/commerce/
+/// marketplaceCheckout.js) — never a client-side guess (Firebase Auth
+/// displayName can be empty/stale). Used ONLY to prefill the form; the
+/// patient may still edit every field before submitting, and the identity
+/// actually bound to the Odoo customer record is re-resolved server-side
+/// again at order-placement time regardless of what this page shows.
+class _CheckoutProfile {
+  const _CheckoutProfile({
+    required this.name,
+    required this.phone,
+    required this.homeAddress,
+  });
+
+  final String name;
+  final String phone;
+  final Map<String, String>? homeAddress;
+
+  factory _CheckoutProfile.fromMap(Map<String, dynamic> m) {
+    final addr = m['homeAddress'];
+    return _CheckoutProfile(
+      name: m['name']?.toString() ?? '',
+      phone: m['phone']?.toString() ?? '',
+      homeAddress: addr is Map
+          ? {
+              'province': addr['province']?.toString() ?? '',
+              'city': addr['city']?.toString() ?? '',
+              'full': addr['full']?.toString() ?? '',
+              'note': addr['note']?.toString() ?? '',
+            }
+          : null,
+    );
+  }
+}
+
+final _checkoutProfileProvider =
+    FutureProvider.autoDispose<_CheckoutProfile>((ref) async {
+  final callable =
+      FirebaseFunctions.instance.httpsCallable('getMarketplaceCheckoutProfile');
+  final result = await callable.call<Map<String, dynamic>>();
+  return _CheckoutProfile.fromMap(result.data);
 });
 
 /// Checkout (Milestone 6). Reached only after ensureMarketplaceLogin has
@@ -75,27 +144,50 @@ class MarketplaceCheckoutPage extends ConsumerStatefulWidget {
 class _MarketplaceCheckoutPageState
     extends ConsumerState<MarketplaceCheckoutPage> {
   final _nameController = TextEditingController();
+  final _provinceController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _noteController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   PhoneNumber _phoneNumber = PhoneNumber(isoCode: 'IQ');
-  String? _selectedDeliveryEngineId; // null == pickup
+  String? _selectedCarrierEngineId; // null == pickup
   bool _placing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final user = FirebaseAuth.instance.currentUser;
-    _nameController.text = user?.displayName ?? '';
-  }
+  bool _prefilled = false;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _provinceController.dispose();
+    _cityController.dispose();
+    _addressController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
-  Future<void> _placeOrder(Cart cart) async {
+  // Prefill is a one-time default from the patient's real profile — once
+  // applied, further profile refetches (e.g. autoDispose re-runs) must
+  // never clobber an in-progress edit the patient has already made.
+  void _applyPrefill(_CheckoutProfile profile) {
+    if (_prefilled) return;
+    _prefilled = true;
+    if (_nameController.text.isEmpty) _nameController.text = profile.name;
+    if (profile.phone.isNotEmpty) {
+      _phoneNumber = PhoneNumber(phoneNumber: profile.phone, isoCode: 'IQ');
+    }
+    final addr = profile.homeAddress;
+    if (addr != null) {
+      _provinceController.text = addr['province'] ?? '';
+      _cityController.text = addr['city'] ?? '';
+      _addressController.text = addr['full'] ?? '';
+      _noteController.text = addr['note'] ?? '';
+    }
+  }
+
+  Future<void> _placeOrder(Cart cart, _DeliveryMethod? selected) async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _placing = true);
+
+    final isDelivery = selected != null && !selected.isPickup;
 
     try {
       // A fresh, random unique key per checkout attempt — reused verbatim
@@ -116,49 +208,61 @@ class _MarketplaceCheckoutPageState
             .map((i) =>
                 {'productEngineId': i.productEngineId, 'quantity': i.quantity})
             .toList(),
-        'deliveryCarrierEngineId': _selectedDeliveryEngineId,
-        'patientName': _nameController.text.trim(),
-        'patientPhone': _phoneNumber.phoneNumber,
+        'deliveryCarrierEngineId': selected?.carrierEngineId,
+        'deliveryAddress': isDelivery
+            ? {
+                'name': _nameController.text.trim(),
+                'phone': _phoneNumber.phoneNumber,
+                'province': _provinceController.text.trim(),
+                'city': _cityController.text.trim(),
+                'full': _addressController.text.trim(),
+                'note': _noteController.text.trim(),
+              }
+            : null,
+        'locale': context.locale.languageCode,
+        'storeNameEn': cart.storeNameEn,
+        'storeNameAr': cart.storeNameAr,
       });
 
+      final orderId = (result.data['orderId'] ?? idempotencyKey).toString();
       final order =
           Map<String, dynamic>.from(result.data['order'] as Map? ?? {});
       await ref.read(marketplaceCartProvider.notifier).clear();
 
       if (!mounted) return;
+      // Land directly on the new order's details page — the confirmation
+      // flow's real entry point, not a temporary SnackBar the patient could
+      // miss (a lightweight toast is shown alongside, not instead of, this
+      // navigation).
       Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MarketplaceOrderDetailsPage(orderId: orderId),
+        ),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          content: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'marketplace_order_placed'.tr(namedArgs: {
-                    'name': (order['name'] ?? '').toString(),
-                  }),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const MarketplaceOrdersPage()),
-                ),
-                child: Text('marketplace_view_my_orders'.tr(),
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
+          content: Text('marketplace_order_placed'.tr(namedArgs: {
+            'name': (order['name'] ?? '').toString(),
+          })),
         ),
       );
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
-      final message = e.code == 'failed-precondition'
-          ? (e.message ?? 'marketplace_checkout_generic_error'.tr())
-          : 'marketplace_checkout_generic_error'.tr();
+      String message;
+      if (e.code == 'invalid-argument' &&
+          (e.details is Map) &&
+          (e.details as Map)['code'] == 'delivery_address_required') {
+        message = 'marketplace_checkout_delivery_address_required_error'.tr();
+      } else if (e.code == 'failed-precondition' &&
+          (e.message ?? '').toLowerCase().contains('profile name')) {
+        message = 'marketplace_checkout_profile_incomplete_error'.tr();
+      } else if (e.code == 'failed-precondition') {
+        message = e.message ?? 'marketplace_checkout_generic_error'.tr();
+      } else {
+        message = 'marketplace_checkout_generic_error'.tr();
+      }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     } catch (_) {
@@ -175,6 +279,8 @@ class _MarketplaceCheckoutPageState
   Widget build(BuildContext context) {
     final cart = ref.watch(marketplaceCartProvider);
     final deliveryMethodsAsync = ref.watch(_deliveryMethodsProvider);
+    final profileAsync = ref.watch(_checkoutProfileProvider);
+    profileAsync.whenData(_applyPrefill);
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -200,6 +306,23 @@ class _MarketplaceCheckoutPageState
     Cart cart,
     AsyncValue<List<_DeliveryMethod>> deliveryMethodsAsync,
   ) {
+    final lang = context.locale.languageCode;
+    final methods = deliveryMethodsAsync.value ?? const <_DeliveryMethod>[];
+    final selected = methods.where((m) => m.carrierEngineId == _selectedCarrierEngineId
+        || (m.carrierEngineId == null && _selectedCarrierEngineId == null)).toList();
+    final selectedMethod = selected.isNotEmpty ? selected.first : null;
+    final isDelivery = selectedMethod != null && !selectedMethod.isPickup;
+    final storeName =
+        (lang == 'ar' ? cart.storeNameAr : cart.storeNameEn) ??
+            cart.storeNameEn ??
+            cart.storeNameAr ??
+            '';
+
+    final currency = cart.items.isNotEmpty ? cart.items.first.currencyName : null;
+    final subtotal = cart.estimatedSubtotal;
+    final deliveryFee = isDelivery ? (selectedMethod.fee) : 0.0;
+    final total = subtotal + deliveryFee;
+
     return Form(
       key: _formKey,
       child: ListView(
@@ -246,34 +369,138 @@ class _MarketplaceCheckoutPageState
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
-            error: (_, __) => _DeliveryOptionTile(
-              label: 'marketplace_checkout_pickup_option'.tr(),
-              subtitle: null,
-              selected: true,
-              onTap: () {},
+            error: (_, __) => const SizedBox.shrink(),
+            data: (loadedMethods) => Column(
+              children: loadedMethods
+                  .map((m) => _DeliveryOptionTile(
+                        label: m.localizedName(lang),
+                        subtitle: m.isPickup || m.fee == 0
+                            ? (m.isPickup ? null : 'marketplace_checkout_free'.tr())
+                            : '${m.fee.toStringAsFixed(m.fee.truncateToDouble() == m.fee ? 0 : 2)} ${currency ?? ''}'
+                                .trim(),
+                        selected: _selectedCarrierEngineId == m.carrierEngineId,
+                        onTap: () => setState(
+                            () => _selectedCarrierEngineId = m.carrierEngineId),
+                      ))
+                  .toList(),
             ),
-            data: (methods) => Column(
+          ),
+          if (!isDelivery && storeName.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
               children: [
-                _DeliveryOptionTile(
-                  label: 'marketplace_checkout_pickup_option'.tr(),
-                  subtitle: null,
-                  selected: _selectedDeliveryEngineId == null,
-                  onTap: () => setState(() => _selectedDeliveryEngineId = null),
+                const Icon(Icons.storefront, size: 15, color: Colors.black45),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'marketplace_checkout_pickup_location'
+                        .tr(namedArgs: {'store': storeName}),
+                    style:
+                        const TextStyle(fontSize: 12.5, color: Colors.black54),
+                  ),
                 ),
-                ...methods.map((m) => _DeliveryOptionTile(
-                      label: m.name,
-                      subtitle: m.fixedPrice?.toStringAsFixed(
-                          m.fixedPrice!.truncateToDouble() == m.fixedPrice
-                              ? 0
-                              : 2),
-                      selected: _selectedDeliveryEngineId == m.engineId,
-                      onTap: () => setState(
-                          () => _selectedDeliveryEngineId = m.engineId),
-                    )),
+              ],
+            ),
+          ],
+          if (isDelivery) ...[
+            const SizedBox(height: 20),
+            Text('marketplace_checkout_delivery_address_section'.tr(),
+                style: const TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _provinceController,
+              decoration: InputDecoration(
+                labelText: 'marketplace_checkout_province_label'.tr(),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
+                  ? 'marketplace_checkout_address_required'.tr()
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _cityController,
+              decoration: InputDecoration(
+                labelText: 'marketplace_checkout_city_label'.tr(),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
+                  ? 'marketplace_checkout_address_required'.tr()
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _addressController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'marketplace_checkout_address_label'.tr(),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
+                  ? 'marketplace_checkout_address_required'.tr()
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _noteController,
+              decoration: InputDecoration(
+                labelText: 'marketplace_checkout_address_note_label'.tr(),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          Text('marketplace_checkout_order_summary_section'.tr(),
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _SummaryRow(
+                  label: 'marketplace_checkout_subtotal_label'.tr(),
+                  value: '${subtotal.toStringAsFixed(subtotal.truncateToDouble() == subtotal ? 0 : 2)} ${currency ?? ''}'
+                      .trim(),
+                ),
+                const SizedBox(height: 6),
+                _SummaryRow(
+                  label: 'marketplace_checkout_delivery_fee_label'.tr(),
+                  value: !isDelivery
+                      ? 'marketplace_checkout_free'.tr()
+                      : (deliveryFee == 0
+                          ? 'marketplace_checkout_free'.tr()
+                          : '${deliveryFee.toStringAsFixed(deliveryFee.truncateToDouble() == deliveryFee ? 0 : 2)} ${currency ?? ''}'
+                              .trim()),
+                ),
+                const Divider(height: 20),
+                _SummaryRow(
+                  label: 'marketplace_checkout_total_label'.tr(),
+                  value: '${total.toStringAsFixed(total.truncateToDouble() == total ? 0 : 2)} ${currency ?? ''}'
+                      .trim(),
+                  bold: true,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 48,
@@ -285,8 +512,9 @@ class _MarketplaceCheckoutPageState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed:
-                  (_placing || cart.isEmpty) ? null : () => _placeOrder(cart),
+              onPressed: (_placing || cart.isEmpty)
+                  ? null
+                  : () => _placeOrder(cart, selectedMethod),
               child: _placing
                   ? const SizedBox(
                       width: 22,
@@ -301,6 +529,34 @@ class _MarketplaceCheckoutPageState
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+  });
+
+  final String label;
+  final String value;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = TextStyle(
+      fontSize: bold ? 14.5 : 13,
+      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+      color: bold ? Colors.black87 : Colors.black54,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: style),
+        Text(value, style: style),
+      ],
     );
   }
 }

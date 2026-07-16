@@ -6,6 +6,7 @@ import 'package:trustydr/pages/contact_us_page.dart';
 import 'package:trustydr/pages/faq_page.dart';
 import 'package:trustydr/pages/help_support.dart';
 import 'package:trustydr/pages/legal_disclaimer_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
 import 'package:trustydr/pages/privacy_policy_page.dart';
 import 'package:trustydr/pages/profile/home_address_page.dart';
 import 'package:trustydr/pages/screens.dart';
@@ -370,6 +371,13 @@ class _ProfileState extends State<Profile> {
                                       onTap: () => _guardedPush(
                                           const MyAppointmentsPage(
                                               showBack: true)),
+                                    ),
+                                    _ActionItem(
+                                      color: PatientAppColors.brandTeal,
+                                      icon: Icons.receipt_long,
+                                      label: tr('my_orders'),
+                                      onTap: () => _guardedPush(
+                                          const MarketplaceOrdersPage()),
                                     ),
                                     _ActionItem(
                                       color: Colors.purple,

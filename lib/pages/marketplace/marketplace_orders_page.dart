@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 /// Order History / tracking (Milestone 6). marketplace_orders is the
@@ -28,11 +29,41 @@ final _myMarketplaceOrdersProvider = StreamProvider.autoDispose<
       .map((snap) => snap.docs);
 });
 
-class MarketplaceOrdersPage extends ConsumerWidget {
+// Active vs Past split uses ONLY the real, deployed `status` field written
+// by placeMarketplaceOrder/cancelMarketplaceOrder (pending/confirmed/
+// failed/cancelled) — no invented status. 'confirmed' means the Odoo
+// sale.order was created; this app has no separate fulfillment-tracking
+// webhook back from Odoo yet, so a 'confirmed' order stays under Active
+// for its whole lifecycle today (matching the actual deployed status
+// mapping, not a guessed future one).
+bool _isActive(String status) => status == 'pending' || status == 'confirmed';
+
+class MarketplaceOrdersPage extends ConsumerStatefulWidget {
   const MarketplaceOrdersPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MarketplaceOrdersPage> createState() =>
+      _MarketplaceOrdersPageState();
+}
+
+class _MarketplaceOrdersPageState extends ConsumerState<MarketplaceOrdersPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ordersAsync = ref.watch(_myMarketplaceOrdersProvider);
 
     return Scaffold(
@@ -42,6 +73,16 @@ class MarketplaceOrdersPage extends ConsumerWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: PatientAppColors.brandTeal,
+          unselectedLabelColor: Colors.black45,
+          indicatorColor: PatientAppColors.brandTeal,
+          tabs: [
+            Tab(text: 'marketplace_orders_tab_active'.tr()),
+            Tab(text: 'marketplace_orders_tab_past'.tr()),
+          ],
+        ),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -49,16 +90,28 @@ class MarketplaceOrdersPage extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) =>
                 Center(child: Text('marketplace_checkout_generic_error'.tr())),
-            data: (docs) => docs.isEmpty
-                ? Center(
-                    child: Text('marketplace_no_orders'.tr(),
-                        style: const TextStyle(color: Colors.black54)))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) => _OrderCard(
-                        doc: docs[index].data(), orderId: docs[index].id),
+            data: (docs) {
+              final active = docs
+                  .where((d) => _isActive((d.data()['status'] ?? '').toString()))
+                  .toList();
+              final past = docs
+                  .where(
+                      (d) => !_isActive((d.data()['status'] ?? '').toString()))
+                  .toList();
+              return TabBarView(
+                controller: _tabController,
+                children: [
+                  _OrderList(
+                    docs: active,
+                    emptyLabelKey: 'marketplace_no_active_orders',
                   ),
+                  _OrderList(
+                    docs: past,
+                    emptyLabelKey: 'marketplace_no_past_orders',
+                  ),
+                ],
+              );
+            },
           );
           if (constraints.maxWidth >= 768) {
             content = WebScaffoldContainer(child: content);
@@ -66,6 +119,29 @@ class MarketplaceOrdersPage extends ConsumerWidget {
           return content;
         },
       ),
+    );
+  }
+}
+
+class _OrderList extends StatelessWidget {
+  const _OrderList({required this.docs, required this.emptyLabelKey});
+
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
+  final String emptyLabelKey;
+
+  @override
+  Widget build(BuildContext context) {
+    if (docs.isEmpty) {
+      return Center(
+        child: Text(emptyLabelKey.tr(),
+            style: const TextStyle(color: Colors.black54)),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: docs.length,
+      itemBuilder: (context, index) =>
+          _OrderCard(doc: docs[index].data(), orderId: docs[index].id),
     );
   }
 }
@@ -95,80 +171,125 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.locale.languageCode;
     final order = Map<String, dynamic>.from(doc['order'] as Map? ?? {});
     final localStatus = (doc['status'] ?? '').toString();
     final name = (order['name'] ?? '').toString();
     final amountTotal = order['amountTotal'];
     final currencyName = (order['currencyName'] ?? '').toString();
+    final isDelivery = doc['deliveryCarrierEngineId'] != null;
+    final storeName = lang == 'ar'
+        ? ((doc['storeNameAr'] ?? doc['storeNameEn']) ?? '').toString()
+        : ((doc['storeNameEn'] ?? doc['storeNameAr']) ?? '').toString();
+    final createdAt = doc['createdAt'];
+    final createdAtText = createdAt is Timestamp
+        ? DateFormat.yMMMd(lang).add_jm().format(createdAt.toDate())
+        : '';
+    final requestedLines = doc['requestedLines'];
+    final itemCount = order['lines'] is List
+        ? (order['lines'] as List).length
+        : (requestedLines is List ? requestedLines.length : 0);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
-        ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => MarketplaceOrderDetailsPage(orderId: orderId),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(name.isNotEmpty ? name : orderId.substring(0, 8),
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: PatientAppColors.brandTeal.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _statusLabelKey(localStatus).tr(),
-                  style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: PatientAppColors.brandTeal),
-                ),
-              ),
-            ],
-          ),
-          if (amountTotal != null) ...[
-            const SizedBox(height: 6),
-            Text('$amountTotal $currencyName'.trim(),
-                style: const TextStyle(fontSize: 13, color: Colors.black54)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
           ],
-          // Patient self-cancellation is intentionally NOT wired to
-          // cancelMarketplaceOrder here (2026-07-16): a real Odoo issue
-          // means sale.order.action_cancel() does not reliably flip the
-          // order's own state even when the backend correctly refuses to
-          // report a false success (see doctor_functions'
-          // cancelMarketplaceOrder — it now safely errors rather than
-          // lying, but a genuine self-service cancel still can't be
-          // guaranteed to work end-to-end). Show a contact-the-pharmacy
-          // notice instead of a non-functional or misleading button until
-          // that root cause is resolved.
-          if (localStatus == 'confirmed') ...[
-            const SizedBox(height: 10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(name.isNotEmpty ? name : orderId.substring(0, 8),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w700)),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: PatientAppColors.brandTeal.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _statusLabelKey(localStatus).tr(),
+                    style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: PatientAppColors.brandTeal),
+                  ),
+                ),
+              ],
+            ),
+            if (storeName.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(storeName,
+                  style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+            ],
+            if (createdAtText.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(createdAtText,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.black45)),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(isDelivery ? Icons.local_shipping : Icons.storefront,
+                    size: 13, color: Colors.black45),
+                const SizedBox(width: 4),
+                Text(
+                  isDelivery
+                      ? 'marketplace_order_delivery_label'.tr()
+                      : 'marketplace_order_pickup_label'.tr(),
+                  style: const TextStyle(fontSize: 11.5, color: Colors.black54),
+                ),
+                if (itemCount > 0) ...[
+                  const SizedBox(width: 10),
+                  Text('marketplace_order_item_count'.tr(
+                          namedArgs: {'count': itemCount.toString()}),
+                      style: const TextStyle(
+                          fontSize: 11.5, color: Colors.black54)),
+                ],
+              ],
+            ),
+            if (amountTotal != null) ...[
+              const SizedBox(height: 6),
+              Text('$amountTotal $currencyName'.trim(),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600)),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(Icons.info_outline, size: 14, color: Colors.black38),
-                const SizedBox(width: 4),
-                Text('marketplace_contact_pharmacy_to_cancel'.tr(),
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.black45)),
+                Text('marketplace_order_view_details'.tr(),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PatientAppColors.brandTeal)),
+                const SizedBox(width: 2),
+                const Icon(Icons.chevron_right,
+                    size: 16, color: PatientAppColors.brandTeal),
               ],
             ),
           ],
-        ],
+        ),
       ),
     );
   }

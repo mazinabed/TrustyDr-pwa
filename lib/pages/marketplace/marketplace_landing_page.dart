@@ -8,6 +8,7 @@ import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_all_categories_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
+import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
@@ -55,7 +56,35 @@ class _MarketplaceLandingPageState
                 title: 'marketplace_enter_stores'.tr(),
                 showBack: true,
                 height: 120,
-                trailing: const MarketplaceCartAction(compact: true),
+                // My Orders entry point (Milestone 6 — the patient must
+                // never rely only on the post-checkout SnackBar) alongside
+                // the persistent Cart action. A small icon-only button, not
+                // MarketplaceCartAction's badge treatment — orders have no
+                // "unread count" concept to show.
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: const Icon(Icons.receipt_long,
+                            color: Colors.white, size: 20),
+                        tooltip: 'marketplace_my_orders_title'.tr(),
+                        onPressed: () => Navigator.push(
+                          context,
+                          PageTransition(
+                            type: PageTransitionType.rightToLeft,
+                            child: const MarketplaceOrdersPage(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const MarketplaceCartAction(compact: true),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               Padding(
