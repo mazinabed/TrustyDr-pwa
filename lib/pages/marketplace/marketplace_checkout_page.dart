@@ -28,6 +28,11 @@ class _DeliveryMethod {
     required this.nameKu,
     required this.fee,
     required this.freeOverThreshold,
+    this.estimatedMinutesMin,
+    this.estimatedMinutesMax,
+    this.noteEn,
+    this.noteAr,
+    this.noteKu,
   });
 
   /// Null for pickup (no Odoo delivery.carrier — the Phase-1
@@ -44,12 +49,25 @@ class _DeliveryMethod {
   /// [fee] — the authoritative amount is always recomputed server-side.
   final double? freeOverThreshold;
 
+  /// Store-owned display fields (organizations/{orgId}.storeSettings.
+  /// delivery) — never price-affecting, always null for pickup.
+  final int? estimatedMinutesMin;
+  final int? estimatedMinutesMax;
+  final String? noteEn;
+  final String? noteAr;
+  final String? noteKu;
+
   bool get isPickup => carrierEngineId == null;
 
   String localizedName(String lang) {
     if (lang == 'ar') return nameAr;
     if (lang == 'ku') return nameKu;
     return nameEn;
+  }
+
+  String? localizedNote(String lang) {
+    final note = lang == 'ar' ? noteAr : (lang == 'ku' ? noteKu : noteEn);
+    return (note == null || note.trim().isEmpty) ? null : note;
   }
 
   factory _DeliveryMethod.fromMap(Map<String, dynamic> m) => _DeliveryMethod(
@@ -62,6 +80,15 @@ class _DeliveryMethod {
         freeOverThreshold: (m['freeOverThreshold'] is num)
             ? (m['freeOverThreshold'] as num).toDouble()
             : null,
+        estimatedMinutesMin: (m['estimatedDeliveryMinutesMin'] is num)
+            ? (m['estimatedDeliveryMinutesMin'] as num).toInt()
+            : null,
+        estimatedMinutesMax: (m['estimatedDeliveryMinutesMax'] is num)
+            ? (m['estimatedDeliveryMinutesMax'] as num).toInt()
+            : null,
+        noteEn: m['note_en']?.toString(),
+        noteAr: m['note_ar']?.toString(),
+        noteKu: m['note_ku']?.toString(),
       );
 }
 
@@ -94,15 +121,77 @@ String _deliveryFeeSubtitle(
   return '$base · $hint';
 }
 
-/// Fetches the pickup + real Odoo delivery.carrier list once per checkout
-/// visit. A failure here (e.g. the relay isn't reachable) degrades to a
-/// pickup-only default rather than blocking checkout entirely.
-final _deliveryMethodsProvider =
-    FutureProvider.autoDispose<List<_DeliveryMethod>>((ref) async {
+/// Minutes -> hours, display only (Option B) — the underlying
+/// estimatedMinutesMin/Max values (and everything upstream: Firestore,
+/// Commerce, the doctor_functions relay) stay in minutes; this is the one
+/// place that formats them for a patient to read. Trims to a whole number
+/// when exact (typical case, since the provider now only ever inputs whole
+/// or half hours), one decimal place otherwise.
+String _formatHours(int minutes) {
+  final hours = minutes / 60.0;
+  return hours == hours.roundToDouble()
+      ? hours.toStringAsFixed(0)
+      : hours.toStringAsFixed(1);
+}
+
+/// Store-owned display estimate (organizations/{orgId}.storeSettings.
+/// delivery) — never affects pricing, purely informational. Null when the
+/// pharmacy hasn't configured an estimate.
+String? _deliveryEstimateText(_DeliveryMethod m) {
+  final min = m.estimatedMinutesMin;
+  final max = m.estimatedMinutesMax;
+  if (min == null && max == null) return null;
+  if (min != null && max != null && min != max) {
+    return 'marketplace_checkout_delivery_estimate_range'.tr(namedArgs: {
+      'min': _formatHours(min),
+      'max': _formatHours(max),
+    });
+  }
+  final minutes = min ?? max;
+  return 'marketplace_checkout_delivery_estimate_single'
+      .tr(namedArgs: {'hours': _formatHours(minutes!)});
+}
+
+/// Combines the fee line with the store's own display-only estimate/note —
+/// pickup only ever shows the pickup-location row built separately below,
+/// never this.
+String? _deliveryTileSubtitle(
+    _DeliveryMethod m, double subtotal, String? currency, String lang) {
+  if (m.isPickup) return null;
+  final lines = <String>[
+    _deliveryFeeSubtitle(m, subtotal, currency),
+    if (_deliveryEstimateText(m) case final estimate?) estimate,
+    if (m.localizedNote(lang) case final note?) note,
+  ];
+  return lines.join('\n');
+}
+
+/// Synthesized locally — Odoo has no native pickup marker, and this is also
+/// the degradation target when the delivery-methods read fails or the cart
+/// has no orgId yet.
+const _pickupOnlyFallback = <_DeliveryMethod>[
+  _DeliveryMethod(
+    carrierEngineId: null,
+    deliveryType: 'pickup',
+    nameEn: 'Store Pickup',
+    nameAr: 'الاستلام من المتجر',
+    nameKu: 'وەرگرتن لە فرۆشگا',
+    fee: 0,
+    freeOverThreshold: null,
+  ),
+];
+
+/// Fetches the pickup + this store's own dedicated Odoo delivery.carrier
+/// (Option B — one carrier per pharmacy; never a global/shared fallback)
+/// once per checkout visit, scoped to the cart's own orgId. A failure here
+/// (e.g. the relay isn't reachable) degrades to a pickup-only default
+/// rather than blocking checkout entirely.
+final _deliveryMethodsProvider = FutureProvider.autoDispose
+    .family<List<_DeliveryMethod>, String>((ref, orgId) async {
   try {
     final callable = FirebaseFunctions.instance
         .httpsCallable('getMarketplaceDeliveryMethods');
-    final result = await callable.call<Map<String, dynamic>>();
+    final result = await callable.call<Map<String, dynamic>>({'orgId': orgId});
     final raw = result.data['methods'];
     if (raw is! List) return const [];
     return raw
@@ -111,17 +200,7 @@ final _deliveryMethodsProvider =
         .toList();
   } catch (_) {
     // Pickup-only degradation — see provider header comment.
-    return const [
-      _DeliveryMethod(
-        carrierEngineId: null,
-        deliveryType: 'pickup',
-        nameEn: 'Store Pickup',
-        nameAr: 'الاستلام من المتجر',
-        nameKu: 'وەرگرتن لە فرۆشگا',
-        fee: 0,
-        freeOverThreshold: null,
-      ),
-    ];
+    return _pickupOnlyFallback;
   }
 });
 
@@ -317,7 +396,10 @@ class _MarketplaceCheckoutPageState
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(marketplaceCartProvider);
-    final deliveryMethodsAsync = ref.watch(_deliveryMethodsProvider);
+    final orgId = cart.orgId;
+    final deliveryMethodsAsync = orgId == null
+        ? const AsyncValue<List<_DeliveryMethod>>.data(_pickupOnlyFallback)
+        : ref.watch(_deliveryMethodsProvider(orgId));
     final profileAsync = ref.watch(_checkoutProfileProvider);
     profileAsync.whenData(_applyPrefill);
 
@@ -420,9 +502,8 @@ class _MarketplaceCheckoutPageState
               children: loadedMethods
                   .map((m) => _DeliveryOptionTile(
                         label: m.localizedName(lang),
-                        subtitle: m.isPickup
-                            ? null
-                            : _deliveryFeeSubtitle(m, subtotal, currency),
+                        subtitle:
+                            _deliveryTileSubtitle(m, subtotal, currency, lang),
                         selected: _selectedCarrierEngineId == m.carrierEngineId,
                         onTap: () => setState(
                             () => _selectedCarrierEngineId = m.carrierEngineId),

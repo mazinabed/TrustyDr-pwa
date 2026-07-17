@@ -226,6 +226,8 @@
   "marketplace_checkout_total_label": "الإجمالي",
   "marketplace_checkout_free": "مجاني",
   "marketplace_checkout_free_over_threshold": "مجاني فوق {amount}",
+  "marketplace_checkout_delivery_estimate_range": "الوقت المتوقع {min}–{max} ساعة",
+  "marketplace_checkout_delivery_estimate_single": "الوقت المتوقع {hours} ساعة",
   "marketplace_checkout_profile_incomplete_error": "يرجى إكمال اسمك في الملف الشخصي قبل تقديم الطلب.",
   "marketplace_place_order": "تأكيد الطلب",
   "marketplace_order_placed": "تم تقديم الطلب {name}",

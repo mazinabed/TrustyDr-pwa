@@ -225,6 +225,8 @@
   "marketplace_checkout_total_label": "کۆی گشتی",
   "marketplace_checkout_free": "بەخۆڕایی",
   "marketplace_checkout_free_over_threshold": "بەخۆڕایی لە سەرووی {amount}",
+  "marketplace_checkout_delivery_estimate_range": "کاتی چاوەڕوانکراو {min}–{max} کاتژمێر",
+  "marketplace_checkout_delivery_estimate_single": "کاتی چاوەڕوانکراو {hours} کاتژمێر",
   "marketplace_checkout_profile_incomplete_error": "تکایە ناوت لە پرۆفایلەکەت تەواو بکە پێش تۆمارکردنی داواکاری.",
   "marketplace_place_order": "دووپاتکردنەوەی داواکاری",
   "marketplace_order_placed": "داواکاری {name} تۆمارکرا",
