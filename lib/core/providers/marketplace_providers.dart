@@ -144,6 +144,41 @@ class MarketplaceCategoryRef {
   }
 }
 
+/// Defensive parsing for [MarketplaceProduct.galleryImageUrls] — pure, no
+/// Firebase/network dependency, deliberately public (not underscore-
+/// prefixed) so it's directly unit-testable. Handles every response shape
+/// that can reach the Patient App: the current backend contract (Primary +
+/// up to 2 more), a legacy/pre-gallery response that only ever had
+/// `imageUrl` (missing/null `raw`), a malformed or non-list `raw`, and a
+/// gallery containing blank/null/duplicate entries — never throws, never
+/// returns something the UI has to null-check further.
+///
+/// Contract: [imageUrl] (the Primary/cover image) always appears first
+/// when present; the rest of [raw] is deduplicated (order preserved) and
+/// blank/null entries are dropped; the result is capped at 3 entries.
+List<String> parseGalleryImageUrls(dynamic raw, String? imageUrl) {
+  final trimmedPrimary = imageUrl?.trim();
+  final hasPrimary = trimmedPrimary != null && trimmedPrimary.isNotEmpty;
+
+  if (raw is! List) {
+    return hasPrimary ? [trimmedPrimary] : const [];
+  }
+
+  final cleaned = raw
+      .map((e) => e?.toString().trim() ?? '')
+      .where((s) => s.isNotEmpty)
+      .toList();
+
+  final ordered = <String>[];
+  if (hasPrimary) ordered.add(trimmedPrimary);
+  for (final url in cleaned) {
+    if (!ordered.contains(url)) ordered.add(url);
+  }
+
+  if (ordered.isEmpty) return const [];
+  return ordered.take(3).toList();
+}
+
 class MarketplaceProduct {
   const MarketplaceProduct({
     required this.orgId,
@@ -165,6 +200,7 @@ class MarketplaceProduct {
     required this.isFeatured,
     required this.availabilityBadge,
     required this.imageUrl,
+    required this.galleryImageUrls,
     required this.storeNameEn,
     required this.storeNameAr,
     required this.storeNameKu,
@@ -198,6 +234,12 @@ class MarketplaceProduct {
   final bool isFeatured;
   final String availabilityBadge;
   final String? imageUrl;
+  // Patient Marketplace gallery (2026-07-18) — Primary first (equal to
+  // [imageUrl] when non-empty), deduplicated, max 3. Product cards must
+  // keep using [imageUrl] only — this exists for the product detail
+  // gallery. See [parseGalleryImageUrls] for the exact defensive-parsing
+  // contract (handles a missing/non-list/legacy response safely).
+  final List<String> galleryImageUrls;
   final String? storeNameEn;
   final String? storeNameAr;
   final String? storeNameKu;
@@ -235,6 +277,8 @@ class MarketplaceProduct {
       isFeatured: m['isFeatured'] == true,
       availabilityBadge: m['availabilityBadge']?.toString() ?? '',
       imageUrl: m['imageUrl']?.toString(),
+      galleryImageUrls: parseGalleryImageUrls(
+          m['galleryImageUrls'], m['imageUrl']?.toString()),
       storeNameEn: m['storeName_en']?.toString(),
       storeNameAr: m['storeName_ar']?.toString(),
       storeNameKu: m['storeName_ku']?.toString(),

@@ -6,6 +6,7 @@ import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_product_image_gallery.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 /// Product details (Patient Marketplace). All display fields come from the
@@ -226,16 +227,21 @@ class _ProductDetailBody extends StatelessWidget {
       product.displayPrice.truncateToDouble() == product.displayPrice ? 0 : 2,
     );
     final currency = product.currencyName ?? '';
-    final url = (product.imageUrl ?? '').trim();
+    final galleryImageUrls =
+        product.galleryImageUrls.where((u) => u.startsWith('http')).toList();
     final name = product.localizedName(lang);
     final description = product.localizedDescription(lang);
     final categoryName = product.localizedCategoryName(lang);
     final storeName = product.localizedStoreName(lang);
+    // Only the single-image height (300) grows when a thumbnail strip is
+    // actually shown — a 1-image (or 0-image) product's header looks
+    // exactly as it did before this feature.
+    final expandedHeight = galleryImageUrls.length > 1 ? 364.0 : 300.0;
 
     return CustomScrollView(
       slivers: [
         SliverAppBar(
-          expandedHeight: 300,
+          expandedHeight: expandedHeight,
           pinned: true,
           backgroundColor: Colors.white,
           leading: BackButton(
@@ -249,18 +255,8 @@ class _ProductDetailBody extends StatelessWidget {
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(
-            background: url.startsWith('http')
-                ? Container(
-                    color: const Color(0xFFF5F6F8),
-                    padding: const EdgeInsets.all(24),
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _placeholderImage(),
-                    ),
-                  )
-                : _placeholderImage(),
+            background:
+                MarketplaceProductImageGallery(imageUrls: galleryImageUrls),
           ),
         ),
         SliverToBoxAdapter(
@@ -363,19 +359,6 @@ class _ProductDetailBody extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _placeholderImage() {
-    return Container(
-      color: PatientAppColors.brandTeal.withValues(alpha: 0.06),
-      child: Center(
-        child: Icon(
-          Icons.medication_outlined,
-          color: PatientAppColors.brandTeal.withValues(alpha: 0.4),
-          size: 64,
-        ),
-      ),
     );
   }
 }
