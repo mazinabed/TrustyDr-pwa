@@ -7,7 +7,9 @@ import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_all_categories_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_nav_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
+import 'package:trustydr/pages/marketplace/marketplace_collection_section.dart';
 import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
@@ -151,19 +153,16 @@ class _MarketplaceLandingPageState
 
 // ─── Discover (default) view ────────────────────────────────────────────────
 
-/// Marketplace Home information architecture (2026-07-15 "Dual-Path Hybrid"
-/// pass, approved after a 3-layout UX proposal comparing Store-First,
-/// Product-First, and this hybrid against Amazon/Walmart/Target/Noon/iHerb
-/// and — the closer structural match for a multi-pharmacy marketplace —
-/// Instacart/DoorDash-style vendor marketplaces). Adapted for TrustyDr
-/// rather than copied from any one competitor:
-///
-/// Search -> an equal-weight "how would you like to shop?" entry row
-/// (Browse by Category / Browse Stores) -> Popular Products -> Featured
-/// Stores. Categories and Stores are deliberately given identical visual
-/// weight as parallel entry points (neither is "the" primary axis) rather
-/// than the previous single ordered stack, which read as an administrative
-/// directory regardless of which section came first.
+/// Marketplace Home information architecture (2026-07-19 simplification —
+/// removed a real "three competing category-entry patterns" defect: an
+/// icon-based "Browse Categories" entry card, a small pill/chip row that
+/// scrolled to it, AND the newer compact [CommerceCategoryNavBar], all
+/// doing the same job). Current order: Search (page-level, above this
+/// widget) -> compact Browse Stores row (store discovery is a genuinely
+/// distinct action, kept) -> compact category nav bar -> category
+/// collection sections -> Featured Stores. Stateless now — the old
+/// scroll-to-section anchor mechanism this page used is gone along with
+/// the pill row it powered.
 ///
 /// "Featured Stores" (not "Stores Near You" / "Nearby Stores") is a
 /// deliberately scalable section name — it does not encode proximity as the
@@ -173,33 +172,13 @@ class _MarketplaceLandingPageState
 /// numeric distance is NOT available today (no lat/lng captured or
 /// distance computed anywhere in the current data model) and is
 /// deliberately not fabricated here.
-class _DiscoverView extends StatefulWidget {
+class _DiscoverView extends StatelessWidget {
   const _DiscoverView({required this.data});
 
   final MarketplaceBrowseData data;
 
   @override
-  State<_DiscoverView> createState() => _DiscoverViewState();
-}
-
-class _DiscoverViewState extends State<_DiscoverView> {
-  final _storesKey = GlobalKey();
-  final _popularKey = GlobalKey();
-
-  Future<void> _scrollTo(GlobalKey key) async {
-    final targetContext = key.currentContext;
-    if (targetContext == null) return;
-    await Scrollable.ensureVisible(
-      targetContext,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      alignment: 0.02,
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final data = widget.data;
     final lang = context.locale.languageCode;
 
     if (data.isEmpty) {
@@ -215,35 +194,29 @@ class _DiscoverViewState extends State<_DiscoverView> {
       );
     }
 
-    final popularProducts = (List.of(data.products)
-          ..sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0)))
-        .take(12)
-        .toList();
-
     final featuredStores = data.stores.take(8).toList();
 
-    // Popular Products rail card size — MUST derive from
-    // marketplaceProductCardTextHeight(), never an independent guess. A
-    // hardcoded, unreconciled height/width pair here (150 wide -> a 150px
-    // image, leaving only ~86px for a 2-line title + price + availability +
-    // store byline) was the exact cause of a real "BOTTOM OVERFLOWED BY 34
-    // PIXELS" report. Width 168 (rather than the old 150) gives 2-line
-    // Arabic titles more breathing room; height is computed, not guessed.
-    const railCardWidth = 168.0;
-    final railCardHeight =
-        railCardWidth + marketplaceProductCardTextHeight(showStoreName: true);
-
-    final navItems = <_SectionNavItem>[
-      if (popularProducts.isNotEmpty)
-        _SectionNavItem(
-          label: 'marketplace_section_popular'.tr(),
-          onTap: () => _scrollTo(_popularKey),
-        ),
-      if (featuredStores.isNotEmpty)
-        _SectionNavItem(
-          label: 'marketplace_tab_stores'.tr(),
-          onTap: () => _scrollTo(_storesKey),
-        ),
+    // Milestone 5 (Marketplace Home upgrade, 2026-07-19) — the flat,
+    // single "Popular Products" rail (sorted only by isFeatured, no
+    // category grouping at all) is replaced with one collection section
+    // PER featured global category that currently has at least one
+    // eligible public product — real Category Engine taxonomy, never a
+    // hardcoded category list (see buildCategoryCollections' own doc
+    // comment for the onlyFeatured/curation rule). Built entirely from
+    // data this page already has in memory — zero extra network requests.
+    final categoryCollections = buildCategoryCollections(
+      products: data.products,
+      categories: data.categories,
+      lang: lang,
+      onlyFeatured: true,
+    );
+    // Same featured, has-products category set the collections below
+    // already use, kept in sync so the nav bar never offers a tap-through
+    // to a category with no corresponding collection.
+    final navCategories = [
+      for (final c in categoryCollections)
+        CommerceCategoryNavItem(
+            categoryKey: c.categoryKey, label: c.categoryName),
     ];
 
     return SingleChildScrollView(
@@ -252,81 +225,85 @@ class _DiscoverViewState extends State<_DiscoverView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 6),
-          // Categories and Stores as EQUAL-WEIGHT entry points — neither is
-          // "the" primary discovery axis. Resolves the tension between
-          // "patients search for products first" (still true — Popular
-          // Products stays the dominant content below) and "stores need to
-          // feel like real storefronts, not directory entries" by giving
-          // each its own dignified "how would you like to shop" choice
-          // up front, then converging into one shared product feed.
-          _EntryPointRow(
-            categoryCount: data.categories.where((c) => c.level == 0).length,
-            storeCount: data.stores.length,
-            onBrowseCategories: () => Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: MarketplaceAllCategoriesPage(
-                  categories: data.categories,
-                  onCategorySelected: (id) {
-                    Navigator.push(
+          // Store discovery — kept (distinct purpose from category
+          // browsing), but as ONE compact row instead of an equal-weight
+          // pairing with the now-removed category entry card.
+          if (data.stores.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _BrowseStoresRow(
+                storeCount: data.stores.length,
+                onTap: () => Navigator.push(
+                  context,
+                  PageTransition(
+                    type: PageTransitionType.rightToLeft,
+                    child: MarketplaceStoresPage(data: data),
+                  ),
+                ),
+              ),
+            ),
+          // Compact text-only category nav bar — the ONLY category-entry
+          // pattern left near the top (2026-07-19 Issue 3 cleanup).
+          // "All Categories" opens the full category browser.
+          if (navCategories.isNotEmpty) ...[
+            SizedBox(height: data.stores.isNotEmpty ? 14 : 6),
+            CommerceCategoryNavBar(
+              categories: navCategories,
+              selectedCategoryKey: null,
+              onCategoryTap: (categoryKey) => Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child:
+                      MarketplaceProductsPage(initialCategoryKey: categoryKey),
+                ),
+              ),
+              onAllCategoriesTap: () => Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: MarketplaceAllCategoriesPage(
+                    categories: data.categories,
+                    onCategorySelected: (id) => Navigator.push(
                       context,
                       PageTransition(
                         type: PageTransitionType.rightToLeft,
                         child: MarketplaceProductsPage(initialCategoryKey: id),
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            onBrowseStores: () => Navigator.push(
-              context,
-              PageTransition(
-                type: PageTransitionType.rightToLeft,
-                child: MarketplaceStoresPage(data: data),
-              ),
-            ),
-          ),
-          if (navItems.length > 1) ...[
-            const SizedBox(height: 20),
-            _SectionNavBar(items: navItems),
-          ],
-          if (popularProducts.isNotEmpty)
-            MarketplaceSection(
-              key: _popularKey,
-              title: 'marketplace_popular_products'.tr(),
-              onViewAll: () => Navigator.push(
-                context,
-                PageTransition(
-                  type: PageTransitionType.rightToLeft,
-                  child: const MarketplaceProductsPage(),
-                ),
-              ),
-              child: SizedBox(
-                height: railCardHeight,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: popularProducts.length,
-                  separatorBuilder: (context, i) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) => SizedBox(
-                    width: railCardWidth,
-                    child: MarketplaceProductCard(
-                      product: popularProducts[i],
-                      showStoreName: true,
-                      // Badge is an exception signal, not decoration — only
-                      // the single top-ranked item in this curated rail
-                      // gets it, never every card.
-                      highlightBadge: i == 0,
                     ),
                   ),
                 ),
               ),
             ),
+          ],
+          if (categoryCollections.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: CommerceCollectionGrid(
+                children: [
+                  for (final collection in categoryCollections)
+                    CommerceCollectionSection(
+                      collection: collection,
+                      // Cross-store Home: show which pharmacy each
+                      // product belongs to, avoiding ambiguity — the
+                      // same showStoreName toggle every other
+                      // cross-store product surface in this app uses.
+                      showStoreName: true,
+                      onViewAll: () => Navigator.push(
+                        context,
+                        PageTransition(
+                          type: PageTransitionType.rightToLeft,
+                          child: MarketplaceProductsPage(
+                            initialCategoryKey: collection.categoryKey,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           if (featuredStores.isNotEmpty)
             MarketplaceSection(
-              key: _storesKey,
               // "Featured Stores", not "Nearby"/"Stores Near You" — a
               // deliberately scalable section name that doesn't encode
               // proximity as its identity. City/address still shows as
@@ -352,9 +329,10 @@ class _DiscoverViewState extends State<_DiscoverView> {
                     width: 260,
                     child: MarketplaceStoreCard(
                       store: featuredStores[i],
-                      categorySummary:
-                          _categorySummaryFor(featuredStores[i].orgId, lang),
-                      categoryCount: _categoryCountFor(featuredStores[i].orgId),
+                      categorySummary: _categorySummaryFor(
+                          data, featuredStores[i].orgId, lang),
+                      categoryCount:
+                          _categoryCountFor(data, featuredStores[i].orgId),
                     ),
                   ),
                 ),
@@ -365,9 +343,10 @@ class _DiscoverViewState extends State<_DiscoverView> {
     );
   }
 
-  String? _categorySummaryFor(String orgId, String lang) {
+  static String? _categorySummaryFor(
+      MarketplaceBrowseData data, String orgId, String lang) {
     final names = <String>{};
-    for (final p in widget.data.products) {
+    for (final p in data.products) {
       if (p.orgId != orgId) continue;
       final name = p.localizedCategoryName(lang);
       if (name != null && name.isNotEmpty) names.add(name);
@@ -376,183 +355,79 @@ class _DiscoverViewState extends State<_DiscoverView> {
     return names.isEmpty ? null : names.join(' · ');
   }
 
-  int _categoryCountFor(String orgId) {
+  static int _categoryCountFor(MarketplaceBrowseData data, String orgId) {
     return distinctCategoryCount(
-      widget.data.products.where((p) => p.orgId == orgId).toList(),
+      data.products.where((p) => p.orgId == orgId).toList(),
     );
   }
 }
 
-/// One tappable entry in the slim section-nav pill row (Noon/iHerb pattern:
-/// scroll to a section in place, never a route change or tab switch).
-class _SectionNavItem {
-  const _SectionNavItem({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-}
+/// Compact single-row Store Discovery entry (2026-07-19 simplification) —
+/// replaces the old equal-weight 2-card row (Categories + Stores). Category
+/// browsing now lives entirely in [CommerceCategoryNavBar]; this row keeps
+/// exactly the one remaining distinct action, "Browse Stores," at a much
+/// smaller footprint than the old oversized icon card.
+class _BrowseStoresRow extends StatelessWidget {
+  const _BrowseStoresRow({required this.storeCount, required this.onTap});
 
-class _SectionNavBar extends StatelessWidget {
-  const _SectionNavBar({required this.items});
-
-  final List<_SectionNavItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: items.length,
-        separatorBuilder: (context, i) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final item = items[i];
-          return Material(
-            color: PatientAppColors.brandTeal.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(18),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: item.onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
-                  child: Text(
-                    item.label,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: PatientAppColors.brandTeal,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// The "how would you like to shop?" entry row — Categories and Stores as
-/// deliberately EQUAL-weight parallel entry points into the Marketplace
-/// (2026-07-15 Dual-Path Hybrid IA). Neither card outranks the other in
-/// size, color, or position; the only difference is icon/label/count.
-class _EntryPointRow extends StatelessWidget {
-  const _EntryPointRow({
-    required this.categoryCount,
-    required this.storeCount,
-    required this.onBrowseCategories,
-    required this.onBrowseStores,
-  });
-
-  final int categoryCount;
   final int storeCount;
-  final VoidCallback onBrowseCategories;
-  final VoidCallback onBrowseStores;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _EntryCard(
-              icon: Icons.grid_view_rounded,
-              title: 'marketplace_entry_categories_title'.tr(),
-              subtitle: categoryCount > 0
-                  ? 'marketplace_category_count'
-                      .tr(namedArgs: {'count': categoryCount.toString()})
-                  : null,
-              onTap: onBrowseCategories,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _EntryCard(
-              icon: Icons.storefront_rounded,
-              title: 'marketplace_entry_stores_title'.tr(),
-              subtitle: storeCount > 0
-                  ? 'marketplace_store_count'
-                      .tr(namedArgs: {'count': storeCount.toString()})
-                  : null,
-              onTap: onBrowseStores,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EntryCard extends StatelessWidget {
-  const _EntryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    // This app's own RTL source of truth (matches main.dart's top-level
+    // Directionality switch) — a forward-pointing chevron must point left
+    // under RTL, never automatic icon mirroring.
+    final isRtl = context.locale.languageCode == 'ar' ||
+        context.locale.languageCode == 'ku';
+
     return Material(
       color: PatientAppColors.brandTeal.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 16, 10, 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: PatientAppColors.brandTeal,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: Colors.white, size: 19),
-              ),
+              const Icon(Icons.storefront_rounded,
+                  size: 18, color: PatientAppColors.brandTeal),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                child: Row(
                   children: [
                     Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      'marketplace_entry_stores_title'.tr(),
                       style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
+                          fontSize: 13.5, fontWeight: FontWeight.w700),
                     ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black45,
-                          fontWeight: FontWeight.w600,
+                    if (storeCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'marketplace_store_count'
+                              .tr(namedArgs: {'count': '$storeCount'}),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black45,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: PatientAppColors.brandTeal),
+              Icon(
+                isRtl
+                    ? Icons.chevron_left_rounded
+                    : Icons.chevron_right_rounded,
+                size: 18,
+                color: PatientAppColors.brandTeal,
+              ),
             ],
           ),
         ),

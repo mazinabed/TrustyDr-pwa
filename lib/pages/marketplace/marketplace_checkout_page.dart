@@ -322,9 +322,20 @@ class _MarketplaceCheckoutPageState
           await callable.call<Map<String, dynamic>>(<String, dynamic>{
         'orgId': cart.orgId,
         'idempotencyKey': idempotencyKey,
+        // Milestone 5 (Patient Product Experience) — variantEngineId is
+        // included only when the line actually has one (a multi-variant
+        // product the patient resolved a specific choice for); a
+        // single-variant line omits it entirely, letting the backend's own
+        // resolveVariantDecision safely auto-select the one sellable
+        // variant, exactly matching CartItem.variantEngineId's own
+        // null-means-unambiguous contract.
         'lines': cart.items
-            .map((i) =>
-                {'productEngineId': i.productEngineId, 'quantity': i.quantity})
+            .map((i) => {
+                  'productEngineId': i.productEngineId,
+                  if (i.variantEngineId != null)
+                    'variantEngineId': i.variantEngineId,
+                  'quantity': i.quantity,
+                })
             .toList(),
         'deliveryCarrierEngineId': selected?.carrierEngineId,
         'deliveryAddress': isDelivery

@@ -12,23 +12,42 @@ import 'package:trustydr/pages/marketplace/marketplace_sort.dart';
 import 'package:trustydr/widgets/trustydr_curved_header.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
-/// Full cross-store Products browse (Patient Marketplace, Phase 1C,
-/// browse-only) — a proper ecommerce product-list page: result count,
-/// Categories/Filters, Sort, and a responsive grid. Mobile opens category
-/// navigation as a near-full-height bottom sheet; wide screens show a
-/// persistent sidebar instead (left in LTR, right in RTL, via ambient
-/// Directionality — no manual side-swapping logic needed).
+/// Full Products browse (Patient Marketplace, Phase 1C, browse-only) — a
+/// proper ecommerce product-list page: result count, Categories/Filters,
+/// Sort, and a responsive grid. Mobile opens category navigation as a
+/// near-full-height bottom sheet; wide screens show a persistent sidebar
+/// instead (left in LTR, right in RTL, via ambient Directionality — no
+/// manual side-swapping logic needed).
 ///
-/// Watches [marketplaceBrowseProvider] directly (same shared, already-
-/// fetched data every other Marketplace screen watches) rather than taking
-/// a data snapshot as a constructor param — this is what lets "Load More"
-/// (bumping [marketplaceProductsLimitProvider]) refresh this page in place,
-/// and keeps every "open the Products page" call site (5 of them across the
-/// landing page) simple: just pass which category to start filtered on.
+/// Two scopes, chosen by whether [orgId] is set (Milestone 5, "See All"
+/// navigation must never lose organization scope, 2026-07-19):
+/// - Cross-store (orgId null): watches [marketplaceBrowseProvider] directly
+///   (same shared, already-fetched data every other cross-store Marketplace
+///   screen watches) rather than taking a data snapshot as a constructor
+///   param — this is what lets "Load More" (bumping
+///   [marketplaceProductsLimitProvider]) refresh this page in place. The
+///   Marketplace Home "See All" (global category collections) uses this.
+/// - Store-scoped (orgId set): watches [marketplaceCatalogProvider(orgId)]
+///   instead — the SAME provider the Pharmacy Store Home page itself
+///   already uses, so arriving here from that page's own "See All From
+///   This Pharmacy" never re-fetches. No "Load More" in this scope (the
+///   store catalog call already returns the store's complete catalog in
+///   one request, unlike the cross-store browse call's deliberate limit).
 class MarketplaceProductsPage extends ConsumerStatefulWidget {
-  const MarketplaceProductsPage({super.key, this.initialCategoryKey});
+  const MarketplaceProductsPage({
+    super.key,
+    this.initialCategoryKey,
+    this.orgId,
+    this.storeName,
+  });
 
   final String? initialCategoryKey;
+  // Store-scope identity for a "See All From This Pharmacy" navigation —
+  // null means the ordinary cross-store Products browse. Never derived or
+  // guessed here: the caller (MarketplaceStorePage) already has its own
+  // real orgId and passes it straight through.
+  final String? orgId;
+  final String? storeName;
 
   @override
   ConsumerState<MarketplaceProductsPage> createState() =>
@@ -114,12 +133,49 @@ class _MarketplaceProductsPageState
 
   @override
   Widget build(BuildContext context) {
-    final browseAsync = ref.watch(marketplaceBrowseProvider);
+    final orgId = widget.orgId;
 
+    // Store-scoped "See All From This Pharmacy" — same
+    // marketplaceCatalogProvider(orgId) the Pharmacy Store Home page
+    // itself watches, so navigating here right after that page never
+    // re-fetches (Riverpod family caching). No cross-store data ever
+    // enters this branch.
+    if (orgId != null) {
+      final catalogAsync = ref.watch(marketplaceCatalogProvider(orgId));
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: catalogAsync.when(
+          data: (catalog) => _buildBody(
+            context,
+            products: catalog.products,
+            categories: catalog.categories,
+            hasMoreProducts: false,
+            showStoreName: false,
+          ),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: PatientAppColors.brandTeal),
+          ),
+          error: (err, __) => Center(
+            child: Text(
+              'error_generic'.tr(),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final browseAsync = ref.watch(marketplaceBrowseProvider);
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: browseAsync.when(
-        data: (data) => _buildBody(context, data),
+        data: (data) => _buildBody(
+          context,
+          products: data.products,
+          categories: data.categories,
+          hasMoreProducts: data.hasMoreProducts,
+          showStoreName: true,
+        ),
         loading: () => const Center(
           child: CircularProgressIndicator(color: PatientAppColors.brandTeal),
         ),
@@ -135,40 +191,48 @@ class _MarketplaceProductsPageState
     );
   }
 
-  Widget _buildBody(BuildContext context, MarketplaceBrowseData data) {
+  Widget _buildBody(
+    BuildContext context, {
+    required List<MarketplaceProduct> products,
+    required List<MarketplaceCategory> categories,
+    required bool hasMoreProducts,
+    required bool showStoreName,
+  }) {
     final lang = context.locale.languageCode;
-    final categoryCounts =
-        computeCategoryProductCounts(data.categories, data.products);
+    final categoryCounts = computeCategoryProductCounts(categories, products);
 
-    var products = data.products;
-    String pageTitle = 'marketplace_tab_products'.tr();
+    var filtered = products;
+    String pageTitle = widget.storeName ?? 'marketplace_tab_products'.tr();
     if (_categoryFilterKey != null) {
       final descendantKeys =
-          descendantCategoryKeys(data.categories, _categoryFilterKey!);
-      products = products
+          descendantCategoryKeys(categories, _categoryFilterKey!);
+      filtered = filtered
           .where(
               (p) => p.categoryKeys.any((key) => descendantKeys.contains(key)))
           .toList();
-      final match = data.categories
-          .where((c) => c.categoryKey == _categoryFilterKey)
-          .toList();
-      if (match.isNotEmpty) pageTitle = match.first.localizedName(lang);
+      final match =
+          categories.where((c) => c.categoryKey == _categoryFilterKey).toList();
+      if (match.isNotEmpty) {
+        pageTitle = widget.storeName != null
+            ? '${widget.storeName} · ${match.first.localizedName(lang)}'
+            : match.first.localizedName(lang);
+      }
     }
     if (_searchQuery.trim().length >= 2) {
       final q = _searchQuery.trim().toLowerCase();
-      products = products
+      filtered = filtered
           .where((p) =>
               p.localizedName(lang).toLowerCase().contains(q) ||
               (p.brandName ?? '').toLowerCase().contains(q))
           .toList();
     }
-    products = sortMarketplaceProducts(products, _sort, lang);
+    filtered = sortMarketplaceProducts(filtered, _sort, lang);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
 
-        Widget grid = products.isEmpty
+        Widget grid = filtered.isEmpty
             ? Center(
                 child: Text(
                   'marketplace_no_products_found'.tr(),
@@ -179,20 +243,20 @@ class _MarketplaceProductsPageState
                 children: [
                   Expanded(
                     child: MarketplaceProductGrid(
-                        products: products, showStoreName: true),
+                        products: filtered, showStoreName: showStoreName),
                   ),
-                  if (data.hasMoreProducts) _LoadMoreButton(ref: ref),
+                  if (hasMoreProducts) _LoadMoreButton(ref: ref),
                 ],
               );
 
         Widget resultArea = Column(
           children: [
             _ResultHeader(
-              count: products.length,
+              count: filtered.length,
               sortLabel: _sort.l10nKey.tr(),
               showCategoriesButton: !isDesktop,
               onCategoriesTap: () =>
-                  _openCategorySheetMobile(data.categories, categoryCounts),
+                  _openCategorySheetMobile(categories, categoryCounts),
               onSortTap: _openSort,
             ),
             Expanded(child: grid),
@@ -223,7 +287,7 @@ class _MarketplaceProductsPageState
                   child: SizedBox(
                     height: 560,
                     child: MarketplaceCategoryTreeNav(
-                      categories: data.categories,
+                      categories: categories,
                       selectedCategoryKey: _categoryFilterKey,
                       productCountByCategoryKey: categoryCounts,
                       onSelect: (id) => setState(() => _categoryFilterKey = id),

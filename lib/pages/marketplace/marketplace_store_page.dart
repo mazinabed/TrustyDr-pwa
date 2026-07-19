@@ -5,21 +5,26 @@ import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_all_categories_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_category_nav_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
+import 'package:trustydr/pages/marketplace/marketplace_collection_section.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
+import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_widgets.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 /// A single pharmacy's Store (Patient Marketplace, Phase 1C, browse-only).
 ///
-/// Marketplace Design System (2026-07-15): this page follows the EXACT
-/// same visual language and section structure as the Marketplace Home page
-/// — [MarketplaceStoreHeader] (not the generic [TrustyDrCurvedHeader] used
-/// by doctor/patient/appointment screens), [MarketplaceSection] +
-/// [MarketplaceCategoryChips] for "Shop by Category", the shared
-/// [MarketplaceProductCard]/[MarketplaceProductGrid] for both the curated
-/// "Popular Products" rail and the full "All Products" grid. The intent is
+/// Marketplace Design System (2026-07-15, category-nav refined 2026-07-19):
+/// this page follows the EXACT same visual language and section structure
+/// as the Marketplace Home page — [MarketplaceStoreHeader] (not the
+/// generic [TrustyDrCurvedHeader] used by doctor/patient/appointment
+/// screens), [CommerceCategoryNavBar] for compact category navigation
+/// (replacing the old large circular-icon chip grid both pages used to
+/// have), [MarketplaceSection] + the shared
+/// [MarketplaceProductCard]/[MarketplaceProductGrid] for the full "All
+/// Products" grid. The intent is
 /// that a patient tapping from Marketplace Home into a specific pharmacy
 /// feels like walking further into the SAME shop, not landing on a
 /// different app — Marketplace Home -> Pharmacy Store -> Category ->
@@ -73,6 +78,7 @@ class _MarketplaceStorePageState extends ConsumerState<MarketplaceStorePage> {
         builder: (context, constraints) {
           Widget content = catalogAsync.when(
             data: (catalog) => _StoreBody(
+              orgId: widget.orgId,
               storeName: widget.storeName,
               bannerUrl: widget.bannerUrl,
               logoUrl: widget.logoUrl,
@@ -110,6 +116,7 @@ class _MarketplaceStorePageState extends ConsumerState<MarketplaceStorePage> {
 
 class _StoreBody extends StatelessWidget {
   const _StoreBody({
+    required this.orgId,
     required this.storeName,
     required this.bannerUrl,
     required this.logoUrl,
@@ -121,6 +128,7 @@ class _StoreBody extends StatelessWidget {
     required this.onSearchChanged,
   });
 
+  final String orgId;
   final String storeName;
   final String? bannerUrl;
   final String? logoUrl;
@@ -184,17 +192,29 @@ class _StoreBody extends StatelessWidget {
         .where((c) => c.level == 0)
         .toList()
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    final categoryShortcuts = storeTopLevelCategories.take(6).toList();
-    // "All Categories" only earns its place when there's something beyond
-    // the shortcut row to see — more top-level categories, or subcategories
-    // underneath the ones already shown.
-    final showAllCategoriesTile =
-        storeCategories.length > categoryShortcuts.length;
+    // 2026-07-19 category-nav refinement — the compact nav bar scrolls, so
+    // (unlike the old wrapped chip grid) it never needs an arbitrary cap:
+    // every top-level category this store's catalog actually uses gets a
+    // slot, in the taxonomy's own configured sortOrder.
+    final navCategories = [
+      for (final c in storeTopLevelCategories)
+        CommerceCategoryNavItem(
+            categoryKey: c.categoryKey, label: c.localizedName(lang)),
+    ];
 
-    final popularProducts = (List.of(catalog.products)
-          ..sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0)))
-        .take(12)
-        .toList();
+    // Milestone 5 (Pharmacy Store Home upgrade, 2026-07-19) — the flat
+    // "Popular Products" rail is replaced with one collection section per
+    // category this store's catalog actually uses (storeCategories above —
+    // never the global featured set; onlyFeatured: false here since
+    // store-scoping, not platform curation, is what already narrowed the
+    // input). Same reusable buildCategoryCollections/CommerceCollectionSection
+    // Marketplace Home uses — this page just supplies store-scoped data
+    // and a store-scoped "See All" destination.
+    final categoryCollections = buildCategoryCollections(
+      products: catalog.products,
+      categories: storeCategories,
+      lang: lang,
+    );
 
     var filteredProducts = catalog.products;
     String? activeCategoryLabel;
@@ -228,6 +248,14 @@ class _StoreBody extends StatelessWidget {
     final isFiltering =
         selectedCategoryKey != null || searchQuery.trim().length >= 2;
 
+    // 2026-07-19 header restructure — MarketplaceStoreHeader now renders the
+    // full identity block itself (gradient with name/logo/verification, plus
+    // its own compact metadata line below), so the search bar sits directly
+    // under it with a small gap, and the category nav bar (full-bleed
+    // tinted strip, not a card floating inside the page's own horizontal
+    // padding) follows immediately: Store identity -> compact metadata ->
+    // Search -> Compact category nav -> Collections, exactly the requested
+    // order, reaching the first product collection noticeably sooner.
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -235,12 +263,40 @@ class _StoreBody extends StatelessWidget {
         children: [
           header,
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: MarketplaceSearchBar(
               hintText: 'marketplace_search_products_in_store'.tr(),
               onChanged: onSearchChanged,
             ),
           ),
+          // Store-scoped compact category nav bar (2026-07-19) — replaces
+          // the old large circular-icon "Shop by Category" chip grid.
+          // "All Categories" opens this store's own complete
+          // product/category browser (MarketplaceAllCategoriesPage scoped
+          // to storeCategories — never the global Marketplace catalog);
+          // tapping a category preserves the EXISTING in-page filter
+          // mechanism (onCategorySelected -> selectedCategoryKey -> the
+          // "All Products" grid below narrows in place, same
+          // removable-Chip affordance as before) rather than navigating to
+          // a separate results page — this store page already IS the
+          // category-results view once filtered, always still scoped to
+          // this same orgId (never touches marketplaceBrowseProvider).
+          if (navCategories.isNotEmpty)
+            CommerceCategoryNavBar(
+              categories: navCategories,
+              selectedCategoryKey: selectedCategoryKey,
+              onCategoryTap: onCategorySelected,
+              onAllCategoriesTap: () => Navigator.push(
+                context,
+                PageTransition(
+                  type: PageTransitionType.rightToLeft,
+                  child: MarketplaceAllCategoriesPage(
+                    categories: storeCategories,
+                    onCategorySelected: onCategorySelected,
+                  ),
+                ),
+              ),
+            ),
           if (activeCategoryLabel != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -260,56 +316,32 @@ class _StoreBody extends StatelessWidget {
                 ),
               ),
             ),
-          if (!isFiltering && categoryShortcuts.isNotEmpty)
-            MarketplaceSection(
-              title: 'marketplace_shop_by_category'.tr(),
-              onViewAll: showAllCategoriesTile
-                  ? () => Navigator.push(
+          if (!isFiltering && categoryCollections.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: CommerceCollectionGrid(
+                children: [
+                  for (final collection in categoryCollections)
+                    CommerceCollectionSection(
+                      collection: collection,
+                      // Store Home: the store is already obvious from
+                      // context (header is right above) — never repeat it
+                      // on every card.
+                      showStoreName: false,
+                      viewAllLabel: 'marketplace_view_all_from_store'.tr(),
+                      onViewAll: () => Navigator.push(
                         context,
                         PageTransition(
                           type: PageTransitionType.rightToLeft,
-                          child: MarketplaceAllCategoriesPage(
-                            categories: storeCategories,
-                            onCategorySelected: onCategorySelected,
+                          child: MarketplaceProductsPage(
+                            initialCategoryKey: collection.categoryKey,
+                            orgId: orgId,
+                            storeName: storeName,
                           ),
                         ),
-                      )
-                  : null,
-              child: MarketplaceCategoryChips(
-                categories: categoryShortcuts,
-                onCategoryTap: onCategorySelected,
-                showAllCategoriesTile: showAllCategoriesTile,
-                onOpenAllCategories: () => Navigator.push(
-                  context,
-                  PageTransition(
-                    type: PageTransitionType.rightToLeft,
-                    child: MarketplaceAllCategoriesPage(
-                      categories: storeCategories,
-                      onCategorySelected: onCategorySelected,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          if (!isFiltering && popularProducts.isNotEmpty)
-            MarketplaceSection(
-              title: 'marketplace_popular_products'.tr(),
-              child: SizedBox(
-                height: 168.0 +
-                    marketplaceProductCardTextHeight(showStoreName: false),
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: popularProducts.length,
-                  separatorBuilder: (context, i) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) => SizedBox(
-                    width: 168,
-                    child: MarketplaceProductCard(
-                      product: popularProducts[i],
-                      highlightBadge: i == 0,
-                    ),
-                  ),
-                ),
+                ],
               ),
             ),
           MarketplaceSection(

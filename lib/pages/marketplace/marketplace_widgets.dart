@@ -2,11 +2,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/login_signup/login.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
-import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_store_card.dart'
     show MarketplaceBannerGradient, MarketplaceLogoFallback;
 
@@ -81,118 +79,6 @@ class MarketplaceSection extends StatelessWidget {
   }
 }
 
-/// Compact "Shop by Category" chip rail — a handful of category tiles (icon
-/// + label) plus a trailing "All Categories" tile that opens the full
-/// [MarketplaceAllCategoriesPage] browser. This is the ONE shared
-/// implementation for every screen that offers a category shortcut —
-/// never a per-screen icon grid reinvented from scratch. Real marketplaces
-/// never expose the full taxonomy at a browse entry point (Noon/iHerb
-/// audit) — callers are expected to pass an already-capped, featured-only
-/// list, not the full category set.
-class MarketplaceCategoryChips extends StatelessWidget {
-  const MarketplaceCategoryChips({
-    super.key,
-    required this.categories,
-    required this.onCategoryTap,
-    required this.onOpenAllCategories,
-    this.showAllCategoriesTile = true,
-  });
-
-  final List<MarketplaceCategory> categories;
-  final ValueChanged<String> onCategoryTap;
-  final VoidCallback onOpenAllCategories;
-  // False when the caller's full available set already fits entirely in
-  // [categories] — showing "All Categories" would just re-open a browser
-  // with nothing new in it (e.g. a small store with 3 top-level categories
-  // and no subcategories at all).
-  final bool showAllCategoriesTile;
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = context.locale.languageCode;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth >= 640 ? 6 : 4;
-          return GridView.count(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 0.95,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              ...categories.map(
-                (c) => _CategoryChip(
-                  icon: marketplaceCategoryIcon(c.iconKey),
-                  label: c.localizedName(lang),
-                  onTap: () => onCategoryTap(c.categoryKey),
-                ),
-              ),
-              if (showAllCategoriesTile)
-                _CategoryChip(
-                  icon: Icons.apps_rounded,
-                  label: 'marketplace_all_categories'.tr(),
-                  onTap: onOpenAllCategories,
-                  emphasized: true,
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.emphasized = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: emphasized
-                  ? PatientAppColors.brandTeal
-                  : PatientAppColors.brandTeal.withValues(alpha: 0.10),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: emphasized ? Colors.white : PatientAppColors.brandTeal,
-              size: 22,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Storefront-identity page header — the Pharmacy Store page's equivalent
 /// of [MarketplaceStoreCard]'s banner+logo anatomy, scaled up to a full
 /// header. Deliberately NOT [TrustyDrCurvedHeader] (this app's generic
@@ -227,136 +113,126 @@ class MarketplaceStoreHeader extends StatelessWidget {
     final banner = (bannerUrl ?? '').trim();
     final logo = (logoUrl ?? bannerUrl ?? '').trim();
 
+    // 2026-07-19 header restructure (Issue 1) — the pharmacy name, logo,
+    // and verification badge now live INSIDE the gradient/banner area
+    // itself, alongside the existing back/cart actions, instead of a
+    // separate large white identity block below. The gradient's height is
+    // organic (sized to its own back/cart row + logo/name row content, via
+    // Stack's "non-positioned child sizes the Stack" rule) rather than a
+    // fixed 96px — it grows just enough to hold what's actually in it.
+    // Below the gradient, only a single compact metadata line remains
+    // (see _StoreMetaLine) — city/product-count/category-count merged into
+    // one line with separators rather than three stacked pills/rows, so
+    // the first product collection sits noticeably higher on the page.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 132,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: banner.startsWith('http')
-                    ? Image.network(
-                        banner,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const MarketplaceBannerGradient(),
-                      )
-                    : const MarketplaceBannerGradient(),
-              ),
-              PositionedDirectional(
-                top: 12,
-                start: 12,
-                child: SafeArea(
-                  bottom: false,
-                  child: _BackButton(),
+        Stack(
+          children: [
+            Positioned.fill(
+              child: banner.startsWith('http')
+                  ? Image.network(
+                      banner,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const MarketplaceBannerGradient(),
+                    )
+                  : const MarketplaceBannerGradient(),
+            ),
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _BackButton(),
+                        const Spacer(),
+                        MarketplaceCartAction(
+                          chipBackground: Colors.black.withValues(alpha: 0.28),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: logo.startsWith('http')
+                              ? Image.network(
+                                  logo,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const MarketplaceLogoFallback(),
+                                )
+                              : const MarketplaceLogoFallback(),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  storeName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'marketplace_verified_pharmacy'.tr(),
+                                child: const Icon(
+                                  Icons.verified_rounded,
+                                  size: 17,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              PositionedDirectional(
-                top: 12,
-                end: 12,
-                child: SafeArea(
-                  bottom: false,
-                  child: MarketplaceCartAction(
-                    chipBackground: Colors.black.withValues(alpha: 0.28),
-                  ),
-                ),
-              ),
-              PositionedDirectional(
-                start: 16,
-                bottom: -28,
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.14),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: logo.startsWith('http')
-                      ? Image.network(
-                          logo,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const MarketplaceLogoFallback(),
-                        )
-                      : const MarketplaceLogoFallback(),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 36, 16, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      storeName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Tooltip(
-                    message: 'marketplace_verified_pharmacy'.tr(),
-                    child: const Icon(
-                      Icons.verified_rounded,
-                      size: 18,
-                      color: PatientAppColors.brandTeal,
-                    ),
-                  ),
-                ],
-              ),
-              if (city != null && city!.isNotEmpty) ...[
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    const Icon(Icons.place_rounded,
-                        size: 13, color: Colors.black38),
-                    const SizedBox(width: 3),
-                    Text(
-                      city!,
-                      style: const TextStyle(
-                          fontSize: 12.5, color: Colors.black45),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  _StatChip(
-                    label: 'marketplace_product_count'
-                        .tr(namedArgs: {'count': productCount.toString()}),
-                    emphasized: true,
-                  ),
-                  if (categoryCount > 0) ...[
-                    const SizedBox(width: 6),
-                    _StatChip(
-                      label: 'marketplace_category_count'
-                          .tr(namedArgs: {'count': categoryCount.toString()}),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
+          child: _StoreMetaLine(
+            city: city,
+            productCount: productCount,
+            categoryCount: categoryCount,
           ),
         ),
       ],
@@ -382,30 +258,65 @@ class _BackButton extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, this.emphasized = false});
+/// Compact single-line store metadata (2026-07-19 Issue 1) — replaces the
+/// old two-`_StatChip`-pill row plus a separate city row with ONE line of
+/// subtle text joined by " · " separators (city · N products · N
+/// categories, whichever are present). Wraps to a second line gracefully on
+/// narrow widths rather than truncating — deliberately not three stacked
+/// pills/chips per the explicit "prefer subtle text with separators"
+/// direction. Counts use accent (brand teal) weight so they read as the
+/// notable part of the line without becoming large chips of their own.
+class _StoreMetaLine extends StatelessWidget {
+  const _StoreMetaLine({
+    required this.city,
+    required this.productCount,
+    required this.categoryCount,
+  });
 
-  final String label;
-  final bool emphasized;
+  final String? city;
+  final int productCount;
+  final int categoryCount;
+
+  static const _labelStyle = TextStyle(fontSize: 12.5, color: Colors.black54);
+  static const _accentStyle = TextStyle(
+    fontSize: 12.5,
+    fontWeight: FontWeight.w700,
+    color: PatientAppColors.brandTeal,
+  );
+  static const _dotStyle = TextStyle(fontSize: 12.5, color: Colors.black26);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-      decoration: BoxDecoration(
-        color: emphasized
-            ? PatientAppColors.brandTeal.withValues(alpha: 0.12)
-            : Colors.black.withValues(alpha: 0.045),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          color: emphasized ? PatientAppColors.brandTeal : Colors.black54,
-        ),
-      ),
+    final segments = <Widget>[];
+    void addSegment(String text, TextStyle style) {
+      if (segments.isNotEmpty) {
+        segments.add(const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 6),
+          child: Text('·', style: _dotStyle),
+        ));
+      }
+      segments.add(Text(text, style: style));
+    }
+
+    if (city != null && city!.isNotEmpty) {
+      addSegment(city!, _labelStyle);
+    }
+    addSegment(
+      'marketplace_product_count'
+          .tr(namedArgs: {'count': productCount.toString()}),
+      _accentStyle,
+    );
+    if (categoryCount > 0) {
+      addSegment(
+        'marketplace_category_count'
+            .tr(namedArgs: {'count': categoryCount.toString()}),
+        _accentStyle,
+      );
+    }
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: segments,
     );
   }
 }

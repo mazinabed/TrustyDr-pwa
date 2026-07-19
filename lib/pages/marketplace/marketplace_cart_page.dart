@@ -110,9 +110,10 @@ class _CartBody extends ConsumerWidget {
               ...cart.items.map((item) => _CartItemTile(
                     item: item,
                     lang: lang,
-                    onQuantityChanged: (q) =>
-                        notifier.updateQuantity(item.productEngineId, q),
-                    onRemove: () => notifier.removeItem(item.productEngineId),
+                    onQuantityChanged: (q) => notifier.updateQuantity(
+                        item.productEngineId, item.variantEngineId, q),
+                    onRemove: () => notifier.removeItem(
+                        item.productEngineId, item.variantEngineId),
                   )),
             ],
           ),
@@ -186,6 +187,17 @@ class _CartItemTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         fontSize: 13.5, fontWeight: FontWeight.w600)),
+                // Milestone 5 (Patient Product Experience) — the exact
+                // variant this line represents (e.g. "Size: Medium, Color:
+                // Black"), display-only, never used for identity.
+                if ((item.variantLabel ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(item.variantLabel!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black54)),
+                ],
                 const SizedBox(height: 4),
                 Text('$price ${item.currencyName ?? ''}'.trim(),
                     style: const TextStyle(

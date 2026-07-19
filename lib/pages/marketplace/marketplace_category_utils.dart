@@ -103,6 +103,82 @@ int distinctCategoryCount(List<MarketplaceProduct> products) {
   return keys.length;
 }
 
+/// One category's homepage collection preview — a stable-ordered sample of
+/// products (never a ranking like "Best Seller"/"Trending", which this app
+/// has no real data for) plus the total count so a "See All" affordance can
+/// say how many exist beyond the sample. Deliberately category-source
+/// agnostic in name only ([categoryKey]/[categoryName] plus plain product
+/// data) — [CommerceCollectionSection] (marketplace_collection_section.dart)
+/// that renders this has no idea whether it came from the global featured
+/// set (Marketplace Home) or one store's own catalog (Pharmacy Store Home),
+/// matching the Milestone 5 "reusable collection component" requirement.
+class MarketplaceCategoryCollection {
+  const MarketplaceCategoryCollection({
+    required this.categoryKey,
+    required this.categoryName,
+    required this.sampleProducts,
+    required this.totalCount,
+  });
+
+  final String categoryKey;
+  final String categoryName;
+  final List<MarketplaceProduct> sampleProducts;
+  final int totalCount;
+}
+
+/// Groups [products] by TOP-LEVEL category (a product assigned to a
+/// subcategory counts toward its top-level ancestor's collection — the same
+/// roll-up [storeAvailableCategories]/[descendantCategoryKeys] already use,
+/// never a second grouping rule) and returns one [MarketplaceCategoryCollection]
+/// per top-level category that has at least one eligible product, ordered by
+/// the category's own [MarketplaceCategory.sortOrder] (the existing
+/// Category Engine's configured display order — never invented, never a
+/// popularity/ranking heuristic this app has no real data for).
+///
+/// [onlyFeatured] selects the curation rule per caller:
+/// - Marketplace Home passes true — only categories an admin has actually
+///   flagged `featured` (the existing, already-established Home-curation
+///   mechanism — see marketplace_landing_page.dart's own header comment)
+///   ever get a section, so a brand-new/unconfigured category never
+///   silently appears on the cross-store homepage.
+/// - Pharmacy Store Home passes false — every category that store's own
+///   published catalog actually uses gets a section (store-scoping, not
+///   platform curation, is the constraint there); callers are expected to
+///   have already narrowed [categories] to [storeAvailableCategories].
+///
+/// Pure, no I/O — operates entirely on the already-loaded product/category
+/// lists every caller already has in memory (marketplaceBrowseProvider /
+/// marketplaceCatalogProvider), so building N collection sections here
+/// costs zero extra network requests.
+List<MarketplaceCategoryCollection> buildCategoryCollections({
+  required List<MarketplaceProduct> products,
+  required List<MarketplaceCategory> categories,
+  required String lang,
+  bool onlyFeatured = false,
+  int sampleSize = 4,
+}) {
+  final topLevel = categories.where((c) => c.level == 0).toList()
+    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+  final collections = <MarketplaceCategoryCollection>[];
+  for (final category in topLevel) {
+    if (onlyFeatured && !category.featured) continue;
+    final descendantKeys =
+        descendantCategoryKeys(categories, category.categoryKey);
+    final matching = products
+        .where((p) => p.categoryKeys.any(descendantKeys.contains))
+        .toList();
+    if (matching.isEmpty) continue;
+    collections.add(MarketplaceCategoryCollection(
+      categoryKey: category.categoryKey,
+      categoryName: category.localizedName(lang),
+      sampleProducts: matching.take(sampleSize).toList(),
+      totalCount: matching.length,
+    ));
+  }
+  return collections;
+}
+
 /// The subset of shared category definitions actually represented by a
 /// specific store's published products — NEVER the global featured set.
 /// A category is included if at least one of [products] carries it in

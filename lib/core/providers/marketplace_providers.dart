@@ -18,6 +18,7 @@
 // marketplace_widgets.dart's `ensureMarketplaceLogin()` for the reusable
 // tap-time login gate protected actions should use instead.
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/providers/app_location_provider.dart';
 
@@ -336,6 +337,48 @@ class MarketplaceProduct {
         return '';
     }
   }
+
+  /// Returns a copy with [orgId] replaced — used ONLY by
+  /// [marketplaceCatalogProvider] to fix a real data gap (2026-07-19): the
+  /// single-store catalog wire contract (getMarketplaceCatalogForHealthcare)
+  /// deliberately omits orgId from each product ("the caller already knows
+  /// the orgId it asked for" — see that Commerce function's own header), so
+  /// [MarketplaceProduct.fromMap] parses orgId as an empty string for every
+  /// product reached via a Store page. That was harmless before this
+  /// product carried no further identity-dependent reads, but
+  /// [marketplaceProductDetailProvider] (Patient Product Experience) reads
+  /// orgId straight off this model to build its own request — an empty
+  /// orgId there is a genuinely invalid request, not a stale cache, and the
+  /// backend correctly (and permanently) rejects it with 400
+  /// invalid-argument. The catalog provider is the one place that already
+  /// knows the correct orgId for every product it returns, so it repairs
+  /// this gap at the source rather than every downstream reader having to
+  /// guess or thread the store's orgId through separately.
+  MarketplaceProduct copyWithOrgId(String newOrgId) => MarketplaceProduct(
+        orgId: newOrgId,
+        engineId: engineId,
+        sku: sku,
+        nameEn: nameEn,
+        nameAr: nameAr,
+        descriptionEn: descriptionEn,
+        descriptionAr: descriptionAr,
+        brandName: brandName,
+        categoryEngineIds: categoryEngineIds,
+        categoryKeys: categoryKeys,
+        categories: categories,
+        categoryEngineId: categoryEngineId,
+        categoryNameEn: categoryNameEn,
+        categoryNameAr: categoryNameAr,
+        displayPrice: displayPrice,
+        currencyName: currencyName,
+        isFeatured: isFeatured,
+        availabilityBadge: availabilityBadge,
+        imageUrl: imageUrl,
+        galleryImageUrls: galleryImageUrls,
+        storeNameEn: storeNameEn,
+        storeNameAr: storeNameAr,
+        storeNameKu: storeNameKu,
+      );
 }
 
 /// Shared Marketplace Category Engine (2026-07-14) — sourced from Commerce's
@@ -402,6 +445,309 @@ class MarketplaceCatalog {
   final List<MarketplaceCategory> categories;
 
   bool get isEmpty => products.isEmpty;
+}
+
+/// One resolved attribute/value on a product's detail read — EN/AR/KU
+/// labels already resolved server-side against Commerce's own
+/// attribute_definitions (mirrors doctor_portal's own
+/// ProductVariantSelection contract exactly — same wire shape, same
+/// backend resolver, reused here for the patient side). Used both for
+/// [MarketplaceProductDetail.attributeSelections] (descriptive specs, e.g.
+/// Strength/Pack Count) and each [MarketplaceProductVariant.selections]
+/// (variant-generating picks, e.g. Size/Color).
+class MarketplaceProductAttributeSelection {
+  const MarketplaceProductAttributeSelection({
+    required this.attributeKey,
+    required this.attributeNameEn,
+    required this.attributeNameAr,
+    required this.attributeNameKu,
+    required this.valueKey,
+    required this.valueNameEn,
+    required this.valueNameAr,
+    required this.valueNameKu,
+  });
+
+  final String? attributeKey;
+  final String? attributeNameEn;
+  final String? attributeNameAr;
+  final String? attributeNameKu;
+  final String? valueKey;
+  final String? valueNameEn;
+  final String? valueNameAr;
+  final String? valueNameKu;
+
+  factory MarketplaceProductAttributeSelection.fromMap(
+          Map<String, dynamic> m) =>
+      MarketplaceProductAttributeSelection(
+        attributeKey: m['attributeKey']?.toString(),
+        attributeNameEn: m['attributeName_en']?.toString(),
+        attributeNameAr: m['attributeName_ar']?.toString(),
+        attributeNameKu: m['attributeName_ku']?.toString(),
+        valueKey: m['valueKey']?.toString(),
+        valueNameEn: m['valueName_en']?.toString(),
+        valueNameAr: m['valueName_ar']?.toString(),
+        valueNameKu: m['valueName_ku']?.toString(),
+      );
+
+  String localizedAttributeName(String lang) =>
+      _localizeNoKu(attributeNameEn ?? '', attributeNameAr ?? '', lang);
+
+  String localizedValueName(String lang) =>
+      _localizeNoKu(valueNameEn ?? '', valueNameAr ?? '', lang);
+}
+
+/// One real, sellable Odoo product.product — only present once a product
+/// actually has more than one variant (hasVariants/variantCount are always
+/// populated regardless). Mirrors doctor_portal's own ProductVariant
+/// contract (Milestone 5, Product Management), read here live so price/
+/// stock are always current at the moment the patient opens this product
+/// — never trusted from the ~15-minute Marketplace browse cache.
+class MarketplaceProductVariant {
+  const MarketplaceProductVariant({
+    required this.variantEngineId,
+    required this.selections,
+    required this.salePrice,
+    required this.quantityAvailable,
+    required this.availabilityBadge,
+    required this.isDefault,
+  });
+
+  final String variantEngineId;
+  final List<MarketplaceProductAttributeSelection> selections;
+  final double salePrice;
+  final double quantityAvailable;
+  final String availabilityBadge;
+  final bool isDefault;
+
+  factory MarketplaceProductVariant.fromMap(Map<String, dynamic> m) {
+    final rawSelections = m['selections'];
+    return MarketplaceProductVariant(
+      variantEngineId: m['variantEngineId']?.toString() ?? '',
+      selections: rawSelections is List
+          ? rawSelections
+              .map((e) => MarketplaceProductAttributeSelection.fromMap(
+                  _asStringKeyedMap(e)))
+              .toList()
+          : const [],
+      salePrice:
+          (m['salePrice'] is num) ? (m['salePrice'] as num).toDouble() : 0.0,
+      quantityAvailable: (m['quantityAvailable'] is num)
+          ? (m['quantityAvailable'] as num).toDouble()
+          : 0.0,
+      availabilityBadge: m['availabilityBadge']?.toString() ?? 'out_of_stock',
+      isDefault: m['isDefault'] == true,
+    );
+  }
+
+  /// The value key this variant carries for a given attribute, or null if
+  /// this variant doesn't select that attribute at all — the building
+  /// block variant-matching logic (resolving a patient's picks to one
+  /// exact variant) is built on.
+  String? valueKeyFor(String attributeKey) => selections
+      .firstWhere(
+        (s) => s.attributeKey == attributeKey,
+        orElse: () => const MarketplaceProductAttributeSelection(
+          attributeKey: null,
+          attributeNameEn: null,
+          attributeNameAr: null,
+          attributeNameKu: null,
+          valueKey: null,
+          valueNameEn: null,
+          valueNameAr: null,
+          valueNameKu: null,
+        ),
+      )
+      .valueKey;
+}
+
+/// Live single-product detail — fetched fresh (never from the Marketplace
+/// browse cache) the moment a patient opens Product Details, via
+/// getMarketplaceProductDetail (Healthcare) -> getMarketplaceProductDetailForHealthcare
+/// (Commerce) -> a direct Odoo read (trustydr-commerce/functions/src/
+/// marketplaceProductDetail.ts). Carries exactly what [MarketplaceProduct]
+/// (the browse-card shape) does NOT: variants, descriptive attribute
+/// specs, and a truth-refreshed price/stock. The detail page keeps using
+/// the already-loaded [MarketplaceProduct] for instant paint (title,
+/// image, description) while this loads, then this becomes the price/
+/// stock/variant authority once it resolves.
+class MarketplaceProductDetail {
+  const MarketplaceProductDetail({
+    required this.engineId,
+    required this.sku,
+    required this.hasVariants,
+    required this.variantCount,
+    required this.variants,
+    required this.attributeSelections,
+    required this.listPrice,
+    required this.currencyName,
+    required this.quantityAvailable,
+    required this.availabilityBadge,
+  });
+
+  final String engineId;
+  final String sku;
+  final bool hasVariants;
+  final int variantCount;
+  final List<MarketplaceProductVariant> variants;
+  final List<MarketplaceProductAttributeSelection> attributeSelections;
+  final double listPrice;
+  final String? currencyName;
+  final double quantityAvailable;
+  final String availabilityBadge;
+
+  factory MarketplaceProductDetail.fromMap(Map<String, dynamic> m) {
+    final rawVariants = m['variants'];
+    final rawAttributeSelections = m['attributeSelections'];
+    return MarketplaceProductDetail(
+      engineId: m['engineId']?.toString() ?? '',
+      sku: m['sku']?.toString() ?? '',
+      hasVariants: m['hasVariants'] == true,
+      variantCount:
+          (m['variantCount'] is num) ? (m['variantCount'] as num).toInt() : 1,
+      variants: rawVariants is List
+          ? rawVariants
+              .map((e) =>
+                  MarketplaceProductVariant.fromMap(_asStringKeyedMap(e)))
+              .toList()
+          : const [],
+      attributeSelections: rawAttributeSelections is List
+          ? rawAttributeSelections
+              .map((e) => MarketplaceProductAttributeSelection.fromMap(
+                  _asStringKeyedMap(e)))
+              .toList()
+          : const [],
+      listPrice:
+          (m['listPrice'] is num) ? (m['listPrice'] as num).toDouble() : 0.0,
+      currencyName: m['currencyName']?.toString(),
+      quantityAvailable: (m['quantityAvailable'] is num)
+          ? (m['quantityAvailable'] as num).toDouble()
+          : 0.0,
+      availabilityBadge: m['availabilityBadge']?.toString() ?? 'out_of_stock',
+    );
+  }
+
+  /// Every distinct attributeKey that actually varies across this
+  /// product's own variants (Size, Color, Flavor, ...) — the set the
+  /// detail page must render as a selectable control. Deliberately derived
+  /// from the real variants, never the global attribute catalog (a product
+  /// must only ever offer the attributes it actually has).
+  List<String> get variantAttributeKeys {
+    final keys = <String>{};
+    for (final variant in variants) {
+      for (final selection in variant.selections) {
+        if (selection.attributeKey != null) keys.add(selection.attributeKey!);
+      }
+    }
+    return keys.toList();
+  }
+
+  /// Resolves a patient's in-progress selections (attributeKey -> chosen
+  /// valueKey) to the one exact variant matching ALL of them, or null if no
+  /// variant matches (either the selection is incomplete or the
+  /// combination doesn't exist) — the single required choke point every
+  /// price/availability/Add-to-Cart decision on the detail page must go
+  /// through for a multi-variant product. Never guesses: only exactly one
+  /// variant satisfying every selected attribute is a match; anything else
+  /// (0 or >1) returns null on purpose so the caller shows "select options"
+  /// rather than an arbitrary price.
+  ///
+  /// Only meaningful when [hasVariants] is true (variants is only ever
+  /// populated in that case — see this class' own field doc comment,
+  /// mirroring EngineManagedProduct.variants exactly). A single-variant
+  /// product needs no resolution at all: the backend's own
+  /// resolveVariantDecision already auto-selects the one sellable variant
+  /// at checkout time when no explicit variantEngineId is submitted — the
+  /// Patient App simply omits variantEngineId entirely for that case,
+  /// never calling this method.
+  MarketplaceProductVariant? resolveVariant(Map<String, String> selections) {
+    if (variants.isEmpty) return null;
+    final matches = variants.where((variant) {
+      for (final attributeKey in variantAttributeKeys) {
+        final selected = selections[attributeKey];
+        if (selected == null) return false;
+        if (variant.valueKeyFor(attributeKey) != selected) return false;
+      }
+      return true;
+    }).toList();
+    return matches.length == 1 ? matches.first : null;
+  }
+
+  /// Every distinct value actually offered for a variant-generating
+  /// attribute, in first-seen order — the picker's own option list, never
+  /// the global attribute catalog (only options this specific product
+  /// really has).
+  List<MarketplaceProductAttributeSelection> optionsFor(String attributeKey) {
+    final seenValueKeys = <String>{};
+    final options = <MarketplaceProductAttributeSelection>[];
+    for (final variant in variants) {
+      for (final selection in variant.selections) {
+        if (selection.attributeKey != attributeKey) continue;
+        final valueKey = selection.valueKey;
+        if (valueKey == null || !seenValueKeys.add(valueKey)) continue;
+        options.add(selection);
+      }
+    }
+    return options;
+  }
+
+  /// Whether choosing [valueKey] for [attributeKey] remains possible given
+  /// the OTHER attributes already selected in [currentSelections] — that
+  /// attribute's own current selection (if any) is ignored, since this
+  /// answers "if I picked this value instead, would some real variant
+  /// exist." Used to visibly disable combinations that don't exist rather
+  /// than letting the patient pick a dead end.
+  bool isValueAvailable(
+    String attributeKey,
+    String valueKey,
+    Map<String, String> currentSelections,
+  ) {
+    return variants.any((variant) {
+      if (variant.valueKeyFor(attributeKey) != valueKey) return false;
+      for (final otherKey in variantAttributeKeys) {
+        if (otherKey == attributeKey) continue;
+        final selected = currentSelections[otherKey];
+        if (selected == null) continue; // not yet chosen — doesn't constrain
+        if (variant.valueKeyFor(otherKey) != selected) return false;
+      }
+      return true;
+    });
+  }
+
+  /// Attribute keys where every real variant shares the exact same value —
+  /// safe to preselect automatically (the approved "unambiguous value"
+  /// initial-selection rule): there is genuinely no choice to make for that
+  /// one attribute, even though the product has multiple variants overall
+  /// (varying by some OTHER attribute). Never guesses across attributes
+  /// that DO vary.
+  Map<String, String> get unambiguousSelections {
+    final result = <String, String>{};
+    for (final attributeKey in variantAttributeKeys) {
+      final values = variants.map((v) => v.valueKeyFor(attributeKey)).toSet();
+      if (values.length == 1 && values.first != null) {
+        result[attributeKey] = values.first!;
+      }
+    }
+    return result;
+  }
+
+  /// Descriptive attribute specs to display as plain product information —
+  /// everything in [attributeSelections] EXCEPT the attributes that are
+  /// actually variant-generating on this product (those render as pickers
+  /// instead, never duplicated as a spec row too). A null attributeKey
+  /// means the backend could not resolve this Odoo attribute against
+  /// Commerce's own attribute_definitions at all (confirmed live: the
+  /// legacy "Brand" mechanism — see odooDriver.ts's resolveBrandNames —
+  /// writes a template.attribute.value that was never migrated into the
+  /// new Attribute Engine) — excluded here since there is no real
+  /// localized attribute name to show, and [MarketplaceProduct.brandName]
+  /// already surfaces that same value through its own dedicated field.
+  List<MarketplaceProductAttributeSelection> get descriptiveAttributes {
+    final variantKeys = variantAttributeKeys.toSet();
+    return attributeSelections
+        .where((s) =>
+            s.attributeKey != null && !variantKeys.contains(s.attributeKey))
+        .toList();
+  }
 }
 
 /// Combined Store/Product/Category browse payload — one Healthcare call
@@ -531,9 +877,20 @@ final marketplaceCatalogProvider = FutureProvider.autoDispose
   final data = _asStringKeyedMap(result.data);
 
   final rawProducts = data['products'];
+  // 2026-07-19 fix (confirmed root cause of the Product Details 400):
+  // getMarketplaceCatalogForHealthcare deliberately never echoes orgId per
+  // product (this family's own orgId param is already the caller's
+  // context), so MarketplaceProduct.fromMap parses every one of these as
+  // orgId: ''. That was harmless before marketplaceProductDetailProvider
+  // started reading orgId straight off this model — an empty orgId there
+  // is a permanent, correctly-rejected 400, not a transient failure. This
+  // is the one place that already knows the real orgId for every product
+  // it returns, so it's repaired here at the source — see
+  // MarketplaceProduct.copyWithOrgId's own doc comment.
   final products = rawProducts is List
       ? rawProducts
-          .map((e) => MarketplaceProduct.fromMap(_asStringKeyedMap(e)))
+          .map((e) => MarketplaceProduct.fromMap(_asStringKeyedMap(e))
+              .copyWithOrgId(orgId))
           .toList()
       : <MarketplaceProduct>[];
 
@@ -546,3 +903,79 @@ final marketplaceCatalogProvider = FutureProvider.autoDispose
 
   return MarketplaceCatalog(products: products, categories: categories);
 });
+
+/// Live single-product detail (Milestone 5, Patient Product Experience) —
+/// keyed by (orgId, engineId) so switching products/stores always fetches
+/// fresh rather than reusing a stale family instance. autoDispose so this
+/// never lingers once the detail page closes. See
+/// [MarketplaceProductDetail]'s own doc comment for why this is a live read
+/// rather than a browse-cache field.
+final marketplaceProductDetailProvider = FutureProvider.autoDispose
+    .family<MarketplaceProductDetail, ({String orgId, String engineId})>(
+  (ref, params) async {
+    // Fail fast, locally, on a request we already know the backend must
+    // reject — never send a callable request with an empty identifier
+    // (the exact 2026-07-19 bug: MarketplaceProduct.orgId was empty for
+    // every product reached via a Store page before copyWithOrgId's own
+    // fix). This is now a defensive backstop, not the primary fix — but it
+    // turns any FUTURE identity gap into an immediate, clearly-labeled,
+    // non-retrying local error instead of a live 400 round trip.
+    if (params.orgId.isEmpty || params.engineId.isEmpty) {
+      debugPrint(
+          '[marketplace_product_detail] refusing to call getMarketplaceProductDetail with '
+          'an empty identifier (orgId empty: ${params.orgId.isEmpty}, engineId empty: '
+          '${params.engineId.isEmpty}) — this product record is missing required identity.');
+      throw const MarketplaceProductDetailRequestError();
+    }
+
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('getMarketplaceProductDetail');
+    try {
+      final result =
+          await callable.call<Map<String, dynamic>>(<String, dynamic>{
+        'orgId': params.orgId,
+        'engineId': params.engineId,
+      });
+      return MarketplaceProductDetail.fromMap(_asStringKeyedMap(result.data));
+    } on FirebaseFunctionsException catch (e) {
+      // Sanitized — error code/type and which identifier was sent, never
+      // auth tokens or any patient data (this endpoint carries none).
+      debugPrint(
+          '[marketplace_product_detail] getMarketplaceProductDetail failed: '
+          'code=${e.code} message=${e.message} orgId.isEmpty=${params.orgId.isEmpty} '
+          'engineId=${params.engineId}');
+      rethrow;
+    }
+  },
+  // 2026-07-19 fix — the reported "endless spinner" symptom: Riverpod's
+  // own default retry (exponential backoff, unlimited by app config) was
+  // re-running this exact request forever after a DETERMINISTIC 400
+  // (invalid-argument) that could never succeed on retry. Deterministic
+  // callable error codes and the local pre-flight guard above stop
+  // immediately (return null — no further automatic retry; the UI's own
+  // explicit Retry button is the only way to try again). Only a genuinely
+  // transient failure (network blip, backend temporarily unavailable) gets
+  // a short, bounded exponential backoff — never unlimited.
+  retry: (retryCount, error) {
+    if (error is MarketplaceProductDetailRequestError) return null;
+    if (error is FirebaseFunctionsException) {
+      const permanentCodes = {
+        'invalid-argument',
+        'not-found',
+        'failed-precondition',
+        'permission-denied',
+        'unauthenticated',
+      };
+      if (permanentCodes.contains(error.code)) return null;
+    }
+    if (retryCount >= 2) return null;
+    return Duration(seconds: 1 << retryCount); // 1s, then 2s
+  },
+);
+
+/// Thrown locally (never reaches the network) when a product record is
+/// missing the identity a live detail fetch requires — see
+/// [marketplaceProductDetailProvider]'s own pre-flight guard.
+class MarketplaceProductDetailRequestError implements Exception {
+  const MarketplaceProductDetailRequestError();
+}
