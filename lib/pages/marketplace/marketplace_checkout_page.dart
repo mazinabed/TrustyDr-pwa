@@ -247,6 +247,148 @@ final _checkoutProfileProvider =
   return _CheckoutProfile.fromMap(result.data);
 });
 
+/// Checkout/Inventory mismatch fix (2026-07-20) — why a cart line failed at
+/// checkout, matching the backend's own `reason` strings 1:1
+/// (marketplaceCheckout.ts's `unavailable` entries). `unknown` covers any
+/// future/unrecognized reason string, so a backend addition never crashes
+/// the client — it just falls back to the generic message.
+enum UnavailableReason {
+  insufficientStock,
+  notFound,
+  unpublished,
+  wrongStore,
+  unknown,
+}
+
+/// One resolved, localization-independent entry — [productName] is empty
+/// when the cart couldn't be correlated to a name (defensive fallback,
+/// shouldn't normally happen).
+class UnavailableCartEntry {
+  const UnavailableCartEntry({
+    required this.reason,
+    required this.productName,
+    this.requestedQuantity,
+    this.availableQuantity,
+  });
+
+  final UnavailableReason reason;
+  final String productName;
+  final num? requestedQuantity;
+  final num? availableQuantity;
+}
+
+/// Checkout/Inventory mismatch fix (2026-07-20) — turns the backend's
+/// per-line `unavailable` array (placeMarketplaceOrderForHealthcare's
+/// FirebaseFunctionsException.details['unavailable'], forwarded verbatim
+/// from Commerce's own placeMarketplaceOrderForHealthcare 409 response —
+/// see marketplaceCheckout.ts) into typed entries, correlated against the
+/// cart's own already-loaded display data (no extra fetch, and never
+/// trusted as authoritative — matches CartItem's own "display-only"
+/// contract, just used to name which item the patient needs to act on).
+///
+/// Deliberately has ZERO `.tr()` calls (unlike [buildUnavailableItemsMessage]
+/// below, which formats this into the actual localized string) — easy_
+/// localization's `.tr()` requires a live EasyLocalization context that
+/// isn't available in a plain unit test, so the correlation/reason-mapping
+/// logic that actually matters to get right is kept separately testable
+/// here, with formatting as a thin, separate layer.
+List<UnavailableCartEntry> resolveUnavailableCartEntries({
+  required List<CartItem> cartItems,
+  required List<dynamic> unavailable,
+  required String lang,
+}) {
+  final entries = <UnavailableCartEntry>[];
+  for (final raw in unavailable) {
+    if (raw is! Map) continue;
+    final productEngineId = raw['productEngineId']?.toString();
+    final variantEngineId = raw['variantEngineId']?.toString();
+
+    final matches = cartItems
+        .where((i) =>
+            i.productEngineId == productEngineId &&
+            (variantEngineId == null || i.variantEngineId == variantEngineId))
+        .toList();
+    final productName = matches.isNotEmpty
+        ? (lang == 'ar' ? matches.first.nameAr : matches.first.nameEn)
+        : '';
+
+    final reason = switch (raw['reason']?.toString()) {
+      'insufficient_stock' => UnavailableReason.insufficientStock,
+      'not_found' => UnavailableReason.notFound,
+      'unpublished' => UnavailableReason.unpublished,
+      'wrong_store' => UnavailableReason.wrongStore,
+      _ => UnavailableReason.unknown,
+    };
+
+    final requested = raw['requestedQuantity'];
+    final available = raw['availableQuantity'];
+    entries.add(UnavailableCartEntry(
+      reason: reason,
+      productName: productName,
+      requestedQuantity: requested is num ? requested : null,
+      availableQuantity: available is num ? available : null,
+    ));
+  }
+  return entries;
+}
+
+/// Formats [resolveUnavailableCartEntries]'s output into the message shown
+/// to the patient — see that function's own doc comment for why the
+/// correlation/reason logic lives separately from this `.tr()`-using layer.
+String buildUnavailableItemsMessage({
+  required List<CartItem> cartItems,
+  required List<dynamic> unavailable,
+  required String lang,
+}) {
+  final entries = resolveUnavailableCartEntries(
+    cartItems: cartItems,
+    unavailable: unavailable,
+    lang: lang,
+  );
+  final lines = <String>[];
+  for (final entry in entries) {
+    if (entry.productName.isEmpty) {
+      lines.add('marketplace_checkout_unavailable_generic'.tr());
+      continue;
+    }
+    switch (entry.reason) {
+      case UnavailableReason.insufficientStock:
+        if (entry.requestedQuantity != null &&
+            entry.availableQuantity != null) {
+          lines.add('marketplace_checkout_unavailable_insufficient_stock'.tr(
+            namedArgs: {
+              'product': entry.productName,
+              'available': entry.availableQuantity.toString(),
+              'requested': entry.requestedQuantity.toString(),
+            },
+          ));
+        } else {
+          lines.add('marketplace_checkout_unavailable_out_of_stock'
+              .tr(namedArgs: {'product': entry.productName}));
+        }
+        break;
+      case UnavailableReason.notFound:
+        lines.add('marketplace_checkout_unavailable_not_found'
+            .tr(namedArgs: {'product': entry.productName}));
+        break;
+      case UnavailableReason.unpublished:
+        lines.add('marketplace_checkout_unavailable_unpublished'
+            .tr(namedArgs: {'product': entry.productName}));
+        break;
+      case UnavailableReason.wrongStore:
+        lines.add('marketplace_checkout_unavailable_wrong_store'
+            .tr(namedArgs: {'product': entry.productName}));
+        break;
+      case UnavailableReason.unknown:
+        lines.add('marketplace_checkout_unavailable_generic'.tr());
+        break;
+    }
+  }
+  return lines.isEmpty
+      ? 'marketplace_checkout_generic_error'.tr()
+      : lines.join('\n');
+}
+
 /// Checkout (Milestone 6). Reached only after ensureMarketplaceLogin has
 /// already confirmed the caller is signed in (the Cart page's own gate) —
 /// this page itself does not re-check auth, matching every other
@@ -380,6 +522,8 @@ class _MarketplaceCheckoutPageState
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       String message;
+      final unavailable =
+          (e.details is Map) ? (e.details as Map)['unavailable'] : null;
       if (e.code == 'invalid-argument' &&
           (e.details is Map) &&
           (e.details as Map)['code'] == 'delivery_address_required') {
@@ -387,6 +531,21 @@ class _MarketplaceCheckoutPageState
       } else if (e.code == 'failed-precondition' &&
           (e.message ?? '').toLowerCase().contains('profile name')) {
         message = 'marketplace_checkout_profile_incomplete_error'.tr();
+      } else if (e.code == 'failed-precondition' &&
+          unavailable is List &&
+          unavailable.isNotEmpty) {
+        // Checkout/Inventory mismatch fix (2026-07-20) — the backend
+        // already identifies exactly which product(s)/variant(s) failed
+        // and why (placeMarketplaceOrderForHealthcare forwards Commerce's
+        // own `unavailable` array as this exception's details); this used
+        // to be discarded in favor of the one generic sentence below. Names
+        // are resolved from the cart's own already-loaded display data —
+        // no extra fetch.
+        message = buildUnavailableItemsMessage(
+          cartItems: cart.items,
+          unavailable: unavailable,
+          lang: context.locale.languageCode,
+        );
       } else if (e.code == 'failed-precondition') {
         message = e.message ?? 'marketplace_checkout_generic_error'.tr();
       } else {
