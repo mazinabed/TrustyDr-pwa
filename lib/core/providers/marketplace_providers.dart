@@ -67,6 +67,14 @@ class MarketplaceStore {
     required this.facilityAddress,
     required this.productCount,
     required this.featuredImageUrl,
+    required this.logoUrl,
+    required this.bannerUrl,
+    required this.taglineEn,
+    required this.taglineAr,
+    required this.taglineKu,
+    required this.descriptionEn,
+    required this.descriptionAr,
+    required this.descriptionKu,
   });
 
   final String providerId;
@@ -83,7 +91,29 @@ class MarketplaceStore {
   final String cityKu;
   final String? facilityAddress;
   final int productCount;
+
+  /// Store Branding V1 (2026-07-22) — no longer populated (always null).
+  /// Previously a sampled PRODUCT image standing in for a store banner —
+  /// removed at the source (Commerce's marketplaceStoreDiscovery.ts) since
+  /// a product must never represent the merchant itself. Kept as a field
+  /// only so this model's shape doesn't silently drop a key some other
+  /// caller might still reference; [bannerUrl] is the real replacement and
+  /// the only one any widget should render.
   final String? featuredImageUrl;
+
+  /// Store Branding V1 — real, merchant-uploaded logo/banner
+  /// (organizations/{orgId}.storeSettings.branding via Commerce's
+  /// storeBranding.ts). Null means the merchant hasn't uploaded one yet —
+  /// render the existing MarketplaceLogoFallback/MarketplaceBannerGradient,
+  /// never fall back to [imageUrl]/[featuredImageUrl].
+  final String? logoUrl;
+  final String? bannerUrl;
+  final String? taglineEn;
+  final String? taglineAr;
+  final String? taglineKu;
+  final String? descriptionEn;
+  final String? descriptionAr;
+  final String? descriptionKu;
 
   factory MarketplaceStore.fromMap(Map<String, dynamic> m) {
     return MarketplaceStore(
@@ -103,6 +133,14 @@ class MarketplaceStore {
       productCount:
           (m['productCount'] is num) ? (m['productCount'] as num).toInt() : 0,
       featuredImageUrl: m['featuredImageUrl']?.toString(),
+      logoUrl: m['logoUrl']?.toString(),
+      bannerUrl: m['bannerUrl']?.toString(),
+      taglineEn: m['tagline_en']?.toString(),
+      taglineAr: m['tagline_ar']?.toString(),
+      taglineKu: m['tagline_ku']?.toString(),
+      descriptionEn: m['description_en']?.toString(),
+      descriptionAr: m['description_ar']?.toString(),
+      descriptionKu: m['description_ku']?.toString(),
     );
   }
 
@@ -114,6 +152,23 @@ class MarketplaceStore {
 
   String localizedProvince(String lang) =>
       _localizeWithKuField(provinceEn, provinceAr, provinceKu, lang);
+
+  /// Null when the merchant hasn't set a tagline in any language yet —
+  /// distinct from `_localizeWithKuField`'s own "always some string" other
+  /// callers rely on, since a tagline/description is genuinely optional.
+  String? localizedTagline(String lang) {
+    final resolved = _localizeWithKuField(
+            taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang)
+        .trim();
+    return resolved.isEmpty ? null : resolved;
+  }
+
+  String? localizedDescription(String lang) {
+    final resolved = _localizeWithKuField(
+            descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang)
+        .trim();
+    return resolved.isEmpty ? null : resolved;
+  }
 }
 
 /// One of a product's assigned categories, as embedded on the product doc
@@ -439,12 +494,76 @@ class MarketplaceCategory {
 }
 
 class MarketplaceCatalog {
-  const MarketplaceCatalog({required this.products, required this.categories});
+  const MarketplaceCatalog({
+    required this.products,
+    required this.categories,
+    this.store,
+  });
 
   final List<MarketplaceProduct> products;
   final List<MarketplaceCategory> categories;
 
+  /// Store Branding V1 (2026-07-22) — real, merchant-controlled storefront
+  /// identity for the orgId this catalog was fetched for, sourced from the
+  /// SAME getMarketplaceCatalog call (never a second fetch). Null only if
+  /// the response omitted it entirely (older/unexpected shape) — a present
+  /// [MarketplaceStoreBranding] with all-null fields is the normal "no
+  /// branding uploaded yet" case, not this being null.
+  final MarketplaceStoreBranding? store;
+
   bool get isEmpty => products.isEmpty;
+}
+
+/// Store Branding V1 (2026-07-22) — see MarketplaceCatalog.store. Every
+/// field is nullable and independently optional; a merchant may have
+/// uploaded a logo but no banner, set a tagline but no description, etc.
+class MarketplaceStoreBranding {
+  const MarketplaceStoreBranding({
+    this.logoUrl,
+    this.bannerUrl,
+    this.taglineEn,
+    this.taglineAr,
+    this.taglineKu,
+    this.descriptionEn,
+    this.descriptionAr,
+    this.descriptionKu,
+  });
+
+  final String? logoUrl;
+  final String? bannerUrl;
+  final String? taglineEn;
+  final String? taglineAr;
+  final String? taglineKu;
+  final String? descriptionEn;
+  final String? descriptionAr;
+  final String? descriptionKu;
+
+  factory MarketplaceStoreBranding.fromMap(Map<String, dynamic> m) {
+    return MarketplaceStoreBranding(
+      logoUrl: m['logoUrl']?.toString(),
+      bannerUrl: m['bannerUrl']?.toString(),
+      taglineEn: m['tagline_en']?.toString(),
+      taglineAr: m['tagline_ar']?.toString(),
+      taglineKu: m['tagline_ku']?.toString(),
+      descriptionEn: m['description_en']?.toString(),
+      descriptionAr: m['description_ar']?.toString(),
+      descriptionKu: m['description_ku']?.toString(),
+    );
+  }
+
+  String? localizedTagline(String lang) {
+    final resolved = _localizeWithKuField(
+            taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang)
+        .trim();
+    return resolved.isEmpty ? null : resolved;
+  }
+
+  String? localizedDescription(String lang) {
+    final resolved = _localizeWithKuField(
+            descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang)
+        .trim();
+    return resolved.isEmpty ? null : resolved;
+  }
 }
 
 /// One resolved attribute/value on a product's detail read — EN/AR/KU
@@ -901,7 +1020,16 @@ final marketplaceCatalogProvider = FutureProvider.autoDispose
           .toList()
       : <MarketplaceCategory>[];
 
-  return MarketplaceCatalog(products: products, categories: categories);
+  // Store Branding V1 (2026-07-22) — same call, no second fetch. Every
+  // caller of this provider (the Store page itself, and the pharmacy
+  // profile page's "Visit Store" button) gets real branding for free.
+  final rawStore = data['store'];
+  final store = rawStore is Map
+      ? MarketplaceStoreBranding.fromMap(_asStringKeyedMap(rawStore))
+      : null;
+
+  return MarketplaceCatalog(
+      products: products, categories: categories, store: store);
 });
 
 /// Live single-product detail (Milestone 5, Patient Product Experience) —

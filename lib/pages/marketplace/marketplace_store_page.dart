@@ -44,20 +44,23 @@ class MarketplaceStorePage extends ConsumerStatefulWidget {
     this.bannerUrl,
     this.logoUrl,
     this.city,
+    this.tagline,
+    this.description,
   });
 
   final String providerId;
   final String orgId;
   final String storeName;
-  // Optional: only available when navigated to from a MarketplaceStoreCard
-  // (which already has the full MarketplaceStore object). The pharmacy
-  // provider profile's "Visit Store" button only has providerId/orgId/name
-  // (Healthcare-side data, no Commerce store metadata) — the header falls
-  // back to the same gradient/icon treatment the store card itself uses
-  // when these are null, never a blank or clinical-looking header.
+  // Optional: every navigation path into this page must supply the SAME
+  // real branding data (Store Branding V1, 2026-07-22) — see each call
+  // site's own comment for where it sources these from. Null renders the
+  // existing gradient/icon fallback, never a blank or clinical-looking
+  // header, and never a sampled product image.
   final String? bannerUrl;
   final String? logoUrl;
   final String? city;
+  final String? tagline;
+  final String? description;
 
   @override
   ConsumerState<MarketplaceStorePage> createState() =>
@@ -83,6 +86,8 @@ class _MarketplaceStorePageState extends ConsumerState<MarketplaceStorePage> {
               bannerUrl: widget.bannerUrl,
               logoUrl: widget.logoUrl,
               city: widget.city,
+              tagline: widget.tagline,
+              description: widget.description,
               catalog: catalog,
               selectedCategoryKey: _selectedCategoryKey,
               searchQuery: _searchQuery,
@@ -121,6 +126,8 @@ class _StoreBody extends StatelessWidget {
     required this.bannerUrl,
     required this.logoUrl,
     required this.city,
+    this.tagline,
+    this.description,
     required this.catalog,
     required this.selectedCategoryKey,
     required this.searchQuery,
@@ -133,6 +140,8 @@ class _StoreBody extends StatelessWidget {
   final String? bannerUrl;
   final String? logoUrl;
   final String? city;
+  final String? tagline;
+  final String? description;
   final MarketplaceCatalog catalog;
   final String? selectedCategoryKey;
   final String searchQuery;
@@ -143,11 +152,26 @@ class _StoreBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
 
+    // Store Branding V1 (2026-07-22) — catalog.store is fetched by THIS
+    // page's own marketplaceCatalogProvider(orgId) call, so it resolves
+    // identically no matter which screen navigated here (store card,
+    // pharmacy profile's "Visit Store", or a product's "Sold by" link) —
+    // the constructor params above only matter as a fallback if the
+    // catalog response is ever missing the store field. City has no
+    // Commerce-side source (it's Healthcare's own public_pharmacy_providers
+    // data), so it stays purely nav-param-sourced.
+    final effectiveBannerUrl = catalog.store?.bannerUrl ?? bannerUrl;
+    final effectiveLogoUrl = catalog.store?.logoUrl ?? logoUrl;
+    final effectiveTagline = catalog.store?.localizedTagline(lang) ?? tagline;
+    final effectiveDescription =
+        catalog.store?.localizedDescription(lang) ?? description;
+
     final header = MarketplaceStoreHeader(
       storeName: storeName,
-      bannerUrl: bannerUrl,
-      logoUrl: logoUrl,
+      bannerUrl: effectiveBannerUrl,
+      logoUrl: effectiveLogoUrl,
       city: city,
+      tagline: effectiveTagline,
       productCount: catalog.products.length,
       categoryCount: distinctCategoryCount(catalog.products),
     );
@@ -262,6 +286,20 @@ class _StoreBody extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           header,
+          // Store Branding V1 (2026-07-22) — the merchant's own longer
+          // description, shown once, directly under the header/metadata
+          // line. Null/empty renders nothing (never a placeholder
+          // sentence) — most stores won't have one yet.
+          if ((effectiveDescription ?? '').trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Text(
+                effectiveDescription!.trim(),
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: MarketplaceSearchBar(

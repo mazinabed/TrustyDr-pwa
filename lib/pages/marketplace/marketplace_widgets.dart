@@ -97,6 +97,7 @@ class MarketplaceStoreHeader extends StatelessWidget {
     this.bannerUrl,
     this.logoUrl,
     this.city,
+    this.tagline,
     required this.productCount,
     required this.categoryCount,
   });
@@ -105,6 +106,12 @@ class MarketplaceStoreHeader extends StatelessWidget {
   final String? bannerUrl;
   final String? logoUrl;
   final String? city;
+
+  /// Store Branding V1 (2026-07-22) — the merchant's own short tagline
+  /// (already localized by the caller), shown as a subtitle under the
+  /// store name. Null/empty renders nothing extra — never a placeholder
+  /// sentence.
+  final String? tagline;
   final int productCount;
   final int categoryCount;
 
@@ -186,36 +193,60 @@ class MarketplaceStoreHeader extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  storeName,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      storeName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.black26,
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Tooltip(
+                                    message:
+                                        'marketplace_verified_pharmacy'.tr(),
+                                    child: const Icon(
+                                      Icons.verified_rounded,
+                                      size: 17,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if ((tagline ?? '').trim().isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  tagline!.trim(),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    shadows: [
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    shadows: const [
                                       Shadow(
-                                        color: Colors.black26,
-                                        blurRadius: 4,
-                                      ),
+                                          color: Colors.black26, blurRadius: 4),
                                     ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 6),
-                              Tooltip(
-                                message: 'marketplace_verified_pharmacy'.tr(),
-                                child: const Icon(
-                                  Icons.verified_rounded,
-                                  size: 17,
-                                  color: Colors.white,
-                                ),
-                              ),
+                              ],
                             ],
                           ),
                         ),

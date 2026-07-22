@@ -7,13 +7,15 @@ import 'package:trustydr/pages/marketplace/marketplace_store_page.dart';
 
 /// Storefront card — DoorDash/Instacart shop-card anatomy (2026-07-15 card
 /// redesign pass), not a healthcare-provider list row. A cover banner
-/// (featuredImageUrl, or a brand-teal gradient if none is set) with the
-/// store's logo overlaid at the seam is what makes this read as "enter this
-/// shop" rather than "here is a business" — a plain logo-plus-text row
-/// (the previous version) reads as a directory entry no matter how the text
-/// underneath it is styled. Never falls back to medical/provider imagery
-/// (e.g. a stethoscope icon) — a missing image gets a neutral storefront
-/// icon instead, since this is a shopping surface, not a clinical directory.
+/// (Store Branding V1, 2026-07-22: store.bannerUrl — the merchant's own
+/// uploaded cover image, or a brand-teal gradient if none is set) with the
+/// store's logo (store.logoUrl) overlaid at the seam is what makes this
+/// read as "enter this shop" rather than "here is a business" — a plain
+/// logo-plus-text row (the previous version) reads as a directory entry no
+/// matter how the text underneath it is styled. Never falls back to
+/// medical/provider imagery (e.g. a stethoscope icon) or to a sampled
+/// product photo — a missing image gets a neutral storefront icon/gradient
+/// instead, since this is a shopping surface, not a clinical directory.
 ///
 /// The verified badge is NOT a new per-store field — every store that can
 /// ever appear in this feed already passed the existing
@@ -43,8 +45,15 @@ class MarketplaceStoreCard extends StatelessWidget {
     final lang = context.locale.languageCode;
     final name = store.localizedName(lang);
     final city = store.localizedCity(lang);
-    final bannerUrl = (store.featuredImageUrl ?? '').trim();
-    final logoUrl = (store.imageUrl ?? store.featuredImageUrl ?? '').trim();
+    // Store Branding V1 (2026-07-22) — real, merchant-uploaded
+    // logoUrl/bannerUrl only. Never falls back to store.imageUrl (a
+    // Healthcare-side provider-profile photo) or store.featuredImageUrl
+    // (the old sampled-product-image leak, now always null) — an absent
+    // value goes straight to MarketplaceBannerGradient/MarketplaceLogoFallback.
+    final bannerUrl = (store.bannerUrl ?? '').trim();
+    final logoUrl = (store.logoUrl ?? '').trim();
+    final tagline = store.localizedTagline(lang);
+    final description = store.localizedDescription(lang);
     final tags = (categorySummary ?? '')
         .split(' · ')
         .map((t) => t.trim())
@@ -66,6 +75,8 @@ class MarketplaceStoreCard extends StatelessWidget {
               bannerUrl: bannerUrl,
               logoUrl: logoUrl,
               city: city,
+              tagline: tagline,
+              description: description,
             ),
           ),
         );
@@ -168,6 +179,11 @@ class MarketplaceStoreCard extends StatelessWidget {
                               providerId: store.providerId,
                               orgId: store.orgId,
                               storeName: name,
+                              bannerUrl: bannerUrl,
+                              logoUrl: logoUrl,
+                              city: city,
+                              tagline: tagline,
+                              description: description,
                             ),
                           ),
                         );
