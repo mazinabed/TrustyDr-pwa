@@ -184,6 +184,18 @@ class CenterActionGrid extends StatelessWidget {
     this.isCollapsed = false,
   });
 
+  // Marketplace Home UI Polish (2026-07-22) -- tile content (38px icon +
+  // 7px gap + up to 2 lines of 11px label text + 10px vertical padding on
+  // each side) is a fixed height, but childAspectRatio sizes each cell
+  // relative to its WIDTH. At real phone widths that produced cells ~10px
+  // taller than the content needs; Column(mainAxisAlignment: center) split
+  // that dead space evenly top/bottom of every tile, so the last row left
+  // extra invisible padding directly above whatever followed the grid (the
+  // Marketplace card), on top of the explicit SizedBox gap already there.
+  // A fixed mainAxisExtent instead sizes every cell to the content itself,
+  // independent of column width, removing that hidden slack.
+  static const double _tileHeight = 92;
+
   @override
   Widget build(BuildContext context) {
     if (isCollapsed) return const SizedBox.shrink();
@@ -194,14 +206,17 @@ class CenterActionGrid extends StatelessWidget {
         builder: (context, constraints) {
           // 4 columns when there is enough room; 3 on very narrow devices.
           final use4 = constraints.maxWidth >= 300;
-          return GridView.count(
+          return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: use4 ? 4 : 3,
-            crossAxisSpacing: 6,
-            mainAxisSpacing: 8,
-            childAspectRatio: use4 ? 0.85 : 1.1,
-            children: items.map(_buildTile).toList(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: use4 ? 4 : 3,
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 8,
+              mainAxisExtent: _tileHeight,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildTile(items[index]),
           );
         },
       ),
