@@ -90,6 +90,11 @@ class MarketplaceSection extends StatelessWidget {
 /// no Commerce-side store metadata) — falls back to the same gradient/icon
 /// treatment [MarketplaceStoreCard] uses when missing, never a blank or
 /// clinical-looking header.
+// Readability fix (2026-07-23): name/tagline/description used to render as
+// white text overlaid on top of the banner image -- illegible against a
+// light or busy merchant-uploaded banner (live-tested, confirmed). Store
+// identity now lives below the banner instead, on the page's own white
+// background (see build() below).
 class MarketplaceStoreHeader extends StatelessWidget {
   const MarketplaceStoreHeader({
     super.key,
@@ -98,6 +103,7 @@ class MarketplaceStoreHeader extends StatelessWidget {
     this.logoUrl,
     this.city,
     this.tagline,
+    this.description,
     required this.productCount,
     required this.categoryCount,
   });
@@ -112,152 +118,161 @@ class MarketplaceStoreHeader extends StatelessWidget {
   /// store name. Null/empty renders nothing extra — never a placeholder
   /// sentence.
   final String? tagline;
+
+  /// The merchant's own longer description (already localized by the
+  /// caller), shown once below the tagline. Null/empty renders nothing.
+  final String? description;
   final int productCount;
   final int categoryCount;
+
+  static const double _bannerHeight = 150;
 
   @override
   Widget build(BuildContext context) {
     final banner = (bannerUrl ?? '').trim();
-    final logo = (logoUrl ?? bannerUrl ?? '').trim();
+    // Readability fix (2026-07-23): never falls back to bannerUrl anymore
+    // for the logo (the old behavior when logoUrl was unset showed a crop
+    // of the banner itself) -- that is exactly the "borrowed image
+    // standing in for real branding" pattern this feature exists to avoid.
+    // Absent logoUrl goes straight to MarketplaceLogoFallback.
+    final logo = (logoUrl ?? '').trim();
 
-    // 2026-07-19 header restructure (Issue 1) — the pharmacy name, logo,
-    // and verification badge now live INSIDE the gradient/banner area
-    // itself, alongside the existing back/cart actions, instead of a
-    // separate large white identity block below. The gradient's height is
-    // organic (sized to its own back/cart row + logo/name row content, via
-    // Stack's "non-positioned child sizes the Stack" rule) rather than a
-    // fixed 96px — it grows just enough to hold what's actually in it.
-    // Below the gradient, only a single compact metadata line remains
-    // (see _StoreMetaLine) — city/product-count/category-count merged into
-    // one line with separators rather than three stacked pills/rows, so
-    // the first product collection sits noticeably higher on the page.
+    // Readability fix (2026-07-23) -- name/tagline/description used to
+    // render as white text overlaid ON the banner image, illegible against
+    // a light or busy merchant-uploaded banner (live-tested, confirmed).
+    // Store identity now lives BELOW the banner on the page's own white
+    // background. The banner is now a fixed-height hero image (previously
+    // sized organically to fit the identity block it used to contain) --
+    // only the back/cart icon buttons still overlay it, since icon buttons
+    // with their own shadow stay legible against any banner color, unlike
+    // paragraphs of text.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Stack(
-          children: [
-            Positioned.fill(
-              child: banner.startsWith('http')
-                  ? Image.network(
-                      banner,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const MarketplaceBannerGradient(),
-                    )
-                  : const MarketplaceBannerGradient(),
-            ),
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _BackButton(),
-                        const Spacer(),
-                        MarketplaceCartAction(
-                          chipBackground: Colors.black.withValues(alpha: 0.28),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: logo.startsWith('http')
-                              ? Image.network(
-                                  logo,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const MarketplaceLogoFallback(),
-                                )
-                              : const MarketplaceLogoFallback(),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      storeName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.black26,
-                                            blurRadius: 4,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Tooltip(
-                                    message:
-                                        'marketplace_verified_pharmacy'.tr(),
-                                    child: const Icon(
-                                      Icons.verified_rounded,
-                                      size: 17,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if ((tagline ?? '').trim().isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  tagline!.trim(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    shadows: const [
-                                      Shadow(
-                                          color: Colors.black26, blurRadius: 4),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
+        SizedBox(
+          height: _bannerHeight,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: banner.startsWith('http')
+                    ? Image.network(
+                        banner,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const MarketplaceBannerGradient(),
+                      )
+                    : const MarketplaceBannerGradient(),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                  child: Row(
+                    children: [
+                      _BackButton(),
+                      const Spacer(),
+                      MarketplaceCartAction(
+                        chipBackground: Colors.black.withValues(alpha: 0.28),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.08), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
+                child: logo.startsWith('http')
+                    ? Image.network(
+                        logo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const MarketplaceLogoFallback(),
+                      )
+                    : const MarketplaceLogoFallback(),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            storeName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Tooltip(
+                          message: 'marketplace_verified_pharmacy'.tr(),
+                          child: const Icon(
+                            Icons.verified_rounded,
+                            size: 17,
+                            color: PatientAppColors.brandTeal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if ((tagline ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        tagline!.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: PatientAppColors.brandTeal,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+        if ((description ?? '').trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+            child: Text(
+              description!.trim(),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: _StoreMetaLine(

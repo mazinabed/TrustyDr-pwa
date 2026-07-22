@@ -172,6 +172,7 @@ class _StoreBody extends StatelessWidget {
       logoUrl: effectiveLogoUrl,
       city: city,
       tagline: effectiveTagline,
+      description: effectiveDescription,
       productCount: catalog.products.length,
       categoryCount: distinctCategoryCount(catalog.products),
     );
@@ -285,21 +286,11 @@ class _StoreBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Store Branding V1 (2026-07-22) / readability fix (2026-07-23) —
+          // MarketplaceStoreHeader now renders name/tagline/description
+          // itself, below the banner (never overlaid on top of it — see
+          // that widget's own header comment for why).
           header,
-          // Store Branding V1 (2026-07-22) — the merchant's own longer
-          // description, shown once, directly under the header/metadata
-          // line. Null/empty renders nothing (never a placeholder
-          // sentence) — most stores won't have one yet.
-          if ((effectiveDescription ?? '').trim().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Text(
-                effectiveDescription!.trim(),
-                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: MarketplaceSearchBar(

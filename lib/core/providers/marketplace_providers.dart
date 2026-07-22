@@ -50,6 +50,25 @@ String _localizeNoKu(String en, String ar, String lang) {
   return en.isNotEmpty ? en : ar;
 }
 
+/// Store Branding V1 localization fix (2026-07-23) — for merchant-authored
+/// free text (tagline/description) the active language's OWN field only,
+/// never [_localizeWithKuField]'s cross-language fallback. That fallback is
+/// correct for curated Healthcare identity fields (name/city, which the
+/// rest of this file still uses it for) but was wrong here: an Arabic
+/// reader seeing an untranslated English description read as if it were
+/// "the" description, not a missing translation. Null means the merchant
+/// hasn't written this field in the active language yet — the caller
+/// renders nothing, never a different language standing in for it.
+String? _localizeExactOrNull(String en, String ar, String ku, String lang) {
+  final value = switch (lang) {
+    'ar' => ar,
+    'ku' => ku,
+    _ => en,
+  };
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
 class MarketplaceStore {
   const MarketplaceStore({
     required this.providerId,
@@ -153,22 +172,14 @@ class MarketplaceStore {
   String localizedProvince(String lang) =>
       _localizeWithKuField(provinceEn, provinceAr, provinceKu, lang);
 
-  /// Null when the merchant hasn't set a tagline in any language yet —
-  /// distinct from `_localizeWithKuField`'s own "always some string" other
-  /// callers rely on, since a tagline/description is genuinely optional.
-  String? localizedTagline(String lang) {
-    final resolved = _localizeWithKuField(
-            taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang)
-        .trim();
-    return resolved.isEmpty ? null : resolved;
-  }
+  /// Localization bug fix (2026-07-23) — exact active-language field only
+  /// (see [_localizeExactOrNull]'s own doc comment for why this must NOT
+  /// use [_localizeWithKuField]'s cross-language fallback here).
+  String? localizedTagline(String lang) => _localizeExactOrNull(
+      taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang);
 
-  String? localizedDescription(String lang) {
-    final resolved = _localizeWithKuField(
-            descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang)
-        .trim();
-    return resolved.isEmpty ? null : resolved;
-  }
+  String? localizedDescription(String lang) => _localizeExactOrNull(
+      descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang);
 }
 
 /// One of a product's assigned categories, as embedded on the product doc
@@ -551,19 +562,13 @@ class MarketplaceStoreBranding {
     );
   }
 
-  String? localizedTagline(String lang) {
-    final resolved = _localizeWithKuField(
-            taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang)
-        .trim();
-    return resolved.isEmpty ? null : resolved;
-  }
+  /// Localization bug fix (2026-07-23) — see MarketplaceStore's own
+  /// identical fix and [_localizeExactOrNull]'s doc comment.
+  String? localizedTagline(String lang) => _localizeExactOrNull(
+      taglineEn ?? '', taglineAr ?? '', taglineKu ?? '', lang);
 
-  String? localizedDescription(String lang) {
-    final resolved = _localizeWithKuField(
-            descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang)
-        .trim();
-    return resolved.isEmpty ? null : resolved;
-  }
+  String? localizedDescription(String lang) => _localizeExactOrNull(
+      descriptionEn ?? '', descriptionAr ?? '', descriptionKu ?? '', lang);
 }
 
 /// One resolved attribute/value on a product's detail read — EN/AR/KU
