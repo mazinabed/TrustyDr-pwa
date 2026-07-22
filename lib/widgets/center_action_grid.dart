@@ -257,16 +257,34 @@ class CenterActionGrid extends StatelessWidget {
                   child: Icon(item.icon, size: 18, color: Colors.white),
                 ),
                 const SizedBox(height: 7),
-                Text(
-                  item.label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: PatientAppColors.darkNavy,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    height: 1.2,
+                // Marketplace Home UI Polish (2026-07-22) -- reserves the
+                // same 2-line label height (11px font * 1.2 line height * 2)
+                // for every tile regardless of whether its own label
+                // actually wraps. Without this, a short 1-line label (e.g.
+                // "Labs") sized itself shorter than a 2-line neighbor in the
+                // same row, leaving that tile's own centered content with
+                // extra slack below it -- most visible on narrower phone
+                // widths, where some labels wrap and others don't, and most
+                // noticeable in the last row, directly above the
+                // Marketplace card. Reserving a fixed label height makes
+                // every tile the same height everywhere, independent of
+                // which labels happen to wrap at the current screen width.
+                SizedBox(
+                  height: 26.5,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text(
+                      item.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: PatientAppColors.darkNavy,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
                   ),
                 ),
               ],
