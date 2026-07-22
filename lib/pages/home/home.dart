@@ -3145,34 +3145,6 @@ class _HomeState extends ConsumerState<Home>
 
   late final AnimationController _tilesCtrl;
 
-  // TEMP DIAGNOSTIC (2026-07-22) -- Marketplace Home UI Polish investigation.
-  // Measures the real, rendered bounds of the grid vs the Marketplace card on
-  // THIS device/window, printed to the console after every frame. Remove
-  // once the mobile-vs-desktop gap discrepancy is root-caused.
-  final GlobalKey _diagGridKey = GlobalKey();
-  final GlobalKey _diagMarketplaceKey = GlobalKey();
-
-  void _logDiagBounds() {
-    final gridBox =
-        _diagGridKey.currentContext?.findRenderObject() as RenderBox?;
-    final marketBox =
-        _diagMarketplaceKey.currentContext?.findRenderObject() as RenderBox?;
-    if (gridBox == null ||
-        !gridBox.hasSize ||
-        marketBox == null ||
-        !marketBox.hasSize) {
-      return;
-    }
-    final gridTop = gridBox.localToGlobal(Offset.zero).dy;
-    final gridBottom = gridTop + gridBox.size.height;
-    final marketTop = marketBox.localToGlobal(Offset.zero).dy;
-    final screenWidth = MediaQuery.of(context).size.width;
-    debugPrint(
-        '[DIAG] screenWidth=$screenWidth gridHeight=${gridBox.size.height} '
-        'gridTop=$gridTop gridBottom=$gridBottom marketTop=$marketTop '
-        'gap=${marketTop - gridBottom}');
-  }
-
   @override
   void initState() {
     super.initState();
@@ -3484,8 +3456,6 @@ class _HomeState extends ConsumerState<Home>
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // TEMP DIAGNOSTIC (2026-07-22) -- see _logDiagBounds doc comment.
-          WidgetsBinding.instance.addPostFrameCallback((_) => _logDiagBounds());
           Widget page = ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -3549,7 +3519,6 @@ class _HomeState extends ConsumerState<Home>
               if (_isGuest) _guestBanner(context),
               const SizedBox(height: 8),
               CenterActionGrid(
-                key: _diagGridKey,
                 items: [
                   ActionItem(
                     icon: Icons.calendar_month_outlined,
@@ -3632,10 +3601,7 @@ class _HomeState extends ConsumerState<Home>
               // section on this page uses (see below). Matching that
               // existing value here, not inventing a new one.
               const SizedBox(height: 16),
-              KeyedSubtree(
-                key: _diagMarketplaceKey,
-                child: _marketplaceBanner(),
-              ),
+              _marketplaceBanner(),
               const SizedBox(height: 16),
               _nextAppointmentCard(),
               const SizedBox(height: 16),

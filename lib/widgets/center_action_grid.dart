@@ -196,14 +196,6 @@ class CenterActionGrid extends StatelessWidget {
   // independent of column width, removing that hidden slack.
   static const double _tileHeight = 92;
 
-  // TEMP DIAGNOSTIC (2026-07-22) -- pinpoints exactly which layer disagrees
-  // with the delegate math (2 rows * 92 + 8 = 192, guaranteed by
-  // mainAxisExtent regardless of width). Measures the GridView's own
-  // RenderBox and one tile's RenderBox directly, separate from whatever the
-  // outer Padding/CenterActionGrid reports. Remove once root-caused.
-  static final GlobalKey _diagInnerGridKey = GlobalKey();
-  static final GlobalKey _diagFirstTileKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     if (isCollapsed) return const SizedBox.shrink();
@@ -214,18 +206,20 @@ class CenterActionGrid extends StatelessWidget {
         builder: (context, constraints) {
           // 4 columns when there is enough room; 3 on very narrow devices.
           final use4 = constraints.maxWidth >= 300;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final gv = _diagInnerGridKey.currentContext?.findRenderObject()
-                as RenderBox?;
-            final tile = _diagFirstTileKey.currentContext?.findRenderObject()
-                as RenderBox?;
-            debugPrint(
-                '[DIAG-INNER] constraintsMaxWidth=${constraints.maxWidth} '
-                'use4=$use4 gridViewHeight=${gv?.hasSize == true ? gv!.size.height : 'null'} '
-                'firstTileHeight=${tile?.hasSize == true ? tile!.size.height : 'null'}');
-          });
           return GridView.builder(
-            key: _diagInnerGridKey,
+            // Marketplace Home UI Polish (2026-07-22) -- BoxScrollView
+            // (GridView/ListView's base class) auto-absorbs
+            // MediaQuery.of(context).padding into a SliverPadding whenever
+            // `padding` is left null, regardless of shrinkWrap/physics. The
+            // outer page ListView already opts out via its own explicit
+            // `padding: EdgeInsets.zero`, but this nested, non-scrolling
+            // GridView never did, so on a device that reports non-zero
+            // top/bottom safe-area padding (e.g. a phone with a status bar
+            // and gesture-nav inset), it silently re-added that padding a
+            // second time as extra height -- absent on desktop web, where
+            // MediaQuery.padding is 0. An explicit zero opts this GridView
+            // out of that auto-padding entirely.
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -235,12 +229,7 @@ class CenterActionGrid extends StatelessWidget {
               mainAxisExtent: _tileHeight,
             ),
             itemCount: items.length,
-            itemBuilder: (context, index) => index == 0
-                ? KeyedSubtree(
-                    key: _diagFirstTileKey,
-                    child: _buildTile(items[index]),
-                  )
-                : _buildTile(items[index]),
+            itemBuilder: (context, index) => _buildTile(items[index]),
           );
         },
       ),
