@@ -196,6 +196,14 @@ class CenterActionGrid extends StatelessWidget {
   // independent of column width, removing that hidden slack.
   static const double _tileHeight = 92;
 
+  // TEMP DIAGNOSTIC (2026-07-22) -- pinpoints exactly which layer disagrees
+  // with the delegate math (2 rows * 92 + 8 = 192, guaranteed by
+  // mainAxisExtent regardless of width). Measures the GridView's own
+  // RenderBox and one tile's RenderBox directly, separate from whatever the
+  // outer Padding/CenterActionGrid reports. Remove once root-caused.
+  static final GlobalKey _diagInnerGridKey = GlobalKey();
+  static final GlobalKey _diagFirstTileKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     if (isCollapsed) return const SizedBox.shrink();
@@ -206,7 +214,18 @@ class CenterActionGrid extends StatelessWidget {
         builder: (context, constraints) {
           // 4 columns when there is enough room; 3 on very narrow devices.
           final use4 = constraints.maxWidth >= 300;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final gv = _diagInnerGridKey.currentContext?.findRenderObject()
+                as RenderBox?;
+            final tile = _diagFirstTileKey.currentContext?.findRenderObject()
+                as RenderBox?;
+            debugPrint(
+                '[DIAG-INNER] constraintsMaxWidth=${constraints.maxWidth} '
+                'use4=$use4 gridViewHeight=${gv?.hasSize == true ? gv!.size.height : 'null'} '
+                'firstTileHeight=${tile?.hasSize == true ? tile!.size.height : 'null'}');
+          });
           return GridView.builder(
+            key: _diagInnerGridKey,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -216,7 +235,12 @@ class CenterActionGrid extends StatelessWidget {
               mainAxisExtent: _tileHeight,
             ),
             itemCount: items.length,
-            itemBuilder: (context, index) => _buildTile(items[index]),
+            itemBuilder: (context, index) => index == 0
+                ? KeyedSubtree(
+                    key: _diagFirstTileKey,
+                    child: _buildTile(items[index]),
+                  )
+                : _buildTile(items[index]),
           );
         },
       ),
