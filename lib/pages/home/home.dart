@@ -3596,9 +3596,13 @@ class _HomeState extends ConsumerState<Home>
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              // Marketplace Home UI Polish (2026-07-22) -- was height: 8 on
+              // both sides, out of step with the 16 rhythm every other
+              // section on this page uses (see below). Matching that
+              // existing value here, not inventing a new one.
+              const SizedBox(height: 16),
               _marketplaceBanner(),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               _nextAppointmentCard(),
               const SizedBox(height: 16),
               const AnnouncementsStrip(),
