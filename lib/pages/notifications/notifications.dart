@@ -16,6 +16,7 @@ import 'package:trustydr/pages/patient/appointment_detail_page.dart';
 import 'package:trustydr/pages/patient/lab_appointment_detail_page.dart';
 import 'package:trustydr/models/patient_appointment_item.dart';
 import 'package:trustydr/pages/patient/referral_detail_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/services/push_notification_service.dart';
 import 'package:trustydr/widgets/push_permission_dialog.dart';
 
@@ -219,6 +220,19 @@ class _NotificationsState extends ConsumerState<Notifications> {
           child: ReferralDetailPage(referralId: notif.clinicalRequestId),
         ),
       );
+    } else if (notif.type == 'marketplace_order' &&
+        notif.marketplaceOrderId.isNotEmpty) {
+      // TrustyDr Workflow & Notification Platform, Phase 2 -- previously
+      // this type had NO tap-to-navigate handling at all (confirmed during
+      // the notification architecture audit); it just marked read and did
+      // nothing else.
+      Navigator.push(
+        context,
+        PageTransition(
+          type: PageTransitionType.rightToLeft,
+          child: MarketplaceOrderDetailsPage(orderId: notif.marketplaceOrderId),
+        ),
+      );
     }
   }
 
@@ -335,6 +349,38 @@ class _NotificationCard extends StatelessWidget {
                       _formatDate(notif.createdAt, lang),
                       style: greySmallTextStyle.copyWith(fontSize: 11),
                     ),
+                    // TrustyDr Workflow & Notification Platform, Phase 2 --
+                    // Notification Actions. Every action currently resolves
+                    // to the same destination as tapping the card itself
+                    // (the entity's own detail page) -- distinct handlers
+                    // (e.g. a live map for track_delivery) are future work
+                    // once those destinations actually exist.
+                    if (notif.actions.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: notif.actions
+                            .map((action) => OutlinedButton(
+                                  onPressed: onTap,
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: Size.zero,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    side: BorderSide(
+                                        color: PatientAppColors.brandTeal),
+                                    foregroundColor: PatientAppColors.brandTeal,
+                                  ),
+                                  child: Text(
+                                    _actionLabel(action),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -363,6 +409,21 @@ class _NotificationCard extends StatelessWidget {
 
   String _formatDate(DateTime dt, String lang) {
     return DateFormat.yMMMd(lang).format(dt);
+  }
+
+  // Shared Notification Actions catalog (see constants.js's ACTION map on
+  // the backend) -- a known, finite set of action keys; unrecognized keys
+  // fall back to a generic label rather than crashing on a future addition
+  // this client doesn't know about yet.
+  String _actionLabel(String action) {
+    switch (action) {
+      case 'view_order':
+        return 'notification_action_view_order'.tr();
+      case 'track_delivery':
+        return 'notification_action_track_delivery'.tr();
+      default:
+        return action;
+    }
   }
 }
 

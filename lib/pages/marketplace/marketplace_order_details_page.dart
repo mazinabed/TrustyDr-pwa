@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
+import 'package:trustydr/widgets/workflow_timeline.dart';
 
 /// One order's full detail (Milestone 6 — My Orders). Reads a SINGLE
 /// marketplace_orders/{orderId} document — the same provider-only,
@@ -180,6 +181,22 @@ class _OrderDetailsBody extends ConsumerWidget {
     final liveStatusAsync = localStatus == 'confirmed'
         ? ref.watch(_liveStatusProvider(orderId))
         : null;
+    // Phase 2 (Workflow & Notification Platform) -- the pharmacy operations
+    // fulfillment stage (accepted/preparing/readyForPickup/outForDelivery/
+    // completed, or a terminal rejected/cancelled/deliveryFailed), already
+    // written by pharmacyOrderActions.js onto this SAME document (never a
+    // separate read/collection -- see fulfillmentStatusHistory below). This
+    // is distinct from `status` above, which only tracks the order's own
+    // Odoo confirmation state (pending/confirmed/failed/cancelled), not the
+    // pharmacy's operational queue.
+    final fulfillmentStatus = (data['fulfillmentStatus'] ?? '').toString();
+    final fulfillmentHistoryRaw = data['fulfillmentStatusHistory'];
+    final fulfillmentHistory = fulfillmentHistoryRaw is List
+        ? fulfillmentHistoryRaw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
+        : const <Map<String, dynamic>>[];
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -250,6 +267,28 @@ class _OrderDetailsBody extends ConsumerWidget {
             ],
           ),
         ),
+        if (fulfillmentStatus.isNotEmpty && fulfillmentStatus != 'new') ...[
+          const SizedBox(height: 16),
+          Text('marketplace_order_progress_section'.tr(),
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: _buildFulfillmentTimeline(
+              fulfillmentStatus: fulfillmentStatus,
+              isDelivery: isDelivery,
+              lastUpdatedAt: fulfillmentHistory.isNotEmpty
+                  ? fulfillmentHistory.last['at']
+                  : null,
+              context: context,
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         if (lines.isNotEmpty) ...[
           Text('marketplace_order_details_items_section'.tr(),
@@ -437,6 +476,78 @@ class _OrderDetailsBody extends ConsumerWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  // Phase 2 (Workflow & Notification Platform) -- generic WorkflowTimeline,
+  // fed the pharmacy fulfillment stage list. Pickup and delivery orders
+  // diverge after 'preparing' (readyForPickup vs outForDelivery), matching
+  // pharmacyOrderActions.js's own two paths. Terminal negative outcomes
+  // (rejected/cancelled/deliveryFailed) render as a single distinct row
+  // instead of a partial happy-path stepper.
+  static const _terminalStages = {'rejected', 'cancelled', 'deliveryFailed'};
+
+  Widget _buildFulfillmentTimeline({
+    required String fulfillmentStatus,
+    required bool isDelivery,
+    required dynamic lastUpdatedAt,
+    required BuildContext context,
+  }) {
+    Widget timeline;
+    if (_terminalStages.contains(fulfillmentStatus)) {
+      final labelKey = switch (fulfillmentStatus) {
+        'rejected' => 'marketplace_order_stage_rejected',
+        'deliveryFailed' => 'marketplace_order_stage_delivery_failed',
+        _ => 'marketplace_order_stage_cancelled',
+      };
+      timeline = WorkflowTimeline(terminalLabel: labelKey.tr());
+    } else {
+      timeline = WorkflowTimeline(
+        currentStage: fulfillmentStatus,
+        steps: [
+          WorkflowTimelineStep(
+            key: 'accepted',
+            label: 'marketplace_order_stage_accepted'.tr(),
+          ),
+          WorkflowTimelineStep(
+            key: 'preparing',
+            label: 'marketplace_order_stage_preparing'.tr(),
+          ),
+          isDelivery
+              ? WorkflowTimelineStep(
+                  key: 'outForDelivery',
+                  label: 'marketplace_order_stage_out_for_delivery'.tr(),
+                )
+              : WorkflowTimelineStep(
+                  key: 'readyForPickup',
+                  label: 'marketplace_order_stage_ready_for_pickup'.tr(),
+                ),
+          WorkflowTimelineStep(
+            key: 'completed',
+            label: 'marketplace_order_stage_completed'.tr(),
+          ),
+        ],
+      );
+    }
+
+    final updatedText = lastUpdatedAt is Timestamp
+        ? DateFormat.yMMMd(context.locale.languageCode)
+            .add_jm()
+            .format(lastUpdatedAt.toDate())
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        timeline,
+        if (updatedText != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            'marketplace_order_last_updated'.tr(args: [updatedText]),
+            style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+          ),
+        ],
       ],
     );
   }

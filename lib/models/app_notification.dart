@@ -22,6 +22,26 @@ class AppNotification {
   final bool dismissed;
   final DateTime createdAt;
 
+  // TrustyDr Workflow & Notification Platform, Phase 1+2 (see
+  // NOTIFICATION_PLATFORM_PROGRESS.md) -- additive fields only present on
+  // notifications written by the new Notification Engine. `category` is
+  // empty for every pre-existing notification type (appointment reminders,
+  // referrals, etc.), which have not migrated to the platform yet -- code
+  // must not assume these are populated.
+  final String category; // '' | 'timeline' | 'event'
+  final String? workflowType;
+  final String? entityType;
+  final String? entityId;
+  final String? currentStage;
+  final bool isCompleted;
+  final bool isCancelled;
+  final String priority; // 'critical' | 'high' | 'normal' | 'low' | 'silent'
+  final List<String> actions;
+  final String? navigationRoute;
+  final Map<String, dynamic>? navigationParams;
+  // Legacy Marketplace field (predates the platform, kept for routing).
+  final String marketplaceOrderId;
+
   const AppNotification({
     required this.id,
     required this.type,
@@ -43,6 +63,18 @@ class AppNotification {
     required this.isRead,
     this.dismissed = false,
     required this.createdAt,
+    this.category = '',
+    this.workflowType,
+    this.entityType,
+    this.entityId,
+    this.currentStage,
+    this.isCompleted = false,
+    this.isCancelled = false,
+    this.priority = 'normal',
+    this.actions = const [],
+    this.navigationRoute,
+    this.navigationParams,
+    this.marketplaceOrderId = '',
   });
 
   factory AppNotification.fromMap(String id, Map<String, dynamic> d) {
@@ -67,6 +99,24 @@ class AppNotification {
       isRead: (d['isRead'] as bool?) ?? false,
       dismissed: (d['dismissed'] as bool?) ?? false,
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      category: (d['category'] ?? '').toString(),
+      workflowType: (d['workflowType'] as String?),
+      entityType: (d['entityType'] as String?),
+      entityId: (d['entityId'] as String?),
+      currentStage: (d['currentStage'] as String?),
+      isCompleted: (d['isCompleted'] as bool?) ?? false,
+      isCancelled: (d['isCancelled'] as bool?) ?? false,
+      priority: (d['priority'] ?? 'normal').toString(),
+      actions: (d['actions'] as List?)?.map((e) => e.toString()).toList() ??
+          const [],
+      navigationRoute: (d['navigationTarget'] is Map)
+          ? (d['navigationTarget']['route'] as String?)
+          : null,
+      navigationParams: (d['navigationTarget'] is Map &&
+              d['navigationTarget']['params'] is Map)
+          ? Map<String, dynamic>.from(d['navigationTarget']['params'])
+          : null,
+      marketplaceOrderId: (d['marketplaceOrderId'] ?? '').toString(),
     );
   }
 
