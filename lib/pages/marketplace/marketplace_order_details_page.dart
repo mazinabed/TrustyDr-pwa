@@ -445,7 +445,7 @@ class _OrderDetailsBody extends ConsumerWidget {
             data: (live) {
               final labelKey = _liveStatusLabelKey(
                 (live?['state'])?.toString(),
-                (live?['pickingState'])?.toString(),
+                fulfillmentStatus,
               );
               if (labelKey == null) return const SizedBox.shrink();
               return Container(
@@ -567,26 +567,35 @@ class _OrderDetailsBody extends ConsumerWidget {
     }
   }
 
-  // Maps Odoo's own native sale.order.state + stock.picking.state (Odoo 17
-  // — no 'done' state on sale.order; the delivery/fulfillment signal lives
-  // entirely on the picking) to a LOCALIZED supplementary label — never
-  // raw Odoo strings shown to the patient. This is purely supplementary
-  // detail layered on top of the primary, always-localized status badge
-  // above (driven by our own `status` field); it never changes Active/Past
-  // bucketing. Verified against odooDriver.ts's own getSalesOrderStatus
-  // (reads sale.order.state + the first linked stock.picking.state) rather
-  // than guessed. Both pickup and delivery orders get a stock.picking on
-  // confirmation (Odoo creates one for any stockable product regardless of
-  // delivery carrier) — pickup vs delivery is distinguished by the
-  // separate is_delivery order line + partner_shipping_id, not by picking
-  // presence, so this mapping intentionally does not vary by isDelivery.
-  String? _liveStatusLabelKey(String? state, String? pickingState) {
+  // Odoo's own sale.order.state is still checked for cancellation (a
+  // genuine Odoo-side order-lifecycle signal, distinct from warehouse
+  // execution). Ready/Fulfilled are now derived from TrustyDr's OWN
+  // fulfillmentStatus (pharmacyOrderActions.js's business workflow field,
+  // already streamed on this same document), never from Odoo's live
+  // stock.picking.state.
+  //
+  // Phase 7 architecture decision (2026-07-23): Odoo's pickingState reaches
+  // 'done' the moment pharmacy staff start Preparing (the stock-decrement
+  // point was moved earlier in trustydr-commerce's odooDriver.ts) — it no
+  // longer distinguishes "ready" from "actually handed over/fulfilled." A
+  // picking being 'done' means the WAREHOUSE operation completed; it does
+  // NOT mean the patient received the medication, picked it up, or that a
+  // courier delivered it. Odoo owns warehouse execution; TrustyDr owns
+  // business workflow and customer-facing status — this label now reflects
+  // that separation instead of exposing Odoo's warehouse state directly.
+  String? _liveStatusLabelKey(String? state, String fulfillmentStatus) {
     if (state == 'cancel') return 'marketplace_live_status_cancelled';
     if (state == 'sale') {
-      if (pickingState == 'done') return 'marketplace_live_status_fulfilled';
-      if (pickingState == 'assigned') return 'marketplace_live_status_ready';
-      // null/draft/waiting/confirmed all mean stock hasn't been fully
-      // reserved/handed over yet — still "being prepared."
+      if (fulfillmentStatus == 'completed')
+        return 'marketplace_live_status_fulfilled';
+      if (fulfillmentStatus == 'readyForPickup' ||
+          fulfillmentStatus == 'readyForDelivery' ||
+          fulfillmentStatus == 'outForDelivery') {
+        return 'marketplace_live_status_ready';
+      }
+      // new/accepted/preparing, empty (legacy pre-Phase-1 order), or any
+      // other value all mean the order hasn't reached Ready yet — still
+      // "being prepared."
       return 'marketplace_live_status_preparing';
     }
     // draft/sent (pre-confirmation) never reaches the patient — every
