@@ -1009,10 +1009,11 @@ class _MarketplaceCheckoutPageState
                   const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(PatientAppColors.radiusCard),
+              boxShadow: PatientAppColors.shadowCard,
             ),
             child: _buildPricingSummary(currency),
           ),
@@ -1107,7 +1108,7 @@ class _MarketplaceCheckoutPageState
           value: _formatAmount(displaySubtotal, currency),
         ),
         if (q.appliedPromotionName != null) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           _SummaryRow(
             label: q.appliedPromotionPercent != null
                 ? 'marketplace_checkout_promotion_label_with_percent'
@@ -1124,19 +1125,26 @@ class _MarketplaceCheckoutPageState
             valueColor: PatientAppColors.brandTeal,
           ),
         ],
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         _SummaryRow(
           label: 'marketplace_order_details_tax_label'.tr(),
           value: _formatAmount(q.amountTax, currency),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         _SummaryRow(
           label: 'marketplace_checkout_delivery_fee_label'.tr(),
           value: (q.deliveryAmount == null || q.deliveryAmount == 0)
               ? 'marketplace_checkout_free'.tr()
               : _formatAmount(q.deliveryAmount!, currency),
         ),
-        const Divider(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Divider(
+            height: 1,
+            thickness: 1.2,
+            color: PatientAppColors.darkNavy.withValues(alpha: 0.1),
+          ),
+        ),
         _SummaryRow(
           label: 'marketplace_checkout_total_label'.tr(),
           value: _formatAmount(q.amountTotal, currency),
@@ -1178,18 +1186,19 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = TextStyle(
-      fontSize: bold ? 14.5 : 13,
-      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-      color: bold ? Colors.black87 : Colors.black54,
+      fontSize: bold ? 17 : 13.5,
+      fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+      color: bold ? PatientAppColors.darkNavy : Colors.black54,
     );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: Text(label, style: style)),
+        Expanded(
+            child: Text(label, style: style, overflow: TextOverflow.ellipsis)),
         const SizedBox(width: 8),
         Text(value,
             style: valueColor != null
-                ? style.copyWith(color: valueColor, fontWeight: FontWeight.w600)
+                ? style.copyWith(color: valueColor, fontWeight: FontWeight.w700)
                 : style),
       ],
     );
