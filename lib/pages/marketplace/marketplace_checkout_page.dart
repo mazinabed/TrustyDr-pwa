@@ -796,6 +796,42 @@ class _MarketplaceCheckoutPageState
     );
   }
 
+  // Contact Information section styling only (2026-07-27) — lighter,
+  // less-heavy field chrome: a subtle border by default and a colored
+  // border/floating-label on focus, instead of one uniform border for
+  // every state. isDense + tighter contentPadding trims the field height.
+  // Same InputDecoration shape as before (labelText/filled/fillColor),
+  // just tuned values — no validator/controller/behavior changes.
+  InputDecoration _contactFieldDecoration(String label) {
+    final radius = BorderRadius.circular(PatientAppColors.radiusMd);
+    return InputDecoration(
+      labelText: label,
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      filled: true,
+      fillColor: Colors.white,
+      labelStyle: const TextStyle(fontSize: 13.5, color: Colors.black54),
+      floatingLabelStyle: const TextStyle(
+        fontSize: 12.5,
+        color: PatientAppColors.brandTeal,
+        fontWeight: FontWeight.w600,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: Colors.black12),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide: const BorderSide(color: Colors.black12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide:
+            const BorderSide(color: PatientAppColors.brandTeal, width: 1.4),
+      ),
+    );
+  }
+
   Widget _buildForm(
     Cart cart,
     AsyncValue<List<_DeliveryMethod>> deliveryMethodsAsync,
@@ -827,21 +863,21 @@ class _MarketplaceCheckoutPageState
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        // Extra top breathing room below the AppBar (Contact Information
+        // is the first section) — bottom/horizontal padding unchanged.
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
         children: [
           Text('marketplace_checkout_contact_section'.tr(),
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: PatientAppColors.darkNavy,
+              )),
+          const SizedBox(height: 14),
           TextFormField(
             controller: _nameController,
-            decoration: InputDecoration(
-              labelText: 'marketplace_checkout_name_label'.tr(),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Colors.white,
-            ),
+            decoration:
+                _contactFieldDecoration('marketplace_checkout_name_label'.tr()),
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'marketplace_checkout_name_required'.tr()
                 : null,
@@ -851,14 +887,17 @@ class _MarketplaceCheckoutPageState
             onInputChanged: (phone) => _phoneNumber = phone,
             initialValue: _phoneNumber,
             selectorConfig: const SelectorConfig(
-                selectorType: PhoneInputSelectorType.DIALOG),
-            inputDecoration: InputDecoration(
-              labelText: 'marketplace_checkout_phone_label'.tr(),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Colors.white,
+              selectorType: PhoneInputSelectorType.DIALOG,
+              // Renders the flag + dial code INSIDE the same field border
+              // (as a prefix) instead of a separate button beside it, so
+              // the flag/+964/number read as one coordinated row — a
+              // config flag on the existing widget, not a new component;
+              // formatting/country-code/validation behavior is unchanged.
+              setSelectorButtonAsPrefixIcon: true,
+              leadingPadding: 12,
             ),
+            inputDecoration: _contactFieldDecoration(
+                'marketplace_checkout_phone_label'.tr()),
           ),
           const SizedBox(height: 24),
           Text('marketplace_checkout_delivery_section'.tr(),
