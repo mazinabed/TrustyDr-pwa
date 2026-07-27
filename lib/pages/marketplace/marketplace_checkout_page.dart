@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -8,6 +10,64 @@ import 'package:trustydr/core/providers/marketplace_cart_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
+
+/// Phase C Priority 1 (2026-07-26) — Unified Pricing Breakdown: the
+/// authoritative, server-computed cart total (quoteMarketplaceCart), never
+/// a second Flutter-side tax/discount calculation. Backed by a REAL,
+/// unconfirmed Odoo sale.order (state='draft') — [quotationEngineId] must
+/// be echoed back on the next quote (cart/coupon/delivery changed) to
+/// update this SAME draft, and again to placeMarketplaceOrder to finalize
+/// this exact quotation rather than a fresh one.
+class _MarketplaceQuote {
+  const _MarketplaceQuote({
+    required this.quotationEngineId,
+    required this.currencyName,
+    required this.amountUntaxed,
+    required this.amountTax,
+    required this.amountTotal,
+    required this.amountDiscount,
+    required this.appliedPromotionName,
+    required this.appliedPromotionPercent,
+    required this.deliveryAmount,
+  });
+
+  final String? quotationEngineId;
+  final String? currencyName;
+  final double amountUntaxed;
+  final double amountTax;
+  final double amountTotal;
+  final double amountDiscount;
+  final String? appliedPromotionName;
+  final double? appliedPromotionPercent;
+  final double? deliveryAmount;
+
+  factory _MarketplaceQuote.fromMap(Map<String, dynamic> m) {
+    final promotion = m['appliedPromotion'];
+    final promotionMap =
+        promotion is Map ? Map<String, dynamic>.from(promotion) : null;
+    return _MarketplaceQuote(
+      quotationEngineId: m['quotationEngineId']?.toString(),
+      currencyName: m['currencyName']?.toString(),
+      amountUntaxed: (m['amountUntaxed'] is num)
+          ? (m['amountUntaxed'] as num).toDouble()
+          : 0,
+      amountTax:
+          (m['amountTax'] is num) ? (m['amountTax'] as num).toDouble() : 0,
+      amountTotal:
+          (m['amountTotal'] is num) ? (m['amountTotal'] as num).toDouble() : 0,
+      amountDiscount: (m['amountDiscount'] is num)
+          ? (m['amountDiscount'] as num).toDouble()
+          : 0,
+      appliedPromotionName: promotionMap?['name']?.toString(),
+      appliedPromotionPercent: (promotionMap?['discountPercent'] is num)
+          ? (promotionMap!['discountPercent'] as num).toDouble()
+          : null,
+      deliveryAmount: (m['deliveryAmount'] is num)
+          ? (m['deliveryAmount'] as num).toDouble()
+          : null,
+    );
+  }
+}
 
 /// One delivery option Odoo (or the synthetic pickup entry) actually offers,
 /// as returned by getMarketplaceDeliveryMethods (a thin relay to Commerce's
@@ -408,20 +468,121 @@ class _MarketplaceCheckoutPageState
   final _cityController = TextEditingController();
   final _addressController = TextEditingController();
   final _noteController = TextEditingController();
+  final _couponController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   PhoneNumber _phoneNumber = PhoneNumber(isoCode: 'IQ');
   String? _selectedCarrierEngineId; // null == pickup
   bool _placing = false;
   bool _prefilled = false;
 
+  // Phase C Priority 1 (2026-07-26) — same debounced-quote/staleness-guard
+  // pattern already proven on the POS Sell tab (pharmacy_sell_tab.dart):
+  // [_quoteVersion] increments on every input that affects pricing (cart,
+  // delivery method, coupon code); a quote response is only ever
+  // trusted/displayed/actionable when [_quoteForVersion] still matches the
+  // CURRENT [_quoteVersion] — this is what prevents confirming with stale
+  // pricing after a change that raced ahead of a slower in-flight quote.
+  int _quoteVersion = 0;
+  int? _quoteForVersion;
+  _MarketplaceQuote? _quote;
+  bool _quoteLoading = false;
+  String? _quoteError;
+  Timer? _quoteDebounce;
+
+  bool get _hasCurrentQuote =>
+      _quote != null && _quoteForVersion == _quoteVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleQuote();
+  }
+
   @override
   void dispose() {
+    _quoteDebounce?.cancel();
     _nameController.dispose();
     _provinceController.dispose();
     _cityController.dispose();
     _addressController.dispose();
     _noteController.dispose();
+    _couponController.dispose();
     super.dispose();
+  }
+
+  void _scheduleQuote() {
+    _quoteVersion++;
+    _quoteDebounce?.cancel();
+    final cart = ref.read(marketplaceCartProvider);
+    if (cart.isEmpty || cart.orgId == null) {
+      setState(() {
+        _quote = null;
+        _quoteForVersion = null;
+        _quoteLoading = false;
+        _quoteError = null;
+      });
+      return;
+    }
+    setState(() => _quoteLoading = true);
+    _quoteDebounce = Timer(const Duration(milliseconds: 450), _fetchQuote);
+  }
+
+  Future<void> _fetchQuote() async {
+    final requestVersion = _quoteVersion;
+    final cart = ref.read(marketplaceCartProvider);
+    if (cart.isEmpty || cart.orgId == null) return;
+
+    try {
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('quoteMarketplaceCart');
+      final result =
+          await callable.call<Map<String, dynamic>>(<String, dynamic>{
+        'orgId': cart.orgId,
+        'lines': cart.items
+            .map((i) => {
+                  'productEngineId': i.productEngineId,
+                  if (i.variantEngineId != null)
+                    'variantEngineId': i.variantEngineId,
+                  'quantity': i.quantity,
+                })
+            .toList(),
+        'deliveryCarrierEngineId': _selectedCarrierEngineId,
+        'locale': context.locale.languageCode,
+        if (_couponController.text.trim().isNotEmpty)
+          'couponCode': _couponController.text.trim(),
+        if (_quote?.quotationEngineId != null)
+          'quotationEngineId': _quote!.quotationEngineId,
+      });
+      if (!mounted || requestVersion != _quoteVersion) {
+        return; // Stale — a newer input change already superseded this.
+      }
+      setState(() {
+        _quote = _MarketplaceQuote.fromMap(
+            Map<String, dynamic>.from(result.data as Map));
+        _quoteForVersion = requestVersion;
+        _quoteLoading = false;
+        _quoteError = null;
+      });
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted || requestVersion != _quoteVersion) return;
+      final code = (e.details is Map) ? (e.details as Map)['code'] : null;
+      setState(() {
+        _quoteLoading = false;
+        _quote = null;
+        _quoteForVersion = null;
+        _quoteError = code == 'invalid_coupon_code'
+            ? 'marketplace_checkout_invalid_coupon_code'.tr()
+            : 'marketplace_checkout_quote_error'.tr();
+      });
+    } catch (_) {
+      if (!mounted || requestVersion != _quoteVersion) return;
+      setState(() {
+        _quoteLoading = false;
+        _quote = null;
+        _quoteForVersion = null;
+        _quoteError = 'marketplace_checkout_quote_error'.tr();
+      });
+    }
   }
 
   // Prefill is a one-time default from the patient's real profile — once
@@ -493,6 +654,19 @@ class _MarketplaceCheckoutPageState
         'locale': context.locale.languageCode,
         'storeNameEn': cart.storeNameEn,
         'storeNameAr': cart.storeNameAr,
+        // Phase C Priority 1 (2026-07-26) — finalize the SAME draft
+        // quotation the patient just reviewed (never a fresh one), and
+        // re-forward the coupon code so the backend's own final,
+        // authoritative recompute (never trusting the earlier quote as-is)
+        // still has it. quotationEngineId is safely omitted whenever no
+        // current quote exists — the button is disabled in that case (see
+        // _hasCurrentQuote), so this branch shouldn't normally be reached,
+        // but placeMarketplaceOrder still works correctly (starts a fresh
+        // draft) if it somehow is.
+        if (_quote?.quotationEngineId != null)
+          'quotationEngineId': _quote!.quotationEngineId,
+        if (_couponController.text.trim().isNotEmpty)
+          'couponCode': _couponController.text.trim(),
       });
 
       final orderId = (result.data['orderId'] ?? idempotencyKey).toString();
@@ -528,6 +702,15 @@ class _MarketplaceCheckoutPageState
           (e.details is Map) &&
           (e.details as Map)['code'] == 'delivery_address_required') {
         message = 'marketplace_checkout_delivery_address_required_error'.tr();
+      } else if (e.code == 'invalid-argument' &&
+          (e.details is Map) &&
+          (e.details as Map)['code'] == 'invalid_coupon_code') {
+        // Phase C Priority 1 (2026-07-26) — the coupon was valid enough to
+        // pass the last quote (or was never re-quoted after being typed)
+        // but failed the final, authoritative recompute — re-quote so the
+        // patient sees the SAME error reflected in the summary too.
+        message = 'marketplace_checkout_invalid_coupon_code'.tr();
+        _scheduleQuote();
       } else if (e.code == 'failed-precondition' &&
           (e.message ?? '').toLowerCase().contains('profile name')) {
         message = 'marketplace_checkout_profile_incomplete_error'.tr();
@@ -563,9 +746,29 @@ class _MarketplaceCheckoutPageState
     }
   }
 
+  // A simple, cheap signature of "what would change the price" — line
+  // count and total quantity. Full structural cart equality isn't exposed
+  // by the cart provider; this is enough to catch every real editing
+  // action a patient can take from elsewhere (Cart page quantity steppers)
+  // while this checkout page is mounted underneath it.
+  String _cartPricingSignature(Cart cart) => cart.items
+      .map((i) => '${i.productEngineId}:${i.variantEngineId}:${i.quantity}')
+      .join('|');
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(marketplaceCartProvider);
+    // Phase C Priority 1 (2026-07-26) — "Recalculate when cart quantities
+    // ... change." The cart is a global provider that can change from
+    // OTHER pages (e.g. the Cart page's own quantity steppers, if the
+    // patient navigates back) — this re-quotes whenever that happens,
+    // never relying solely on this page's own explicit input handlers.
+    ref.listen<Cart>(marketplaceCartProvider, (previous, next) {
+      if (previous == null ||
+          _cartPricingSignature(previous) != _cartPricingSignature(next)) {
+        _scheduleQuote();
+      }
+    });
     final orgId = cart.orgId;
     final deliveryMethodsAsync = orgId == null
         ? const AsyncValue<List<_DeliveryMethod>>.data(_pickupOnlyFallback)
@@ -613,13 +816,13 @@ class _MarketplaceCheckoutPageState
 
     final currency =
         cart.items.isNotEmpty ? cart.items.first.currencyName : null;
+    // Phase C Priority 1 (2026-07-26) — this local estimate is used ONLY
+    // to annotate each delivery-method OPTION in the list below (e.g. "Free
+    // over X") before the patient has even picked one; the actual charged
+    // amounts (Subtotal/Promotion/Tax/Delivery/Grand Total) always come
+    // from the authoritative quote (_quote), never from this estimate —
+    // see _buildPricingSummary.
     final subtotal = cart.estimatedSubtotal;
-    // Mirrors the free-above-threshold rule Odoo applies server-side
-    // (createPatientOrder, odooDriver.ts) purely for this pre-submit
-    // estimate — the real amount always comes from the confirmed order.
-    final deliveryFee =
-        isDelivery ? _effectiveFee(selectedMethod, subtotal) : 0.0;
-    final total = subtotal + deliveryFee;
 
     return Form(
       key: _formKey,
@@ -675,8 +878,11 @@ class _MarketplaceCheckoutPageState
                         subtitle:
                             _deliveryTileSubtitle(m, subtotal, currency, lang),
                         selected: _selectedCarrierEngineId == m.carrierEngineId,
-                        onTap: () => setState(
-                            () => _selectedCarrierEngineId = m.carrierEngineId),
+                        onTap: () {
+                          setState(() =>
+                              _selectedCarrierEngineId = m.carrierEngineId);
+                          _scheduleQuote();
+                        },
                       ))
                   .toList(),
             ),
@@ -759,6 +965,45 @@ class _MarketplaceCheckoutPageState
             ),
           ],
           const SizedBox(height: 24),
+          // Phase C Priority 1 (2026-07-26) — owner-created coupon-code
+          // promotions ONLY: this is a code entry, never a free-text
+          // discount amount. Applying it just re-quotes (the SAME live
+          // pipeline auto-eligible promotions already go through) —
+          // there is no separate "apply" write, just a fresh, authoritative
+          // recompute.
+          Text('marketplace_checkout_coupon_section'.tr(),
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _couponController,
+                  textInputAction: TextInputAction.done,
+                  decoration: InputDecoration(
+                    hintText: 'marketplace_checkout_coupon_hint'.tr(),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _scheduleQuote(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: _quoteLoading ? null : _scheduleQuote,
+                  child: Text('marketplace_checkout_coupon_apply'.tr()),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           Text('marketplace_checkout_order_summary_section'.tr(),
               style:
                   const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
@@ -769,34 +1014,7 @@ class _MarketplaceCheckoutPageState
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              children: [
-                _SummaryRow(
-                  label: 'marketplace_checkout_subtotal_label'.tr(),
-                  value:
-                      '${subtotal.toStringAsFixed(subtotal.truncateToDouble() == subtotal ? 0 : 2)} ${currency ?? ''}'
-                          .trim(),
-                ),
-                const SizedBox(height: 6),
-                _SummaryRow(
-                  label: 'marketplace_checkout_delivery_fee_label'.tr(),
-                  value: !isDelivery
-                      ? 'marketplace_checkout_free'.tr()
-                      : (deliveryFee == 0
-                          ? 'marketplace_checkout_free'.tr()
-                          : '${deliveryFee.toStringAsFixed(deliveryFee.truncateToDouble() == deliveryFee ? 0 : 2)} ${currency ?? ''}'
-                              .trim()),
-                ),
-                const Divider(height: 20),
-                _SummaryRow(
-                  label: 'marketplace_checkout_total_label'.tr(),
-                  value:
-                      '${total.toStringAsFixed(total.truncateToDouble() == total ? 0 : 2)} ${currency ?? ''}'
-                          .trim(),
-                  bold: true,
-                ),
-              ],
-            ),
+            child: _buildPricingSummary(currency),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -810,7 +1028,11 @@ class _MarketplaceCheckoutPageState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: (_placing || cart.isEmpty)
+              // Prevent confirmation using stale pricing (Phase C Priority
+              // 1) — Place Order is only ever enabled when a quote for the
+              // CURRENT inputs is in hand, never while one is loading/
+              // errored/stale.
+              onPressed: (_placing || cart.isEmpty || !_hasCurrentQuote)
                   ? null
                   : () => _placeOrder(cart, selectedMethod),
               child: _placing
@@ -829,6 +1051,115 @@ class _MarketplaceCheckoutPageState
       ),
     );
   }
+
+  // Phase C Priority 1 (2026-07-26) — the professional pricing summary:
+  // Subtotal / Promotion (omitted when none applies) / Tax / Delivery /
+  // Grand Total, sourced ENTIRELY from the authoritative quote — never a
+  // second, Flutter-side tax/discount calculation. Shows a clear loading
+  // state while a fresh quote is in flight (cart/delivery/coupon just
+  // changed) rather than a stale or blank total.
+  Widget _buildPricingSummary(String? fallbackCurrency) {
+    final q = _quote;
+    if (q == null) {
+      if (_quoteError != null) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_quoteError!,
+                style: const TextStyle(fontSize: 12.5, color: Colors.red)),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _scheduleQuote,
+              child: Text('marketplace_checkout_retry'.tr()),
+            ),
+          ],
+        );
+      }
+      return Row(
+        children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Text('marketplace_checkout_calculating'.tr(),
+              style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+        ],
+      );
+    }
+
+    final currency = q.currencyName ?? fallbackCurrency;
+    // q.amountUntaxed is Odoo's own sale.order.amount_untaxed — the sum of
+    // EVERY line's price_subtotal, product AND reward lines together, so
+    // any applied discount is already netted into it (same semantics
+    // pos.order's own amountUntaxed already has, see resolvePosCartLines).
+    // The pre-discount product subtotal a professional summary should show
+    // as "Subtotal" is always amountUntaxed + amountDiscount — pure
+    // display arithmetic on two already-authoritative numbers, never a
+    // second independent calculation.
+    final displaySubtotal = q.amountUntaxed + q.amountDiscount;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SummaryRow(
+          label: 'marketplace_checkout_subtotal_label'.tr(),
+          value: _formatAmount(displaySubtotal, currency),
+        ),
+        if (q.appliedPromotionName != null) ...[
+          const SizedBox(height: 6),
+          _SummaryRow(
+            label: q.appliedPromotionPercent != null
+                ? 'marketplace_checkout_promotion_label_with_percent'
+                    .tr(namedArgs: {
+                    'name': q.appliedPromotionName!,
+                    'percent': q.appliedPromotionPercent!.toStringAsFixed(
+                        q.appliedPromotionPercent! ==
+                                q.appliedPromotionPercent!.roundToDouble()
+                            ? 0
+                            : 1),
+                  })
+                : q.appliedPromotionName!,
+            value: '-${_formatAmount(q.amountDiscount, currency)}',
+            valueColor: PatientAppColors.brandTeal,
+          ),
+        ],
+        const SizedBox(height: 6),
+        _SummaryRow(
+          label: 'marketplace_order_details_tax_label'.tr(),
+          value: _formatAmount(q.amountTax, currency),
+        ),
+        const SizedBox(height: 6),
+        _SummaryRow(
+          label: 'marketplace_checkout_delivery_fee_label'.tr(),
+          value: (q.deliveryAmount == null || q.deliveryAmount == 0)
+              ? 'marketplace_checkout_free'.tr()
+              : _formatAmount(q.deliveryAmount!, currency),
+        ),
+        const Divider(height: 20),
+        _SummaryRow(
+          label: 'marketplace_checkout_total_label'.tr(),
+          value: _formatAmount(q.amountTotal, currency),
+          bold: true,
+        ),
+        if (_quoteLoading) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text('marketplace_checkout_calculating'.tr(),
+                  style: const TextStyle(fontSize: 11, color: Colors.black54)),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _SummaryRow extends StatelessWidget {
@@ -836,11 +1167,13 @@ class _SummaryRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.bold = false,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final bool bold;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -852,8 +1185,12 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: style),
-        Text(value, style: style),
+        Expanded(child: Text(label, style: style)),
+        const SizedBox(width: 8),
+        Text(value,
+            style: valueColor != null
+                ? style.copyWith(color: valueColor, fontWeight: FontWeight.w600)
+                : style),
       ],
     );
   }

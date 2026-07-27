@@ -171,6 +171,17 @@ class _OrderDetailsBody extends ConsumerWidget {
             .format(createdAt.toDate())
         : '';
     final currencyName = (order['currencyName'] ?? '').toString();
+    // Phase C Priority 1 (2026-07-26) — order['amountUntaxed'] is Odoo's
+    // own sale.order.amount_untaxed, which already nets any applied
+    // discount into it (the reward line's own negative price_subtotal is
+    // summed in alongside every product line's — same semantics
+    // pos.order's own amountUntaxed already has, see resolvePosCartLines).
+    // The pre-discount product subtotal a professional summary should show
+    // as "Subtotal" is always amountUntaxed + amountDiscount — pure
+    // display arithmetic on two already-authoritative numbers, never a
+    // second independent calculation.
+    final displaySubtotal = (_num(order['amountUntaxed'])?.toDouble() ?? 0) +
+        (_num(order['amountDiscount'])?.toDouble() ?? 0);
     final linesRaw = order['lines'];
     final lines = linesRaw is List
         ? linesRaw
@@ -339,8 +350,39 @@ class _OrderDetailsBody extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              _row('marketplace_checkout_subtotal_label'.tr(),
-                  '${_fmt(_num(order['amountUntaxed']))} $currencyName'.trim()),
+              _row(
+                'marketplace_checkout_subtotal_label'.tr(),
+                '${_fmt(displaySubtotal)} $currencyName'.trim(),
+              ),
+              // Phase C Priority 1 (2026-07-26) — same promotion breakdown
+              // shown at checkout, persisted on the order so it's still
+              // visible after the fact. Absent entirely (both fields
+              // omitted/null) on an order placed before this milestone or
+              // with no eligible promotion — never a "Promotion: —" row.
+              if (order['appliedPromotion'] is Map) ...[
+                const SizedBox(height: 6),
+                Builder(builder: (context) {
+                  final promotion = Map<String, dynamic>.from(
+                      order['appliedPromotion'] as Map);
+                  final name = promotion['name']?.toString() ?? '';
+                  final percent = _num(promotion['discountPercent']);
+                  final label = percent != null
+                      ? 'marketplace_checkout_promotion_label_with_percent'
+                          .tr(namedArgs: {
+                          'name': name,
+                          'percent': percent == percent.roundToDouble()
+                              ? percent.toStringAsFixed(0)
+                              : percent.toStringAsFixed(1),
+                        })
+                      : name;
+                  return _row(
+                    label,
+                    '-${_fmt(_num(order['amountDiscount']))} $currencyName'
+                        .trim(),
+                    valueColor: PatientAppColors.brandTeal,
+                  );
+                }),
+              ],
               const SizedBox(height: 6),
               _row('marketplace_order_details_tax_label'.tr(),
                   '${_fmt(_num(order['amountTax']))} $currencyName'.trim()),
@@ -603,7 +645,8 @@ class _OrderDetailsBody extends ConsumerWidget {
     return null;
   }
 
-  Widget _row(String label, String value, {bool bold = false}) {
+  Widget _row(String label, String value,
+      {bool bold = false, Color? valueColor}) {
     final style = TextStyle(
       fontSize: bold ? 14.5 : 13,
       fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
@@ -612,8 +655,14 @@ class _OrderDetailsBody extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: style),
-        Text(value, style: style),
+        Expanded(child: Text(label, style: style)),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: valueColor != null
+              ? style.copyWith(color: valueColor, fontWeight: FontWeight.w600)
+              : style,
+        ),
       ],
     );
   }
