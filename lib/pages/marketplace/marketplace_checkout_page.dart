@@ -950,9 +950,12 @@ class _MarketplaceCheckoutPageState
           ),
           const SizedBox(height: 24),
           Text('marketplace_checkout_delivery_section'.tr(),
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: PatientAppColors.darkNavy,
+              )),
+          const SizedBox(height: 14),
           deliveryMethodsAsync.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -962,6 +965,9 @@ class _MarketplaceCheckoutPageState
             data: (loadedMethods) => Column(
               children: loadedMethods
                   .map((m) => _DeliveryOptionTile(
+                        icon: m.isPickup
+                            ? Icons.storefront
+                            : Icons.delivery_dining,
                         label: m.localizedName(lang),
                         subtitle:
                             _deliveryTileSubtitle(m, subtotal, currency, lang),
@@ -1280,14 +1286,22 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
+// Fulfillment Cards styling only (2026-07-27) — same RadioListTile-based
+// tile as before (no widget-class change), just: a colored icon badge via
+// RadioListTile's own `secondary` slot, a light brand-teal background wash
+// + stronger border when selected (was border-only), tighter/darker
+// typography, and a touch more spacing between cards. onTap/selection
+// logic and the [subtitle] string itself are unchanged.
 class _DeliveryOptionTile extends StatelessWidget {
   const _DeliveryOptionTile({
+    required this.icon,
     required this.label,
     required this.subtitle,
     required this.selected,
     required this.onTap,
   });
 
+  final IconData icon;
   final String label;
   final String? subtitle;
   final bool selected;
@@ -1296,10 +1310,12 @@ class _DeliveryOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: selected
+            ? PatientAppColors.brandTeal.withValues(alpha: 0.06)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(PatientAppColors.radiusMd),
         border: Border.all(
           color: selected ? PatientAppColors.brandTeal : Colors.black12,
           width: selected ? 1.5 : 1,
@@ -1309,9 +1325,29 @@ class _DeliveryOptionTile extends StatelessWidget {
         value: true,
         groupValue: selected ? true : null,
         onChanged: (_) => onTap(),
+        secondary: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: selected
+                ? PatientAppColors.brandTeal
+                : Colors.black.withValues(alpha: 0.06),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon,
+              size: 18, color: selected ? Colors.white : Colors.black54),
+        ),
         title: Text(label,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        subtitle: subtitle != null ? Text(subtitle!) : null,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: PatientAppColors.darkNavy,
+            )),
+        subtitle: subtitle != null
+            ? Text(subtitle!,
+                style: TextStyle(
+                    fontSize: 12.5, color: Colors.black.withValues(alpha: 0.6)))
+            : null,
         activeColor: PatientAppColors.brandTeal,
       ),
     );
