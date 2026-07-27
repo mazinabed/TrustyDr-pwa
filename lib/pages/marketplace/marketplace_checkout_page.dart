@@ -832,6 +832,55 @@ class _MarketplaceCheckoutPageState
     );
   }
 
+  // Delivery Address section styling only (2026-07-27) — same lighter/
+  // less-heavy field chrome as the contact section (a separate helper so
+  // this change never touches that section's own decoration/call sites).
+  // [icon] marks the full address field as the primary input; [secondary]
+  // mutes the optional note field (softer fill, smaller label, tighter
+  // padding) so it visually reads as less important than the address
+  // itself. Province/city get neither, so they stay visually identical
+  // to each other. No validator/controller/behavior changes.
+  InputDecoration _addressFieldDecoration(
+    String label, {
+    IconData? icon,
+    bool secondary = false,
+  }) {
+    final radius = BorderRadius.circular(PatientAppColors.radiusMd);
+    final borderSide = BorderSide(
+      color: secondary ? Colors.black12.withValues(alpha: 0.7) : Colors.black12,
+    );
+    return InputDecoration(
+      labelText: label,
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: secondary ? 12 : 14,
+      ),
+      filled: true,
+      fillColor: secondary ? PatientAppColors.pageBackground : Colors.white,
+      prefixIcon: icon != null
+          ? Icon(icon, size: 20, color: PatientAppColors.brandTeal)
+          : null,
+      labelStyle: TextStyle(
+        fontSize: secondary ? 12.5 : 13.5,
+        color: Colors.black54,
+      ),
+      floatingLabelStyle: const TextStyle(
+        fontSize: 12.5,
+        color: PatientAppColors.brandTeal,
+        fontWeight: FontWeight.w600,
+      ),
+      border: OutlineInputBorder(borderRadius: radius, borderSide: borderSide),
+      enabledBorder:
+          OutlineInputBorder(borderRadius: radius, borderSide: borderSide),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: radius,
+        borderSide:
+            const BorderSide(color: PatientAppColors.brandTeal, width: 1.4),
+      ),
+    );
+  }
+
   Widget _buildForm(
     Cart cart,
     AsyncValue<List<_DeliveryMethod>> deliveryMethodsAsync,
@@ -944,20 +993,18 @@ class _MarketplaceCheckoutPageState
             ),
           ],
           if (isDelivery) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text('marketplace_checkout_delivery_address_section'.tr(),
-                style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 10),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: PatientAppColors.darkNavy,
+                )),
+            const SizedBox(height: 14),
             TextFormField(
               controller: _provinceController,
-              decoration: InputDecoration(
-                labelText: 'marketplace_checkout_province_label'.tr(),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.white,
-              ),
+              decoration: _addressFieldDecoration(
+                  'marketplace_checkout_province_label'.tr()),
               validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
                   ? 'marketplace_checkout_address_required'.tr()
                   : null,
@@ -965,13 +1012,8 @@ class _MarketplaceCheckoutPageState
             const SizedBox(height: 12),
             TextFormField(
               controller: _cityController,
-              decoration: InputDecoration(
-                labelText: 'marketplace_checkout_city_label'.tr(),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.white,
-              ),
+              decoration: _addressFieldDecoration(
+                  'marketplace_checkout_city_label'.tr()),
               validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
                   ? 'marketplace_checkout_address_required'.tr()
                   : null,
@@ -980,12 +1022,9 @@ class _MarketplaceCheckoutPageState
             TextFormField(
               controller: _addressController,
               maxLines: 2,
-              decoration: InputDecoration(
-                labelText: 'marketplace_checkout_address_label'.tr(),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.white,
+              decoration: _addressFieldDecoration(
+                'marketplace_checkout_address_label'.tr(),
+                icon: Icons.location_on_outlined,
               ),
               validator: (v) => (isDelivery && (v == null || v.trim().isEmpty))
                   ? 'marketplace_checkout_address_required'.tr()
@@ -994,12 +1033,9 @@ class _MarketplaceCheckoutPageState
             const SizedBox(height: 12),
             TextFormField(
               controller: _noteController,
-              decoration: InputDecoration(
-                labelText: 'marketplace_checkout_address_note_label'.tr(),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.white,
+              decoration: _addressFieldDecoration(
+                'marketplace_checkout_address_note_label'.tr(),
+                secondary: true,
               ),
             ),
           ],
