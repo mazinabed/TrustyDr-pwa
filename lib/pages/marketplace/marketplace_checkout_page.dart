@@ -475,6 +475,16 @@ class _MarketplaceCheckoutPageState
   bool _placing = false;
   bool _prefilled = false;
 
+  // Checkpoint D (2026-07-28) — stable per-attempt idempotency key. Reused
+  // verbatim across every _placeOrder retry (double-tap, network retry,
+  // backend transient error) until the underlying order attempt materially
+  // changes, at which point _scheduleQuote (already the single choke point
+  // for "cart/delivery/coupon changed") clears it so the NEXT attempt gets
+  // a fresh key. Previously a fresh random key was minted on every single
+  // _placeOrder call despite a comment claiming reuse — that comment was
+  // never true; this field is what actually makes it true.
+  String? _checkoutIdempotencyKey;
+
   // Phase C Priority 1 (2026-07-26) — same debounced-quote/staleness-guard
   // pattern already proven on the POS Sell tab (pharmacy_sell_tab.dart):
   // [_quoteVersion] increments on every input that affects pricing (cart,
@@ -512,6 +522,10 @@ class _MarketplaceCheckoutPageState
 
   void _scheduleQuote() {
     _quoteVersion++;
+    // The order attempt this key was reserved for is now stale (cart,
+    // delivery method, or coupon changed) — the next _placeOrder call must
+    // mint a new one, never reuse a key tied to a since-changed order.
+    _checkoutIdempotencyKey = null;
     _quoteDebounce?.cancel();
     final cart = ref.read(marketplaceCartProvider);
     if (cart.isEmpty || cart.orgId == null) {
@@ -605,18 +619,22 @@ class _MarketplaceCheckoutPageState
   }
 
   Future<void> _placeOrder(Cart cart, _DeliveryMethod? selected) async {
+    // Re-entry guard — a double-tap on the confirm button (or a rebuild
+    // racing an in-flight submission) must never fire a second call while
+    // one is already outstanding.
+    if (_placing) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _placing = true);
 
     final isDelivery = selected != null && !selected.isPickup;
 
     try {
-      // A fresh, random unique key per checkout attempt — reused verbatim
-      // on any client-side retry within this same screen instance so a
-      // double-tap or network retry can never create two orders (the
-      // idempotency contract placeMarketplaceOrder/placeMarketplaceOrderForHealthcare
-      // already enforce server-side).
-      final idempotencyKey =
+      // Stable per-attempt key — reused verbatim on any client-side retry
+      // within this same attempt (see _checkoutIdempotencyKey's own doc
+      // comment) so a double-tap or network retry can never create two
+      // orders (the idempotency contract placeMarketplaceOrder/
+      // placeMarketplaceOrderForHealthcare already enforce server-side).
+      final idempotencyKey = _checkoutIdempotencyKey ??=
           FirebaseFirestore.instance.collection('_').doc().id;
 
       final callable =
@@ -669,30 +687,46 @@ class _MarketplaceCheckoutPageState
           'couponCode': _couponController.text.trim(),
       });
 
+      // The order is confirmed as of this point — the backend has already
+      // created (or idempotently replayed) it. Everything below is local
+      // cleanup/navigation only; a failure there must never be reported to
+      // the patient as an order failure, since the order genuinely exists.
       final orderId = (result.data['orderId'] ?? idempotencyKey).toString();
       final order =
           Map<String, dynamic>.from(result.data['order'] as Map? ?? {});
-      await ref.read(marketplaceCartProvider.notifier).clear();
+      // The attempt this key belonged to is now complete — free it so a
+      // later, unrelated order never accidentally reuses it.
+      _checkoutIdempotencyKey = null;
 
-      if (!mounted) return;
-      // Land directly on the new order's details page — the confirmation
-      // flow's real entry point, not a temporary SnackBar the patient could
-      // miss (a lightweight toast is shown alongside, not instead of, this
-      // navigation).
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => MarketplaceOrderDetailsPage(orderId: orderId),
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text('marketplace_order_placed'.tr(namedArgs: {
-            'name': (order['name'] ?? '').toString(),
-          })),
-        ),
-      );
+      try {
+        await ref.read(marketplaceCartProvider.notifier).clear();
+        if (!mounted) return;
+        // Land directly on the new order's details page — the confirmation
+        // flow's real entry point, not a temporary SnackBar the patient
+        // could miss (a lightweight toast is shown alongside, not instead
+        // of, this navigation).
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MarketplaceOrderDetailsPage(orderId: orderId),
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('marketplace_order_placed'.tr(namedArgs: {
+              'name': (order['name'] ?? '').toString(),
+            })),
+          ),
+        );
+      } catch (cleanupError, stackTrace) {
+        // Cart-clear or navigation failed — the order still exists on the
+        // backend. Log it for diagnosis but do not surface any "order
+        // failed" UI to the patient.
+        debugPrint(
+            'marketplace checkout: post-order cleanup/navigation failed '
+            'for order $orderId: $cleanupError\n$stackTrace');
+      }
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       String message;
