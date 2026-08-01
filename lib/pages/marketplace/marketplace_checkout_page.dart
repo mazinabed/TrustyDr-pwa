@@ -723,8 +723,7 @@ class _MarketplaceCheckoutPageState
         // Cart-clear or navigation failed — the order still exists on the
         // backend. Log it for diagnosis but do not surface any "order
         // failed" UI to the patient.
-        debugPrint(
-            'marketplace checkout: post-order cleanup/navigation failed '
+        debugPrint('marketplace checkout: post-order cleanup/navigation failed '
             'for order $orderId: $cleanupError\n$stackTrace');
       }
     } on FirebaseFunctionsException catch (e) {
