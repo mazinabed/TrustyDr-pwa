@@ -135,12 +135,33 @@ class MarketplaceStore {
   final String? descriptionKu;
 
   factory MarketplaceStore.fromMap(Map<String, dynamic> m) {
+    // Standalone Commerce store name fallback (Stage 1, 2026-08-04) —
+    // Commerce's own Organization schema has a single `name` field, never
+    // the localized facilityName_en/ar/ku triplet Healthcare pharmacy
+    // documents provide (see doctor_functions' getActiveMarketplaceStores.js
+    // merge step for the backend half of this same fallback — it already
+    // sends `name` duplicated across all three facilityName_* keys for a
+    // standalone store, so this fallback is a second, independent layer of
+    // the same guarantee, not the only one). `name` is used ONLY when the
+    // corresponding localized field is absent/blank; every existing
+    // Healthcare pharmacy response already includes real, distinct
+    // facilityName_en/ar/ku values, so this fallback never triggers for
+    // them and their behavior is completely unchanged.
+    final fallbackName = m['name']?.toString().trim();
+    String nameOrFallback(dynamic localized) {
+      final trimmed = localized?.toString().trim();
+      if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+      return (fallbackName != null && fallbackName.isNotEmpty)
+          ? fallbackName
+          : '';
+    }
+
     return MarketplaceStore(
       providerId: m['providerId']?.toString() ?? '',
       orgId: m['orgId']?.toString() ?? '',
-      facilityNameEn: m['facilityName_en']?.toString() ?? '',
-      facilityNameAr: m['facilityName_ar']?.toString() ?? '',
-      facilityNameKu: m['facilityName_ku']?.toString() ?? '',
+      facilityNameEn: nameOrFallback(m['facilityName_en']),
+      facilityNameAr: nameOrFallback(m['facilityName_ar']),
+      facilityNameKu: nameOrFallback(m['facilityName_ku']),
       imageUrl: m['imageUrl']?.toString(),
       provinceEn: m['province_en']?.toString() ?? '',
       provinceAr: m['province_ar']?.toString() ?? '',
