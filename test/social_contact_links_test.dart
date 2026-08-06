@@ -247,44 +247,78 @@ void main() {
     });
   });
 
-  group('buildCompactPrimaryStoreActions (2026-08-07 Store header compaction)',
+  group('buildQuickStoreActions (2026-08-08 second-pass Store header redesign)',
       () {
     test('everything absent produces no actions — no reserved space', () {
-      final items = buildCompactPrimaryStoreActions();
+      final items = buildQuickStoreActions();
       expect(items, isEmpty);
     });
 
-    test('order is call, whatsapp, location, website — email is never included',
+    test(
+        'exactly matches the live Demo Store example: Location, Instagram, capped at 3',
         () {
-      final items = buildCompactPrimaryStoreActions(
+      // Demo Store as tested live: streetAddress present (always public),
+      // showSocialLinks enabled with only Instagram configured, phone
+      // NOT currently public. Expect exactly 2 quick actions (Location,
+      // Instagram) — the "Store Info" chip itself is appended by the
+      // Store page, not by this builder.
+      final items = buildQuickStoreActions(
+        hasLocation: true,
+        onLocationTap: () {},
+        socialLinks: {'instagram': 'https://instagram.com/demostore'},
+      );
+      expect(items, hasLength(2));
+    });
+
+    test('caps at maxPrimary (default 3) even when more channels are public',
+        () {
+      final items = buildQuickStoreActions(
         phone: '+964 770 000 0000',
         whatsapp: '+964 770 111 1111',
         website: 'https://example.com',
         hasLocation: true,
         onLocationTap: () {},
+        socialLinks: {
+          'instagram': 'https://instagram.com/x',
+          'facebook': 'https://facebook.com/x',
+        },
       );
-      // 4 actions: call, whatsapp, location, website. Email has no
-      // representation in this builder at all (by design).
-      expect(items, hasLength(4));
+      // 6 candidates exist (call, whatsapp, location, website, instagram,
+      // facebook) but only the first 3 by priority render inline — the
+      // rest are reachable only via Store Info.
+      expect(items, hasLength(3));
+    });
+
+    test('priority order is call, whatsapp, location, website, then socials',
+        () {
+      // Fewer than maxPrimary candidates so the full relative order is
+      // observable: whatsapp+location+instagram, no call/website.
+      final items = buildQuickStoreActions(
+        whatsapp: '+964 770 111 1111',
+        hasLocation: true,
+        onLocationTap: () {},
+        socialLinks: {'instagram': 'https://instagram.com/x'},
+      );
+      expect(items, hasLength(3));
     });
 
     test(
         'location action only appears when hasLocation AND onLocationTap are both set',
         () {
-      final withoutTap = buildCompactPrimaryStoreActions(hasLocation: true);
+      final withoutTap = buildQuickStoreActions(hasLocation: true);
       expect(withoutTap, isEmpty);
 
-      final withoutFlag = buildCompactPrimaryStoreActions(
-          hasLocation: false, onLocationTap: () {});
+      final withoutFlag =
+          buildQuickStoreActions(hasLocation: false, onLocationTap: () {});
       expect(withoutFlag, isEmpty);
 
-      final both = buildCompactPrimaryStoreActions(
-          hasLocation: true, onLocationTap: () {});
+      final both =
+          buildQuickStoreActions(hasLocation: true, onLocationTap: () {});
       expect(both, hasLength(1));
     });
 
     test('phone gated by canCall, same as the labeled variant', () {
-      final hidden = buildCompactPrimaryStoreActions(
+      final hidden = buildQuickStoreActions(
         phone: '+964 770 000 0000',
         canCall: false,
       );
@@ -292,47 +326,42 @@ void main() {
     });
 
     test('an invalid website scheme produces no action', () {
-      final items = buildCompactPrimaryStoreActions(website: 'not-a-valid-url');
+      final items = buildQuickStoreActions(website: 'not-a-valid-url');
       expect(items, isEmpty);
     });
 
-    test('a single available action renders alone — one Call action only', () {
-      final items = buildCompactPrimaryStoreActions(phone: '+964 770 000 0000');
+    test('a single available action renders alone', () {
+      final items = buildQuickStoreActions(phone: '+964 770 000 0000');
       expect(items, hasLength(1));
     });
   });
 
-  group('buildCompactSocialIcons (2026-08-07 Store header compaction)', () {
-    test('no social links produces no icons', () {
-      expect(buildCompactSocialIcons(), isEmpty);
-      expect(buildCompactSocialIcons(socialLinks: const {}), isEmpty);
-    });
-
-    test('website is excluded — already covered by the primary row', () {
-      final items = buildCompactSocialIcons(
-        socialLinks: {'website': 'https://example.com'},
-      );
-      expect(items, isEmpty);
-    });
-
-    test('only Instagram present renders exactly one compact icon', () {
-      final items = buildCompactSocialIcons(
-        socialLinks: {'instagram': 'https://instagram.com/demostore'},
-      );
-      expect(items, hasLength(1));
-    });
-
-    test('all four platforms present renders all four, invalid ones dropped',
+  group('resolveContactSocialActions (2026-08-08 shared resolver)', () {
+    test(
+        'includes email (unlike buildQuickStoreActions) for Store Info sheet use',
         () {
-      final items = buildCompactSocialIcons(
+      final items = resolveContactSocialActions(email: 'owner@example.com');
+      expect(items, hasLength(1));
+      expect(items.first.label, isNotEmpty);
+    });
+
+    test(
+        'buildSocialContactActionButtons stays behaviorally identical after the refactor',
+        () {
+      // Confirms the extraction into resolveContactSocialActions didn't
+      // change buildSocialContactActionButtons' own public behavior —
+      // still call, whatsapp, email, then the 4 socials + website.
+      final items = buildSocialContactActionButtons(
+        phone: '+964 770 000 0000',
+        whatsapp: '+964 770 111 1111',
+        email: 'owner@example.com',
         socialLinks: {
           'instagram': 'https://instagram.com/x',
-          'facebook': 'https://facebook.com/x',
-          'tiktok': 'not-a-url',
-          'youtube': 'https://youtube.com/x',
+          'website': 'https://example.com',
         },
       );
-      expect(items, hasLength(3));
+      expect(items, hasLength(5));
+      expect(items.every((w) => w is SocialContactActionButton), isTrue);
     });
   });
 

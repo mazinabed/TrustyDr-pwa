@@ -128,8 +128,6 @@ class MarketplaceStoreHeader extends StatelessWidget {
     this.city,
     this.businessType,
     this.tagline,
-    required this.productCount,
-    required this.categoryCount,
   });
 
   final String storeName;
@@ -148,10 +146,14 @@ class MarketplaceStoreHeader extends StatelessWidget {
   /// store name. Null/empty renders nothing extra — never a placeholder
   /// sentence.
   final String? tagline;
-  final int productCount;
-  final int categoryCount;
 
-  static const double _bannerHeight = 150;
+  // Store header second-pass redesign (2026-08-08) — banner height
+  // trimmed from 150 to 110: live testing found the header consumed too
+  // much vertical space before Search on mobile. The identity row below
+  // now overlaps the banner's bottom edge (negative top padding — see
+  // build()) rather than starting fully clear of it, reclaiming further
+  // space instead of just visually decorating over an unchanged gap.
+  static const double _bannerHeight = 110;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +210,14 @@ class MarketplaceStoreHeader extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          // Store header second-pass redesign (2026-08-08) — negative top
+          // padding pulls the identity row up so the logo overlaps the
+          // banner's bottom edge (a plain Column paints later siblings on
+          // top of earlier ones wherever they overlap, so this also
+          // genuinely reclaims layout space, unlike Transform.translate,
+          // which would only shift the paint position and leave the
+          // original gap behind).
+          padding: const EdgeInsets.fromLTRB(16, -22, 16, 0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -294,15 +303,17 @@ class MarketplaceStoreHeader extends StatelessWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
-          child: _StoreMetaLine(
-            city: city,
-            businessType: businessType,
-            productCount: productCount,
-            categoryCount: categoryCount,
+        // Store header second-pass redesign (2026-08-08) — product/category
+        // counts removed from the header entirely (audited: the products
+        // grid immediately below the quick-actions row already conveys
+        // this, and repeating "N products" here only consumed header
+        // height without adding wayfinding value on mobile — see this
+        // checkpoint's own direction).
+        if ((businessType ?? '').isNotEmpty || (city ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
+            child: _StoreMetaLine(city: city, businessType: businessType),
           ),
-        ),
       ],
     );
   }
@@ -326,33 +337,23 @@ class _BackButton extends StatelessWidget {
   }
 }
 
-/// Compact single-line store metadata (2026-07-19 Issue 1) — replaces the
-/// old two-`_StatChip`-pill row plus a separate city row with ONE line of
-/// subtle text joined by " · " separators (city · N products · N
-/// categories, whichever are present). Wraps to a second line gracefully on
-/// narrow widths rather than truncating — deliberately not three stacked
-/// pills/chips per the explicit "prefer subtle text with separators"
-/// direction. Counts use accent (brand teal) weight so they read as the
-/// notable part of the line without becoming large chips of their own.
+/// Compact single-line store metadata (2026-07-19, product/category counts
+/// removed 2026-08-08) — one line of subtle text joined by " · "
+/// separators (business type · city, whichever are present). Product/
+/// category counts used to render here too; audited and removed for the
+/// Store header specifically (see [MarketplaceStoreHeader]'s own call
+/// site) — the products grid immediately below already conveys count, and
+/// repeating it in the header only consumed vertical space on mobile
+/// without adding wayfinding value. [MarketplaceStoresPage] and other
+/// callers of `marketplace_product_count`/`marketplace_category_count`
+/// elsewhere in the app are unaffected — those keys are untouched.
 class _StoreMetaLine extends StatelessWidget {
-  const _StoreMetaLine({
-    required this.city,
-    this.businessType,
-    required this.productCount,
-    required this.categoryCount,
-  });
+  const _StoreMetaLine({required this.city, this.businessType});
 
   final String? city;
   final String? businessType;
-  final int productCount;
-  final int categoryCount;
 
   static const _labelStyle = TextStyle(fontSize: 12.5, color: Colors.black54);
-  static const _accentStyle = TextStyle(
-    fontSize: 12.5,
-    fontWeight: FontWeight.w700,
-    color: PatientAppColors.brandTeal,
-  );
   static const _dotStyle = TextStyle(fontSize: 12.5, color: Colors.black26);
 
   @override
@@ -373,18 +374,6 @@ class _StoreMetaLine extends StatelessWidget {
     }
     if (city != null && city!.isNotEmpty) {
       addSegment(city!, _labelStyle);
-    }
-    addSegment(
-      'marketplace_product_count'
-          .tr(namedArgs: {'count': productCount.toString()}),
-      _accentStyle,
-    );
-    if (categoryCount > 0) {
-      addSegment(
-        'marketplace_category_count'
-            .tr(namedArgs: {'count': categoryCount.toString()}),
-        _accentStyle,
-      );
     }
 
     return Wrap(

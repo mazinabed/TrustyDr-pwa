@@ -53,30 +53,48 @@ class SocialContactActionButton extends StatelessWidget {
   }
 }
 
-/// Builds the ordered list of contact/social action buttons — call,
-/// WhatsApp, email, then Instagram/Facebook/TikTok/YouTube/Website.
-///
-/// Every value is independently optional; an absent/empty/invalid one is
-/// simply skipped (never rendered as a disabled or blank button). [phone]
-/// is additionally gated by [canCall] — mirrors Healthcare's own
-/// `canCall` admin-controlled gate for Provider profiles; standalone
-/// Commerce callers that already pre-gate every value server-side (see
+/// Store Info sheet (2026-08-08) — a resolved contact/social action as
+/// plain data (icon/label/color/tap), decoupled from any particular visual
+/// presentation. [resolveContactSocialActions] is the ONE place that
+/// decides which of phone/whatsapp/email/instagram/facebook/tiktok/
+/// youtube/website are valid and in what order — both
+/// [buildSocialContactActionButtons] (circle-button grid, Provider
+/// profiles + this app's existing Store sections) and the Store Info
+/// sheet's own compact list rows consume this SAME resolved list, so the
+/// URL-validation/ordering logic only ever lives in one place.
+class ContactSocialAction {
+  const ContactSocialAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final Widget icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+/// Resolves phone/whatsapp/email/social/website into an ordered list of
+/// valid actions — call, WhatsApp, email, then Instagram/Facebook/TikTok/
+/// YouTube/Website. Every value is independently optional; an absent/
+/// empty/invalid one is simply omitted. [phone] is additionally gated by
+/// [canCall] — mirrors Healthcare's own `canCall` admin-controlled gate for
+/// Provider profiles; standalone Commerce callers that already pre-gate
+/// every value server-side (see
 /// trustydr-commerce/functions/src/organizations.ts's
-/// publicBusinessProfileFromOrgDoc — phone is null unless the merchant
-/// opted in) simply never need to pass [canCall] at all (defaults to
-/// true, matching "the value itself already encodes whether it's public").
-/// Social URLs must parse as a real http(s):// link, exactly the same
-/// scheme check every existing Provider page already applied — a
-/// malformed or non-http(s) stored value is dropped, not surfaced as a
-/// broken button.
-List<Widget> buildSocialContactActionButtons({
+/// publicBusinessProfileFromOrgDoc) simply never need to pass [canCall] at
+/// all. Social URLs must parse as a real http(s):// link — a malformed or
+/// non-http(s) stored value is dropped, never surfaced as a broken action.
+List<ContactSocialAction> resolveContactSocialActions({
   String? phone,
   String? email,
   String? whatsapp,
   bool canCall = true,
   Map<String, dynamic>? socialLinks,
 }) {
-  final items = <Widget>[];
+  final items = <ContactSocialAction>[];
 
   void addUrlAction({
     required String? url,
@@ -90,7 +108,7 @@ List<Widget> buildSocialContactActionButtons({
     final uri = Uri.tryParse(trimmed);
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) return;
     items.add(
-      SocialContactActionButton(
+      ContactSocialAction(
         icon: icon,
         label: labelKey.tr(),
         color: color,
@@ -102,7 +120,7 @@ List<Widget> buildSocialContactActionButtons({
   final trimmedPhone = phone?.trim() ?? '';
   if (canCall && trimmedPhone.isNotEmpty) {
     items.add(
-      SocialContactActionButton(
+      ContactSocialAction(
         icon: Icon(Icons.call, color: PatientAppColors.statusConfirmed),
         label: 'call_now'.tr(),
         color: PatientAppColors.statusConfirmed,
@@ -116,7 +134,7 @@ List<Widget> buildSocialContactActionButtons({
     final digitsOnly = trimmedWhatsapp.replaceAll(RegExp(r'[^0-9+]'), '');
     if (digitsOnly.isNotEmpty) {
       items.add(
-        SocialContactActionButton(
+        ContactSocialAction(
           icon: const FaIcon(FontAwesomeIcons.whatsapp,
               color: Color(0xFF25D366), size: 24),
           label: 'whatsapp_contact'.tr(),
@@ -133,7 +151,7 @@ List<Widget> buildSocialContactActionButtons({
   final trimmedEmail = email?.trim() ?? '';
   if (trimmedEmail.isNotEmpty) {
     items.add(
-      SocialContactActionButton(
+      ContactSocialAction(
         icon: Icon(Icons.email_outlined, color: PatientAppColors.brandTeal),
         label: 'email_address'.tr(),
         color: PatientAppColors.brandTeal,
@@ -186,13 +204,38 @@ List<Widget> buildSocialContactActionButtons({
   return items;
 }
 
-/// Compact Store header actions (2026-08-07) — a small icon-only circular
-/// tap target, deliberately NOT [SocialContactActionButton] (which always
-/// shows a label underneath — right for a Provider profile's dedicated
-/// action row, too tall for a Store header that must stay compact). Reused
-/// for both the primary quick-actions row (Call/WhatsApp/Location/Website)
-/// and the social-icons row (Instagram/Facebook/TikTok/YouTube) — one
-/// small, consistent, subtly-tinted circle either way.
+/// Thin presentation wrapper over [resolveContactSocialActions] — same
+/// ordering/validation, rendered as [SocialContactActionButton]s (icon
+/// circle + label underneath). Reused by Provider profile pages
+/// (doctor_profile_v2.dart) and this app's own [SocialContactActionsRow].
+List<Widget> buildSocialContactActionButtons({
+  String? phone,
+  String? email,
+  String? whatsapp,
+  bool canCall = true,
+  Map<String, dynamic>? socialLinks,
+}) {
+  return resolveContactSocialActions(
+    phone: phone,
+    email: email,
+    whatsapp: whatsapp,
+    canCall: canCall,
+    socialLinks: socialLinks,
+  )
+      .map((a) => SocialContactActionButton(
+            icon: a.icon,
+            label: a.label,
+            color: a.color,
+            onTap: a.onTap,
+          ))
+      .toList();
+}
+
+/// Compact Store header action (2026-08-07, revised 2026-08-08) — a small
+/// icon-only circular tap target, deliberately NOT [SocialContactActionButton]
+/// (which always shows a label underneath — right for a Provider profile's
+/// dedicated action row, too tall for a Store header that must stay
+/// compact).
 class CompactStoreActionButton extends StatelessWidget {
   const CompactStoreActionButton({
     super.key,
@@ -229,30 +272,35 @@ class CompactStoreActionButton extends StatelessWidget {
   }
 }
 
-/// The primary compact Store-header action row — Call, WhatsApp, Location,
-/// Website, in that order, icon-only, no section title (2026-08-07 Store
-/// header compaction). Each is independently optional and simply omitted
-/// when there's nothing to act on; [onLocationTap] is only ever included
-/// when [hasLocation] is true (there's no "value" to validate the way the
-/// other three have a phone/link — Location just opens the Store Info
-/// sheet, so the caller decides both whether it's shown and what happens on
-/// tap). Email is deliberately NOT part of this compact row — it stays a
-/// "See Store Info" detail, not a quick action, matching the smallest set
-/// of icons a patient would expect to tap immediately (call/message/find/
-/// visit), not every public contact channel.
-List<Widget> buildCompactPrimaryStoreActions({
+/// The Store header's ONE quick-actions row (2026-08-08 second-pass
+/// redesign — replaces the old two-row primary+social split, which read as
+/// "a long toolbar" rather than a few deliberate shortcuts). Priority
+/// order: Call, WhatsApp, Location, Website, Instagram, Facebook, TikTok,
+/// YouTube — capped to [maxPrimary] (default 3), so a merchant with many
+/// public channels still shows only a handful of icons inline; everything
+/// else (including channels bumped past the cap) is only ever one tap away
+/// via the Store Info sheet, never crammed into the header. [hasLocation]/
+/// [onLocationTap] work the same as before: Location has no "value" to
+/// validate, so the caller decides both whether it's eligible and what
+/// happens on tap (opens the Store Info sheet). Email is deliberately
+/// excluded from this row entirely — it stays a Store Info detail, never a
+/// quick action, matching the smallest set of icons a patient would expect
+/// to tap immediately.
+List<Widget> buildQuickStoreActions({
   String? phone,
   String? whatsapp,
   String? website,
+  Map<String, dynamic>? socialLinks,
   bool canCall = true,
   bool hasLocation = false,
   VoidCallback? onLocationTap,
+  int maxPrimary = 3,
 }) {
-  final items = <Widget>[];
+  final candidates = <CompactStoreActionButton>[];
 
   final trimmedPhone = phone?.trim() ?? '';
   if (canCall && trimmedPhone.isNotEmpty) {
-    items.add(
+    candidates.add(
       CompactStoreActionButton(
         icon:
             Icon(Icons.call, color: PatientAppColors.statusConfirmed, size: 18),
@@ -267,7 +315,7 @@ List<Widget> buildCompactPrimaryStoreActions({
   if (trimmedWhatsapp.isNotEmpty) {
     final digitsOnly = trimmedWhatsapp.replaceAll(RegExp(r'[^0-9+]'), '');
     if (digitsOnly.isNotEmpty) {
-      items.add(
+      candidates.add(
         CompactStoreActionButton(
           icon: const FaIcon(FontAwesomeIcons.whatsapp,
               color: Color(0xFF25D366), size: 18),
@@ -283,7 +331,7 @@ List<Widget> buildCompactPrimaryStoreActions({
   }
 
   if (hasLocation && onLocationTap != null) {
-    items.add(
+    candidates.add(
       CompactStoreActionButton(
         icon: Icon(Icons.location_on_outlined,
             color: PatientAppColors.brandTeal, size: 18),
@@ -298,7 +346,7 @@ List<Widget> buildCompactPrimaryStoreActions({
   if (trimmedWebsite.isNotEmpty) {
     final uri = Uri.tryParse(trimmedWebsite);
     if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
-      items.add(
+      candidates.add(
         CompactStoreActionButton(
           icon: FaIcon(FontAwesomeIcons.globe,
               color: PatientAppColors.brandTeal, size: 18),
@@ -310,18 +358,7 @@ List<Widget> buildCompactPrimaryStoreActions({
     }
   }
 
-  return items;
-}
-
-/// The secondary compact Store-header row — social platform icons only
-/// (Instagram/Facebook/TikTok/YouTube), deliberately excluding website
-/// (already covered by the primary row above, so it never appears twice).
-/// Same empty-state rule as every other builder here: an invalid/missing
-/// URL is simply skipped, never a broken or blank icon.
-List<Widget> buildCompactSocialIcons({Map<String, dynamic>? socialLinks}) {
-  final items = <Widget>[];
-
-  void addIcon({
+  void addSocialIcon({
     required String key,
     required Widget icon,
     required String tooltipKey,
@@ -333,7 +370,7 @@ List<Widget> buildCompactSocialIcons({Map<String, dynamic>? socialLinks}) {
     if (trimmed.isEmpty) return;
     final uri = Uri.tryParse(trimmed);
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) return;
-    items.add(
+    candidates.add(
       CompactStoreActionButton(
         icon: icon,
         tooltip: tooltipKey.tr(),
@@ -343,28 +380,28 @@ List<Widget> buildCompactSocialIcons({Map<String, dynamic>? socialLinks}) {
     );
   }
 
-  addIcon(
+  addSocialIcon(
     key: 'instagram',
     icon: const FaIcon(FontAwesomeIcons.instagram,
         color: Color(0xFFE1306C), size: 18),
     tooltipKey: 'social_instagram',
     color: const Color(0xFFE1306C),
   );
-  addIcon(
+  addSocialIcon(
     key: 'facebook',
     icon: const FaIcon(FontAwesomeIcons.facebook,
         color: Color(0xFF1877F2), size: 18),
     tooltipKey: 'social_facebook',
     color: const Color(0xFF1877F2),
   );
-  addIcon(
+  addSocialIcon(
     key: 'tiktok',
     icon:
         const FaIcon(FontAwesomeIcons.tiktok, color: Colors.black87, size: 18),
     tooltipKey: 'social_tiktok',
     color: Colors.black87,
   );
-  addIcon(
+  addSocialIcon(
     key: 'youtube',
     icon: const FaIcon(FontAwesomeIcons.youtube,
         color: Color(0xFFFF0000), size: 18),
@@ -372,7 +409,7 @@ List<Widget> buildCompactSocialIcons({Map<String, dynamic>? socialLinks}) {
     color: const Color(0xFFFF0000),
   );
 
-  return items;
+  return candidates.take(maxPrimary).toList();
 }
 
 /// Convenience wrapper for non-Sliver contexts (e.g. the standalone

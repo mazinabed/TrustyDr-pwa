@@ -203,8 +203,6 @@ class _StoreBody extends ConsumerWidget {
       logoUrl: effectiveLogoUrl,
       city: effectiveCity,
       tagline: effectiveTagline,
-      productCount: catalog.products.length,
-      categoryCount: distinctCategoryCount(catalog.products),
     );
 
     // Store header compaction (2026-08-07) — the full description no
@@ -220,15 +218,20 @@ class _StoreBody extends ConsumerWidget {
           resolvedLocation: effectiveCity,
           description: effectiveDescription,
         );
-    final primaryActions = buildCompactPrimaryStoreActions(
+    // Second-pass Store header redesign (2026-08-08) — ONE capped row
+    // (buildQuickStoreActions, max 3 by priority: Call, WhatsApp, Location,
+    // Website, then socials) instead of the previous two separate rows
+    // (primary + social) plus a distinct "See Store Info" text link below
+    // them. Everything beyond the cap, plus the full description, is only
+    // ever reachable through the Store Info chip — never inline.
+    final quickActions = buildQuickStoreActions(
       phone: catalog.store?.phone,
       whatsapp: catalog.store?.whatsapp,
       website: catalog.store?.website,
+      socialLinks: catalog.store?.socialLinks,
       hasLocation: hasLocationDetail,
       onLocationTap: hasLocationDetail ? openStoreInfo : null,
     );
-    final socialIcons =
-        buildCompactSocialIcons(socialLinks: catalog.store?.socialLinks);
     final hasDetailedInfo = storeHasDetailedInfo(
       store: catalog.store,
       resolvedLocation: effectiveCity,
@@ -349,48 +352,24 @@ class _StoreBody extends ConsumerWidget {
           // itself, below the banner (never overlaid on top of it — see
           // that widget's own header comment for why).
           header,
-          // Store header compaction (2026-08-07) — replaces the old two
-          // full-width, titled "Contact"/"Social & Online" MarketplaceSection
-          // blocks with compact, icon-only action rows directly under the
-          // header — no section title (per this checkpoint's own direction:
-          // patients already recognize a WhatsApp/Instagram icon, a heading
-          // only adds height). Two independent rows (primary actions, then
-          // social icons) so each stays a single line on typical widths;
-          // each row is entirely absent (not just empty) when it has
-          // nothing to show — never reserved space for a missing action.
-          // Detailed info (full description/address/contact/social) moved
-          // to the "See Store Info" bottom sheet below, never inline here.
-          if (primaryActions.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: Wrap(spacing: 10, runSpacing: 6, children: primaryActions),
-            ),
-          if (socialIcons.isNotEmpty)
+          // Second-pass Store header redesign (2026-08-08) — ONE compact
+          // row: up to 3 priority-capped quick actions (never a long
+          // toolbar of every possible channel) plus a "Store Info" chip
+          // when there's more to see, all in the SAME Wrap so they read as
+          // one deliberate shortcut bar, not several stacked bands. Absent
+          // entirely (not just empty) when there is nothing at all —
+          // never reserved space.
+          if (quickActions.isNotEmpty || hasDetailedInfo)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Wrap(spacing: 10, runSpacing: 6, children: socialIcons),
-            ),
-          if (hasDetailedInfo)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  onPressed: openStoreInfo,
-                  style: TextButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    foregroundColor: PatientAppColors.brandTeal,
-                  ),
-                  icon: const Icon(Icons.info_outline_rounded, size: 16),
-                  label: Text(
-                    'marketplace_store_see_info'.tr(),
-                    style: const TextStyle(
-                        fontSize: 12.5, fontWeight: FontWeight.w700),
-                  ),
-                ),
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ...quickActions,
+                  if (hasDetailedInfo) _StoreInfoChip(onTap: openStoreInfo),
+                ],
               ),
             ),
           Padding(
@@ -496,6 +475,49 @@ class _StoreBody extends ConsumerWidget {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The "Store Info" pill appended to the end of the quick-actions row
+/// (2026-08-08) — a labeled chip rather than an icon-only
+/// [CompactStoreActionButton] since there's no single universally
+/// recognizable icon for "see everything else about this store" the way
+/// a phone/pin/platform icon is already self-evident.
+class _StoreInfoChip extends StatelessWidget {
+  const _StoreInfoChip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(19),
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: PatientAppColors.brandTeal.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.info_outline_rounded,
+                size: 16, color: PatientAppColors.brandTeal),
+            const SizedBox(width: 6),
+            Text(
+              'marketplace_store_see_info'.tr(),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: PatientAppColors.brandTeal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
