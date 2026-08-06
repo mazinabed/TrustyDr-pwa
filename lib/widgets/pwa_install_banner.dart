@@ -126,19 +126,22 @@
 // }
 
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:js_interop';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trustydr/utils/pwa_install_platform.dart';
 
-// --- Single Point of Truth for JS ---
-@JS('trustyDrCanInstall')
-external bool _canInstallJS();
-
-@JS('trustyDrPromptInstall')
-external JSPromise _promptInstallJS();
+// dart:html/dart:js_interop-free (2026-08-08) — every platform-specific
+// call (isStandalone/listenForInstallAvailable/canInstall/promptInstall)
+// now goes through utils/pwa_install_platform.dart's conditional export,
+// same pattern as utils/web_location.dart/web_reload.dart. No behavior
+// change: the web build resolves to pwa_install_platform_web.dart, which
+// makes the exact same dart:html/js_interop calls this file used to make
+// directly. This is what lets home.dart — and everything that
+// transitively imports it (login.dart, bottom_bar.dart, screens.dart,
+// marketplace_widgets.dart) — compile on the VM test platform used by
+// plain `flutter test`.
 
 class TrustyInstallBanner extends StatefulWidget {
   const TrustyInstallBanner({super.key});
@@ -153,8 +156,6 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
   bool get _isAndroidWeb =>
       kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-  bool get _isStandalone =>
-      html.window.matchMedia('(display-mode: standalone)').matches;
 
   @override
   void initState() {
@@ -162,7 +163,7 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
     _checkStatus();
 
     // Listen for the 'available' event from your pwa.js
-    html.window.addEventListener('pwa-install-available', (_) {
+    listenForInstallAvailable(() {
       if (mounted) setState(() {});
     });
   }
@@ -174,8 +175,8 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
 
   Future<void> _handleAction() async {
     if (_isAndroidWeb) {
-      if (_canInstallJS()) {
-        await _promptInstallJS().toDart;
+      if (canInstall()) {
+        await promptInstall();
         _dismissForever();
       } else {
         _showToast("Installation is coming soon!");
@@ -194,8 +195,9 @@ class _TrustyInstallBannerState extends State<TrustyInstallBanner> {
   @override
   Widget build(BuildContext context) {
     // Don't show if: Not web, already installed, or user dismissed it.
-    if (!kIsWeb || _isStandalone || _isDismissed)
+    if (!kIsWeb || isStandalone() || _isDismissed) {
       return const SizedBox.shrink();
+    }
     // Only show on Mobile (Big companies rarely show banners on Desktop)
     if (!_isIOS && !_isAndroidWeb) return const SizedBox.shrink();
 

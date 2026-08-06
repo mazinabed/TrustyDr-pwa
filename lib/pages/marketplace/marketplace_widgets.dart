@@ -210,14 +210,25 @@ class MarketplaceStoreHeader extends StatelessWidget {
           ),
         ),
         Padding(
-          // Store header second-pass redesign (2026-08-08) — negative top
-          // padding pulls the identity row up so the logo overlaps the
-          // banner's bottom edge (a plain Column paints later siblings on
-          // top of earlier ones wherever they overlap, so this also
-          // genuinely reclaims layout space, unlike Transform.translate,
-          // which would only shift the paint position and leave the
-          // original gap behind).
-          padding: const EdgeInsets.fromLTRB(16, -22, 16, 0),
+          // Store header compaction (2026-08-08) — small top gap, NOT
+          // negative padding. An earlier revision used
+          // EdgeInsets.fromLTRB(16, -22, 16, 0) to pull the logo up over
+          // the banner's bottom edge, which violates Flutter's own
+          // Padding.padding.isNonNegative assertion (RenderPadding rejects
+          // negative insets outright). That assertion only runs in debug
+          // builds — `flutter build web` (release, assertions stripped)
+          // and `flutter test` (blocked from even compiling this file
+          // until the dart:html fix — see
+          // marketplace_store_page_compiles_test.dart) both never
+          // exercised it, so the bug shipped silently. Confirmed via this
+          // exact regression test once the compile blocker was fixed:
+          // 'padding.isNonNegative': is not true. Fixed by using a small
+          // non-negative gap instead — the banner-height reduction
+          // (150->110px) from the same checkpoint already accounts for
+          // most of the intended compaction; the logo-overlap visual
+          // flourish is dropped rather than reimplemented with Stack/
+          // Positioned, to keep this fix minimal and provably valid.
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           // Identity alignment polish (2026-08-08) — centered against the
           // logo (was `start`, which top-pinned a short 1-2-line text
           // block against the full 56px logo height, reading as "sitting
