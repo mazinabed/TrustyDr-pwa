@@ -17,6 +17,7 @@
 // backend's auth gate, not a client-side guard hiding it. See
 // marketplace_widgets.dart's `ensureMarketplaceLogin()` for the reusable
 // tap-time login gate protected actions should use instead.
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1128,6 +1129,80 @@ final marketplaceCatalogProvider = FutureProvider.autoDispose
   return MarketplaceCatalog(
       products: products, categories: categories, store: store);
 });
+
+/// Location display-name lookup (2026-08-05 Store-page location fix) — the
+/// SAME `cities` collection home.dart's own location selector already reads
+/// directly (province_key / name_en / lang.ar / lang.ku / subCities[en,ar,
+/// ku]), reused here rather than inventing a second taxonomy. Cached for
+/// the app's lifetime (not autoDispose) since this is a bounded reference
+/// dataset, not per-store data — one read total across every Store page a
+/// patient visits in a session, matching home.dart's own `_cachedCities`
+/// caching intent.
+final citiesLookupProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final snap = await FirebaseFirestore.instance.collection('cities').get();
+  return snap.docs.map((d) => d.data()).toList();
+});
+
+/// Resolves a Commerce standalone store's raw `provinceKey`/`cityEn` codes
+/// (see [MarketplaceStoreBranding]) into a localized "City, Province"
+/// display string via [citiesLookupProvider]'s data — mirrors home.dart's
+/// own `_displaySelectedCity`/`_displayProvince`/`_displayCity` resolution
+/// exactly, so the same `cities` doc shape only ever needs one interpretation
+/// across the app. Returns null when there isn't enough data to resolve
+/// anything (legacy Healthcare pharmacy stores never set provinceKey/cityEn
+/// at all — callers should fall back to their own nav-param city in that
+/// case, never show a raw code).
+String? localizedStoreLocation({
+  required List<Map<String, dynamic>> citiesData,
+  required String? provinceKey,
+  required String? cityEn,
+  required String lang,
+}) {
+  if (provinceKey == null || provinceKey.isEmpty) return null;
+  Map<String, dynamic>? provinceDoc;
+  for (final doc in citiesData) {
+    if (doc['province_key'] == provinceKey) {
+      provinceDoc = doc;
+      break;
+    }
+  }
+  if (provinceDoc == null) return null;
+
+  final provinceLang = provinceDoc['lang'] is Map
+      ? Map<String, dynamic>.from(provinceDoc['lang'] as Map)
+      : const <String, dynamic>{};
+  final provinceNameEn = provinceDoc['name_en']?.toString();
+  final provinceName = lang == 'ar'
+      ? (provinceLang['ar']?.toString() ?? provinceNameEn)
+      : lang == 'ku'
+          ? (provinceLang['ku']?.toString() ?? provinceNameEn)
+          : provinceNameEn;
+
+  String? cityName;
+  if (cityEn != null && cityEn.isNotEmpty) {
+    final subCities = provinceDoc['subCities'] is List
+        ? provinceDoc['subCities'] as List
+        : const [];
+    for (final raw in subCities) {
+      if (raw is! Map) continue;
+      final c = Map<String, dynamic>.from(raw);
+      if ((c['en'] ?? '').toString() != cityEn) continue;
+      cityName = lang == 'ar'
+          ? (c['ar']?.toString() ?? c['en']?.toString())
+          : lang == 'ku'
+              ? (c['ku']?.toString() ?? c['en']?.toString())
+              : c['en']?.toString();
+      break;
+    }
+  }
+
+  final parts = [
+    if (cityName != null && cityName.isNotEmpty) cityName,
+    if (provinceName != null && provinceName.isNotEmpty) provinceName,
+  ];
+  return parts.isEmpty ? null : parts.join(', ');
+}
 
 /// Live single-product detail (Milestone 5, Patient Product Experience) —
 /// keyed by (orgId, engineId) so switching products/stores always fetches

@@ -120,7 +120,7 @@ class _MarketplaceStorePageState extends ConsumerState<MarketplaceStorePage> {
   }
 }
 
-class _StoreBody extends StatelessWidget {
+class _StoreBody extends ConsumerWidget {
   const _StoreBody({
     required this.orgId,
     required this.storeName,
@@ -150,7 +150,7 @@ class _StoreBody extends StatelessWidget {
   final ValueChanged<String> onSearchChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final lang = context.locale.languageCode;
 
     // Store Branding V1 (2026-07-22) — catalog.store is fetched by THIS
@@ -174,12 +174,33 @@ class _StoreBody extends StatelessWidget {
     // checkpoint.
     final businessType = localizedBusinessType(catalog.store?.businessType);
 
+    // Store-page location fix (2026-08-05) — catalog.store's own
+    // provinceKey/cityEn (always present for standalone Commerce stores,
+    // ungated by showPublicContact/showSocialLinks) is now the AUTHORITATIVE
+    // location source, resolved to a display string via
+    // [citiesLookupProvider]/[localizedStoreLocation] — the same resolution
+    // home.dart's own location selector already does. The nav-param `city`
+    // (this widget's own constructor param, populated only by the store
+    // card's area-scoped browse flow) is a fallback ONLY, so every entry
+    // point (direct link, product "Sold By", provider "Visit Store", and
+    // the marketplace card) shows the same location instead of only the
+    // card path working.
+    final citiesData =
+        ref.watch(citiesLookupProvider).asData?.value ?? const [];
+    final resolvedLocation = localizedStoreLocation(
+      citiesData: citiesData,
+      provinceKey: catalog.store?.provinceKey,
+      cityEn: catalog.store?.cityEn,
+      lang: lang,
+    );
+    final effectiveCity = resolvedLocation ?? city;
+
     final header = MarketplaceStoreHeader(
       storeName: storeName,
       businessType: businessType,
       bannerUrl: effectiveBannerUrl,
       logoUrl: effectiveLogoUrl,
-      city: city,
+      city: effectiveCity,
       tagline: effectiveTagline,
       description: effectiveDescription,
       productCount: catalog.products.length,
