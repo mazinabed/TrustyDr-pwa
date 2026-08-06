@@ -218,10 +218,18 @@ class MarketplaceStoreHeader extends StatelessWidget {
           // which would only shift the paint position and leave the
           // original gap behind).
           padding: const EdgeInsets.fromLTRB(16, -22, 16, 0),
+          // Identity alignment polish (2026-08-08) — centered against the
+          // logo (was `start`, which top-pinned a short 1-2-line text
+          // block against the full 56px logo height, reading as "sitting
+          // too high"). Matches the avatar+stacked-text pattern common to
+          // Instagram/Twitter-style profile headers: one vertically
+          // centered text column beside a fixed-size avatar, never
+          // top-aligned against it.
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
+                key: const Key('storeHeaderLogo'),
                 width: 56,
                 height: 56,
                 clipBehavior: Clip.antiAlias,
@@ -250,6 +258,7 @@ class MarketplaceStoreHeader extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
+                  key: const Key('storeHeaderIdentityText'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -279,13 +288,22 @@ class MarketplaceStoreHeader extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Store header compaction (2026-08-07) — max 2 lines
-                    // (was 1): still compact, but a slightly longer tagline
-                    // no longer truncates on the very first few words. The
-                    // full description never renders here at all anymore —
-                    // see MarketplaceStorePage's "See Store Info" sheet.
+                    // Identity alignment polish (2026-08-08) — business
+                    // type/city now renders HERE, inside the same column as
+                    // the name and tagline, instead of as a separate
+                    // sibling below the whole Row (which used the page's
+                    // own 16px margin and so started flush under the LOGO,
+                    // never under the text that follows it — the exact
+                    // "tagline and type/location not sharing a clean text
+                    // axis" bug). All three lines now share one left edge
+                    // (right edge in RTL) and one consistent small gap.
+                    if ((businessType ?? '').isNotEmpty ||
+                        (city ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      _StoreMetaLine(city: city, businessType: businessType),
+                    ],
                     if ((tagline ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         tagline!.trim(),
                         maxLines: 2,
@@ -303,17 +321,6 @@ class MarketplaceStoreHeader extends StatelessWidget {
             ],
           ),
         ),
-        // Store header second-pass redesign (2026-08-08) — product/category
-        // counts removed from the header entirely (audited: the products
-        // grid immediately below the quick-actions row already conveys
-        // this, and repeating "N products" here only consumed header
-        // height without adding wayfinding value on mobile — see this
-        // checkpoint's own direction).
-        if ((businessType ?? '').isNotEmpty || (city ?? '').isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 2),
-            child: _StoreMetaLine(city: city, businessType: businessType),
-          ),
       ],
     );
   }
