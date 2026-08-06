@@ -128,7 +128,6 @@ class MarketplaceStoreHeader extends StatelessWidget {
     this.city,
     this.businessType,
     this.tagline,
-    this.description,
     required this.productCount,
     required this.categoryCount,
   });
@@ -149,10 +148,6 @@ class MarketplaceStoreHeader extends StatelessWidget {
   /// store name. Null/empty renders nothing extra — never a placeholder
   /// sentence.
   final String? tagline;
-
-  /// The merchant's own longer description (already localized by the
-  /// caller), shown once below the tagline. Null/empty renders nothing.
-  final String? description;
   final int productCount;
   final int categoryCount;
 
@@ -275,11 +270,16 @@ class MarketplaceStoreHeader extends StatelessWidget {
                         ),
                       ],
                     ),
+                    // Store header compaction (2026-08-07) — max 2 lines
+                    // (was 1): still compact, but a slightly longer tagline
+                    // no longer truncates on the very first few words. The
+                    // full description never renders here at all anymore —
+                    // see MarketplaceStorePage's "See Store Info" sheet.
                     if ((tagline ?? '').trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         tagline!.trim(),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 12.5,
@@ -294,16 +294,6 @@ class MarketplaceStoreHeader extends StatelessWidget {
             ],
           ),
         ),
-        if ((description ?? '').trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
-            child: Text(
-              description!.trim(),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-            ),
-          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: _StoreMetaLine(

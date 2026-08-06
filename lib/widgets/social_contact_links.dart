@@ -186,6 +186,195 @@ List<Widget> buildSocialContactActionButtons({
   return items;
 }
 
+/// Compact Store header actions (2026-08-07) — a small icon-only circular
+/// tap target, deliberately NOT [SocialContactActionButton] (which always
+/// shows a label underneath — right for a Provider profile's dedicated
+/// action row, too tall for a Store header that must stay compact). Reused
+/// for both the primary quick-actions row (Call/WhatsApp/Location/Website)
+/// and the social-icons row (Instagram/Facebook/TikTok/YouTube) — one
+/// small, consistent, subtly-tinted circle either way.
+class CompactStoreActionButton extends StatelessWidget {
+  const CompactStoreActionButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    this.onTap,
+  });
+
+  final Widget icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: icon,
+        ),
+      ),
+    );
+  }
+}
+
+/// The primary compact Store-header action row — Call, WhatsApp, Location,
+/// Website, in that order, icon-only, no section title (2026-08-07 Store
+/// header compaction). Each is independently optional and simply omitted
+/// when there's nothing to act on; [onLocationTap] is only ever included
+/// when [hasLocation] is true (there's no "value" to validate the way the
+/// other three have a phone/link — Location just opens the Store Info
+/// sheet, so the caller decides both whether it's shown and what happens on
+/// tap). Email is deliberately NOT part of this compact row — it stays a
+/// "See Store Info" detail, not a quick action, matching the smallest set
+/// of icons a patient would expect to tap immediately (call/message/find/
+/// visit), not every public contact channel.
+List<Widget> buildCompactPrimaryStoreActions({
+  String? phone,
+  String? whatsapp,
+  String? website,
+  bool canCall = true,
+  bool hasLocation = false,
+  VoidCallback? onLocationTap,
+}) {
+  final items = <Widget>[];
+
+  final trimmedPhone = phone?.trim() ?? '';
+  if (canCall && trimmedPhone.isNotEmpty) {
+    items.add(
+      CompactStoreActionButton(
+        icon:
+            Icon(Icons.call, color: PatientAppColors.statusConfirmed, size: 18),
+        tooltip: 'call_now'.tr(),
+        color: PatientAppColors.statusConfirmed,
+        onTap: () => launchUrl(Uri.parse('tel:$trimmedPhone')),
+      ),
+    );
+  }
+
+  final trimmedWhatsapp = whatsapp?.trim() ?? '';
+  if (trimmedWhatsapp.isNotEmpty) {
+    final digitsOnly = trimmedWhatsapp.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (digitsOnly.isNotEmpty) {
+      items.add(
+        CompactStoreActionButton(
+          icon: const FaIcon(FontAwesomeIcons.whatsapp,
+              color: Color(0xFF25D366), size: 18),
+          tooltip: 'whatsapp_contact'.tr(),
+          color: const Color(0xFF25D366),
+          onTap: () => launchUrl(
+            Uri.parse('https://wa.me/$digitsOnly'),
+            mode: LaunchMode.externalApplication,
+          ),
+        ),
+      );
+    }
+  }
+
+  if (hasLocation && onLocationTap != null) {
+    items.add(
+      CompactStoreActionButton(
+        icon: Icon(Icons.location_on_outlined,
+            color: PatientAppColors.brandTeal, size: 18),
+        tooltip: 'marketplace_store_location_action'.tr(),
+        color: PatientAppColors.brandTeal,
+        onTap: onLocationTap,
+      ),
+    );
+  }
+
+  final trimmedWebsite = website?.trim() ?? '';
+  if (trimmedWebsite.isNotEmpty) {
+    final uri = Uri.tryParse(trimmedWebsite);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      items.add(
+        CompactStoreActionButton(
+          icon: FaIcon(FontAwesomeIcons.globe,
+              color: PatientAppColors.brandTeal, size: 18),
+          tooltip: 'social_website'.tr(),
+          color: PatientAppColors.brandTeal,
+          onTap: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+        ),
+      );
+    }
+  }
+
+  return items;
+}
+
+/// The secondary compact Store-header row — social platform icons only
+/// (Instagram/Facebook/TikTok/YouTube), deliberately excluding website
+/// (already covered by the primary row above, so it never appears twice).
+/// Same empty-state rule as every other builder here: an invalid/missing
+/// URL is simply skipped, never a broken or blank icon.
+List<Widget> buildCompactSocialIcons({Map<String, dynamic>? socialLinks}) {
+  final items = <Widget>[];
+
+  void addIcon({
+    required String key,
+    required Widget icon,
+    required String tooltipKey,
+    required Color color,
+  }) {
+    final value = socialLinks?[key];
+    if (value is! String) return;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) return;
+    items.add(
+      CompactStoreActionButton(
+        icon: icon,
+        tooltip: tooltipKey.tr(),
+        color: color,
+        onTap: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+      ),
+    );
+  }
+
+  addIcon(
+    key: 'instagram',
+    icon: const FaIcon(FontAwesomeIcons.instagram,
+        color: Color(0xFFE1306C), size: 18),
+    tooltipKey: 'social_instagram',
+    color: const Color(0xFFE1306C),
+  );
+  addIcon(
+    key: 'facebook',
+    icon: const FaIcon(FontAwesomeIcons.facebook,
+        color: Color(0xFF1877F2), size: 18),
+    tooltipKey: 'social_facebook',
+    color: const Color(0xFF1877F2),
+  );
+  addIcon(
+    key: 'tiktok',
+    icon:
+        const FaIcon(FontAwesomeIcons.tiktok, color: Colors.black87, size: 18),
+    tooltipKey: 'social_tiktok',
+    color: Colors.black87,
+  );
+  addIcon(
+    key: 'youtube',
+    icon: const FaIcon(FontAwesomeIcons.youtube,
+        color: Color(0xFFFF0000), size: 18),
+    tooltipKey: 'social_youtube',
+    color: const Color(0xFFFF0000),
+  );
+
+  return items;
+}
+
 /// Convenience wrapper for non-Sliver contexts (e.g. the standalone
 /// Commerce Store page, a plain widget tree) — same `Wrap` layout
 /// (centered, 16/12 spacing) Provider profile pages already use inside

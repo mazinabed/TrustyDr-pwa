@@ -5,6 +5,7 @@
 // standalone Commerce Store page. Tests the pure filtering/ordering logic
 // directly — no Firebase dependency, matching this app's existing
 // marketplace_gallery_parsing_test.dart convention.
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
 import 'package:trustydr/widgets/social_contact_links.dart';
@@ -202,6 +203,159 @@ void main() {
         canCall: true,
       );
       expect(socialOnly, hasLength(1));
+    });
+  });
+
+  group(
+      'MarketplaceStore/MarketplaceStoreBranding address parsing (2026-08-07)',
+      () {
+    test('MarketplaceStore.fromMap parses streetAddress/locationNotes', () {
+      final store = MarketplaceStore.fromMap({
+        'providerId': 'org_1',
+        'orgId': 'org_1',
+        'facilityName_en': 'Demo Store',
+        'facilityName_ar': 'Demo Store',
+        'facilityName_ku': 'Demo Store',
+        'province_en': 'Wasit',
+        'province_ar': 'Wasit',
+        'province_ku': 'Wasit',
+        'city_en': 'Kut',
+        'city_ar': 'Kut',
+        'city_ku': 'Kut',
+        'productCount': 3,
+        'streetAddress': '123 Demo Street',
+        'locationNotes': 'Near the market',
+      });
+      expect(store.streetAddress, '123 Demo Street');
+      expect(store.locationNotes, 'Near the market');
+    });
+
+    test('MarketplaceStoreBranding.fromMap parses streetAddress/locationNotes',
+        () {
+      final branding = MarketplaceStoreBranding.fromMap({
+        'streetAddress': '123 Demo Street',
+        'locationNotes': 'Near the market',
+      });
+      expect(branding.streetAddress, '123 Demo Street');
+      expect(branding.locationNotes, 'Near the market');
+    });
+
+    test('absent streetAddress/locationNotes parse to null, never crash', () {
+      final branding = MarketplaceStoreBranding.fromMap(const {});
+      expect(branding.streetAddress, isNull);
+      expect(branding.locationNotes, isNull);
+    });
+  });
+
+  group('buildCompactPrimaryStoreActions (2026-08-07 Store header compaction)',
+      () {
+    test('everything absent produces no actions — no reserved space', () {
+      final items = buildCompactPrimaryStoreActions();
+      expect(items, isEmpty);
+    });
+
+    test('order is call, whatsapp, location, website — email is never included',
+        () {
+      final items = buildCompactPrimaryStoreActions(
+        phone: '+964 770 000 0000',
+        whatsapp: '+964 770 111 1111',
+        website: 'https://example.com',
+        hasLocation: true,
+        onLocationTap: () {},
+      );
+      // 4 actions: call, whatsapp, location, website. Email has no
+      // representation in this builder at all (by design).
+      expect(items, hasLength(4));
+    });
+
+    test(
+        'location action only appears when hasLocation AND onLocationTap are both set',
+        () {
+      final withoutTap = buildCompactPrimaryStoreActions(hasLocation: true);
+      expect(withoutTap, isEmpty);
+
+      final withoutFlag = buildCompactPrimaryStoreActions(
+          hasLocation: false, onLocationTap: () {});
+      expect(withoutFlag, isEmpty);
+
+      final both = buildCompactPrimaryStoreActions(
+          hasLocation: true, onLocationTap: () {});
+      expect(both, hasLength(1));
+    });
+
+    test('phone gated by canCall, same as the labeled variant', () {
+      final hidden = buildCompactPrimaryStoreActions(
+        phone: '+964 770 000 0000',
+        canCall: false,
+      );
+      expect(hidden, isEmpty);
+    });
+
+    test('an invalid website scheme produces no action', () {
+      final items = buildCompactPrimaryStoreActions(website: 'not-a-valid-url');
+      expect(items, isEmpty);
+    });
+
+    test('a single available action renders alone — one Call action only', () {
+      final items = buildCompactPrimaryStoreActions(phone: '+964 770 000 0000');
+      expect(items, hasLength(1));
+    });
+  });
+
+  group('buildCompactSocialIcons (2026-08-07 Store header compaction)', () {
+    test('no social links produces no icons', () {
+      expect(buildCompactSocialIcons(), isEmpty);
+      expect(buildCompactSocialIcons(socialLinks: const {}), isEmpty);
+    });
+
+    test('website is excluded — already covered by the primary row', () {
+      final items = buildCompactSocialIcons(
+        socialLinks: {'website': 'https://example.com'},
+      );
+      expect(items, isEmpty);
+    });
+
+    test('only Instagram present renders exactly one compact icon', () {
+      final items = buildCompactSocialIcons(
+        socialLinks: {'instagram': 'https://instagram.com/demostore'},
+      );
+      expect(items, hasLength(1));
+    });
+
+    test('all four platforms present renders all four, invalid ones dropped',
+        () {
+      final items = buildCompactSocialIcons(
+        socialLinks: {
+          'instagram': 'https://instagram.com/x',
+          'facebook': 'https://facebook.com/x',
+          'tiktok': 'not-a-url',
+          'youtube': 'https://youtube.com/x',
+        },
+      );
+      expect(items, hasLength(3));
+    });
+  });
+
+  group('CompactStoreActionButton rendering', () {
+    testWidgets('renders as an icon-only tap target, no visible label text',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CompactStoreActionButton(
+              icon: const Icon(Icons.call),
+              tooltip: 'Call',
+              color: Colors.green,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.call), findsOneWidget);
+      // Unlike SocialContactActionButton (label underneath), this compact
+      // variant renders no visible Text widget at all.
+      expect(find.byType(Text), findsNothing);
     });
   });
 }

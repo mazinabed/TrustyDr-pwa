@@ -11,6 +11,7 @@ import 'package:trustydr/pages/marketplace/marketplace_collection_section.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
+import 'package:trustydr/pages/marketplace/marketplace_store_info_sheet.dart';
 import 'package:trustydr/pages/marketplace/marketplace_widgets.dart';
 import 'package:trustydr/widgets/social_contact_links.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
@@ -202,9 +203,36 @@ class _StoreBody extends ConsumerWidget {
       logoUrl: effectiveLogoUrl,
       city: effectiveCity,
       tagline: effectiveTagline,
-      description: effectiveDescription,
       productCount: catalog.products.length,
       categoryCount: distinctCategoryCount(catalog.products),
+    );
+
+    // Store header compaction (2026-08-07) — the full description no
+    // longer renders inline above Search; it only ever appears inside the
+    // "See Store Info" sheet (see showStoreInfoSheet below), keeping the
+    // header itself to identity + a short tagline only.
+    final hasLocationDetail = (effectiveCity?.trim().isNotEmpty ?? false) ||
+        (catalog.store?.streetAddress?.trim().isNotEmpty ?? false) ||
+        (catalog.store?.locationNotes?.trim().isNotEmpty ?? false);
+    void openStoreInfo() => showStoreInfoSheet(
+          context: context,
+          store: catalog.store,
+          resolvedLocation: effectiveCity,
+          description: effectiveDescription,
+        );
+    final primaryActions = buildCompactPrimaryStoreActions(
+      phone: catalog.store?.phone,
+      whatsapp: catalog.store?.whatsapp,
+      website: catalog.store?.website,
+      hasLocation: hasLocationDetail,
+      onLocationTap: hasLocationDetail ? openStoreInfo : null,
+    );
+    final socialIcons =
+        buildCompactSocialIcons(socialLinks: catalog.store?.socialLinks);
+    final hasDetailedInfo = storeHasDetailedInfo(
+      store: catalog.store,
+      resolvedLocation: effectiveCity,
+      description: effectiveDescription,
     );
 
     if (catalog.isEmpty) {
@@ -321,44 +349,47 @@ class _StoreBody extends ConsumerWidget {
           // itself, below the banner (never overlaid on top of it — see
           // that widget's own header comment for why).
           header,
-          // Public Store Profile + Social Links (2026-08-05) — two
-          // independent sections (Contact, Social & Online), each entirely
-          // absent (not just empty) when the merchant has nothing public in
-          // that category — never an empty MarketplaceSection shell. Both
-          // reuse buildSocialContactActionButtons (widgets/
-          // social_contact_links.dart), the SAME helper Provider public
-          // profiles use, split into two calls so each section only ever
-          // contains its own category of button (Contact never shows a
-          // social icon, Social & Online never shows call/email/WhatsApp).
-          // catalog.store already only carries these fields when the
-          // merchant made them public (publicBusinessProfileFromOrgDoc) —
-          // this widget never re-checks that gate, only renders what it's
-          // given.
-          if (buildSocialContactActionButtons(
-            phone: catalog.store?.phone,
-            email: catalog.store?.email,
-            whatsapp: catalog.store?.whatsapp,
-          ).isNotEmpty)
-            MarketplaceSection(
-              title: 'marketplace_store_contact_section'.tr(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SocialContactActionsRow(
-                  phone: catalog.store?.phone,
-                  email: catalog.store?.email,
-                  whatsapp: catalog.store?.whatsapp,
-                ),
-              ),
+          // Store header compaction (2026-08-07) — replaces the old two
+          // full-width, titled "Contact"/"Social & Online" MarketplaceSection
+          // blocks with compact, icon-only action rows directly under the
+          // header — no section title (per this checkpoint's own direction:
+          // patients already recognize a WhatsApp/Instagram icon, a heading
+          // only adds height). Two independent rows (primary actions, then
+          // social icons) so each stays a single line on typical widths;
+          // each row is entirely absent (not just empty) when it has
+          // nothing to show — never reserved space for a missing action.
+          // Detailed info (full description/address/contact/social) moved
+          // to the "See Store Info" bottom sheet below, never inline here.
+          if (primaryActions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Wrap(spacing: 10, runSpacing: 6, children: primaryActions),
             ),
-          if (buildSocialContactActionButtons(
-            socialLinks: catalog.store?.socialLinks,
-          ).isNotEmpty)
-            MarketplaceSection(
-              title: 'marketplace_store_social_section'.tr(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SocialContactActionsRow(
-                  socialLinks: catalog.store?.socialLinks,
+          if (socialIcons.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Wrap(spacing: 10, runSpacing: 6, children: socialIcons),
+            ),
+          if (hasDetailedInfo)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: openStoreInfo,
+                  style: TextButton.styleFrom(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: PatientAppColors.brandTeal,
+                  ),
+                  icon: const Icon(Icons.info_outline_rounded, size: 16),
+                  label: Text(
+                    'marketplace_store_see_info'.tr(),
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ),

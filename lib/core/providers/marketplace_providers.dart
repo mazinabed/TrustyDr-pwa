@@ -101,6 +101,8 @@ class MarketplaceStore {
     this.phone,
     this.email,
     this.whatsapp,
+    this.streetAddress,
+    this.locationNotes,
   });
 
   final String providerId;
@@ -159,6 +161,14 @@ class MarketplaceStore {
   final String? email;
   final String? whatsapp;
 
+  /// Address publication (2026-08-07) — ungated (public whenever the
+  /// merchant entered them, never dependent on showPublicContact/
+  /// showSocialLinks) — see publicBusinessProfileFromOrgDoc's own header
+  /// comment. Distinct from the older Healthcare-only [facilityAddress]
+  /// above.
+  final String? streetAddress;
+  final String? locationNotes;
+
   factory MarketplaceStore.fromMap(Map<String, dynamic> m) {
     // Standalone Commerce store name fallback (Stage 1, 2026-08-04) —
     // Commerce's own Organization schema has a single `name` field, never
@@ -214,6 +224,8 @@ class MarketplaceStore {
       phone: m['phone']?.toString(),
       email: m['email']?.toString(),
       whatsapp: m['whatsapp']?.toString(),
+      streetAddress: m['streetAddress']?.toString(),
+      locationNotes: m['locationNotes']?.toString(),
     );
   }
 
@@ -601,6 +613,8 @@ class MarketplaceStoreBranding {
     this.phone,
     this.email,
     this.whatsapp,
+    this.streetAddress,
+    this.locationNotes,
   });
 
   final String? logoUrl;
@@ -631,6 +645,12 @@ class MarketplaceStoreBranding {
   final String? email;
   final String? whatsapp;
 
+  /// Address publication (2026-08-07) — ungated (public whenever the
+  /// merchant entered them) — see publicBusinessProfileFromOrgDoc's own
+  /// header comment.
+  final String? streetAddress;
+  final String? locationNotes;
+
   factory MarketplaceStoreBranding.fromMap(Map<String, dynamic> m) {
     return MarketplaceStoreBranding(
       logoUrl: m['logoUrl']?.toString(),
@@ -652,6 +672,8 @@ class MarketplaceStoreBranding {
       phone: m['phone']?.toString(),
       email: m['email']?.toString(),
       whatsapp: m['whatsapp']?.toString(),
+      streetAddress: m['streetAddress']?.toString(),
+      locationNotes: m['locationNotes']?.toString(),
     );
   }
 
