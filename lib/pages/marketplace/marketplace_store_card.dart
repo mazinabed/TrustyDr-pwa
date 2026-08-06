@@ -44,7 +44,20 @@ class MarketplaceStoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
     final name = store.localizedName(lang);
-    final city = store.localizedCity(lang);
+    // Public Store Profile (2026-08-05) — city ALONE was already flowing
+    // through to MarketplaceStorePage's own `city` param (nav-sourced from
+    // this SAME store.localizedCity, no backend change needed), but
+    // province was silently dropped: store.localizedProvince was already
+    // resolved (doctor_functions' own cities lookup, unchanged), just
+    // never combined into what gets displayed. "Kut, Wasit" is this same
+    // existing city/province pair, joined exactly like doctor_profile_v2.
+    // dart's own locationLine ([cityLoc, provinceLoc]...join(', ')) — no
+    // new location taxonomy, no new backend field.
+    final province = store.localizedProvince(lang);
+    final city = [
+      store.localizedCity(lang),
+      province,
+    ].where((s) => s.isNotEmpty).join(', ');
     // Store Branding V1 (2026-07-22) — real, merchant-uploaded
     // logoUrl/bannerUrl only. Never falls back to store.imageUrl (a
     // Healthcare-side provider-profile photo) or store.featuredImageUrl

@@ -94,6 +94,12 @@ class MarketplaceStore {
     required this.descriptionEn,
     required this.descriptionAr,
     required this.descriptionKu,
+    this.businessType,
+    this.website,
+    this.socialLinks,
+    this.phone,
+    this.email,
+    this.whatsapp,
   });
 
   final String providerId;
@@ -133,6 +139,24 @@ class MarketplaceStore {
   final String? descriptionEn;
   final String? descriptionAr;
   final String? descriptionKu;
+
+  /// Public Store Profile + Social Links (2026-08-05) — [businessType] is
+  /// the raw Commerce OrganizationType code (e.g. "retailer"); this model
+  /// never localizes it — see [MarketplaceStorePage]'s own display-name
+  /// mapping (kept next to the widget, not here, since it's presentation,
+  /// not data). [website]/[socialLinks]/[phone]/[email]/[whatsapp] are
+  /// already null-unless-public by the time they cross the bridge — see
+  /// trustydr-commerce/functions/src/organizations.ts's
+  /// publicBusinessProfileFromOrgDoc, the ONE place that decides whether a
+  /// merchant's Business Profile data is public at all. This model never
+  /// re-derives or re-checks that gate — an absent value here always means
+  /// "not public," never "not fetched."
+  final String? businessType;
+  final String? website;
+  final Map<String, dynamic>? socialLinks;
+  final String? phone;
+  final String? email;
+  final String? whatsapp;
 
   factory MarketplaceStore.fromMap(Map<String, dynamic> m) {
     // Standalone Commerce store name fallback (Stage 1, 2026-08-04) —
@@ -181,6 +205,14 @@ class MarketplaceStore {
       descriptionEn: m['description_en']?.toString(),
       descriptionAr: m['description_ar']?.toString(),
       descriptionKu: m['description_ku']?.toString(),
+      businessType: m['type']?.toString(),
+      website: m['website']?.toString(),
+      socialLinks: m['socialLinks'] is Map
+          ? Map<String, dynamic>.from(m['socialLinks'] as Map)
+          : null,
+      phone: m['phone']?.toString(),
+      email: m['email']?.toString(),
+      whatsapp: m['whatsapp']?.toString(),
     );
   }
 
@@ -559,6 +591,15 @@ class MarketplaceStoreBranding {
     this.descriptionEn,
     this.descriptionAr,
     this.descriptionKu,
+    this.businessType,
+    this.provinceKey,
+    this.cityKey,
+    this.cityEn,
+    this.website,
+    this.socialLinks,
+    this.phone,
+    this.email,
+    this.whatsapp,
   });
 
   final String? logoUrl;
@@ -570,6 +611,25 @@ class MarketplaceStoreBranding {
   final String? descriptionAr;
   final String? descriptionKu;
 
+  /// Public Store Profile + Social Links (2026-08-05) — sourced from
+  /// getMarketplaceCatalogForHealthcare (marketplaceBridge.ts), the ONE
+  /// per-org catalog endpoint every Store page entry point re-fetches
+  /// through regardless of navigation path — see MarketplaceStore's own
+  /// identical fields for the same null-unless-public contract.
+  /// provinceKey/cityKey are raw codes (not display names); resolve a
+  /// display name via [MarketplaceProvincesProvider] or similar, matching
+  /// how Provider profiles already resolve province/city — this model
+  /// deliberately does not carry a second denormalized display-name copy.
+  final String? businessType;
+  final String? provinceKey;
+  final String? cityKey;
+  final String? cityEn;
+  final String? website;
+  final Map<String, dynamic>? socialLinks;
+  final String? phone;
+  final String? email;
+  final String? whatsapp;
+
   factory MarketplaceStoreBranding.fromMap(Map<String, dynamic> m) {
     return MarketplaceStoreBranding(
       logoUrl: m['logoUrl']?.toString(),
@@ -580,6 +640,17 @@ class MarketplaceStoreBranding {
       descriptionEn: m['description_en']?.toString(),
       descriptionAr: m['description_ar']?.toString(),
       descriptionKu: m['description_ku']?.toString(),
+      businessType: m['type']?.toString(),
+      provinceKey: m['provinceKey']?.toString(),
+      cityKey: m['cityKey']?.toString(),
+      cityEn: m['cityEn']?.toString(),
+      website: m['website']?.toString(),
+      socialLinks: m['socialLinks'] is Map
+          ? Map<String, dynamic>.from(m['socialLinks'] as Map)
+          : null,
+      phone: m['phone']?.toString(),
+      email: m['email']?.toString(),
+      whatsapp: m['whatsapp']?.toString(),
     );
   }
 

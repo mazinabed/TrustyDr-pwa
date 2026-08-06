@@ -95,6 +95,30 @@ class MarketplaceSection extends StatelessWidget {
 // light or busy merchant-uploaded banner (live-tested, confirmed). Store
 // identity now lives below the banner instead, on the page's own white
 // background (see build() below).
+// Public Store Profile (2026-08-05) — the raw Commerce OrganizationType
+// code -> localized label mapping, mirroring trustydr-commerce/app's own
+// merchant-side kStandaloneOrganizationTypes (organization_types.dart) —
+// same codes, same set (that list is what a merchant could have actually
+// chosen at registration), but this app's own l10n keys (Flutter apps
+// don't share l10n files across repos). Unknown/legacy codes (or null —
+// every org that predates this checkpoint) render nothing rather than the
+// raw code.
+String? localizedBusinessType(String? code) {
+  const keys = {
+    'wholesaler': 'business_type_wholesaler',
+    'medical_supplier': 'business_type_medical_supplier',
+    'equipment_supplier': 'business_type_equipment_supplier',
+    'general_wholesaler': 'business_type_general_wholesaler',
+    'distributor': 'business_type_distributor',
+    'retailer': 'business_type_retailer',
+    'manufacturer': 'business_type_manufacturer',
+    'importer': 'business_type_importer',
+    'other': 'business_type_other',
+  };
+  final key = keys[code];
+  return key?.tr();
+}
+
 class MarketplaceStoreHeader extends StatelessWidget {
   const MarketplaceStoreHeader({
     super.key,
@@ -102,6 +126,7 @@ class MarketplaceStoreHeader extends StatelessWidget {
     this.bannerUrl,
     this.logoUrl,
     this.city,
+    this.businessType,
     this.tagline,
     this.description,
     required this.productCount,
@@ -112,6 +137,12 @@ class MarketplaceStoreHeader extends StatelessWidget {
   final String? bannerUrl;
   final String? logoUrl;
   final String? city;
+
+  /// Public Store Profile (2026-08-05) — already-localized display label
+  /// (see [localizedBusinessType]), never the raw type code. Null for a
+  /// Healthcare pharmacy (no concept of this field) or a standalone org
+  /// that predates this checkpoint.
+  final String? businessType;
 
   /// Store Branding V1 (2026-07-22) — the merchant's own short tagline
   /// (already localized by the caller), shown as a subtitle under the
@@ -277,6 +308,7 @@ class MarketplaceStoreHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           child: _StoreMetaLine(
             city: city,
+            businessType: businessType,
             productCount: productCount,
             categoryCount: categoryCount,
           ),
@@ -315,11 +347,13 @@ class _BackButton extends StatelessWidget {
 class _StoreMetaLine extends StatelessWidget {
   const _StoreMetaLine({
     required this.city,
+    this.businessType,
     required this.productCount,
     required this.categoryCount,
   });
 
   final String? city;
+  final String? businessType;
   final int productCount;
   final int categoryCount;
 
@@ -344,6 +378,9 @@ class _StoreMetaLine extends StatelessWidget {
       segments.add(Text(text, style: style));
     }
 
+    if (businessType != null && businessType!.isNotEmpty) {
+      addSegment(businessType!, _labelStyle);
+    }
     if (city != null && city!.isNotEmpty) {
       addSegment(city!, _labelStyle);
     }

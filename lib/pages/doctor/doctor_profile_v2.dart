@@ -3,13 +3,12 @@ import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/pages/doctor/doctor_time_slot.dart';
 import 'package:trustydr/pages/screens.dart' show LoginScreen;
 import 'package:trustydr/widgets/doctor_reviews_section.dart';
+import 'package:trustydr/widgets/social_contact_links.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 /// Returns true when the center has at least one valid date window open.
 /// Mirrors centerAccessProvider date-only logic from the doctor portal.
@@ -340,80 +339,23 @@ class _DoctorProfileView extends StatelessWidget {
       );
     }
 
-    Widget actionButton({
-      required Widget iconWidget,
-      required String label,
-      required Color color,
-      VoidCallback? onTap,
-    }) {
-      return InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: iconWidget,
-            ),
-            const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 13)),
-          ],
-        ),
-      );
-    }
-
+    // Public Store Profile + Social Links (2026-08-05) — migrated to the
+    // shared buildSocialContactActionButtons (widgets/social_contact_links.
+    // dart), extracted from this page's own previously-inline actionButton/
+    // addSocial closures (now removed). Behavior preserved exactly: same
+    // icons/colors/order (call, email, then Instagram/Facebook/TikTok/
+    // YouTube/Website), same http(s)-only URL validation, same empty-state
+    // (SliverToBoxAdapter around SizedBox.shrink when nothing to show).
+    // whatsapp is omitted (doctors have no WhatsApp field) — the shared
+    // helper already skips it cleanly when null.
     SliverToBoxAdapter buildAllActions(BuildContext context, String phone,
         String email, bool canCall, Map<String, String> socialLinks) {
-      final items = <Widget>[];
-
-      if (canCall && phone.isNotEmpty) {
-        items.add(actionButton(
-          iconWidget: Icon(Icons.call, color: PatientAppColors.statusConfirmed),
-          label: 'call_now'.tr(),
-          color: PatientAppColors.statusConfirmed,
-          onTap: () => launchUrl(Uri.parse('tel:$phone')),
-        ));
-      }
-      if (email.isNotEmpty) {
-        items.add(actionButton(
-          iconWidget:
-              Icon(Icons.email_outlined, color: PatientAppColors.brandTeal),
-          label: 'email_address'.tr(),
-          color: PatientAppColors.brandTeal,
-          onTap: () => launchUrl(Uri.parse('mailto:$email')),
-        ));
-      }
-
-      void addSocial(
-          String key, IconData faIcon, String labelKey, Color color) {
-        final url = socialLinks[key];
-        if (url == null) return;
-        final uri = Uri.tryParse(url);
-        if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-          return;
-        }
-        items.add(actionButton(
-          iconWidget: FaIcon(faIcon, color: color, size: 24),
-          label: labelKey.tr(),
-          color: color,
-          onTap: () => launchUrl(uri, mode: LaunchMode.externalApplication),
-        ));
-      }
-
-      addSocial('instagram', FontAwesomeIcons.instagram, 'social_instagram',
-          const Color(0xFFE1306C));
-      addSocial('facebook', FontAwesomeIcons.facebook, 'social_facebook',
-          const Color(0xFF1877F2));
-      addSocial(
-          'tiktok', FontAwesomeIcons.tiktok, 'social_tiktok', Colors.black87);
-      addSocial('youtube', FontAwesomeIcons.youtube, 'social_youtube',
-          const Color(0xFFFF0000));
-      addSocial('website', FontAwesomeIcons.globe, 'social_website',
-          PatientAppColors.brandTeal);
+      final items = buildSocialContactActionButtons(
+        phone: phone,
+        email: email,
+        canCall: canCall,
+        socialLinks: socialLinks,
+      );
 
       if (items.isEmpty) {
         return const SliverToBoxAdapter(child: SizedBox.shrink());

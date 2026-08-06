@@ -12,6 +12,7 @@ import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_search_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_widgets.dart';
+import 'package:trustydr/widgets/social_contact_links.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 /// A single pharmacy's Store (Patient Marketplace, Phase 1C, browse-only).
@@ -165,9 +166,17 @@ class _StoreBody extends StatelessWidget {
     final effectiveTagline = catalog.store?.localizedTagline(lang) ?? tagline;
     final effectiveDescription =
         catalog.store?.localizedDescription(lang) ?? description;
+    // Public Store Profile + Social Links (2026-08-05) — businessType/
+    // contact/social have no nav-param fallback at all (only catalog.store,
+    // via getMarketplaceCatalogForHealthcare, carries them) — a Healthcare
+    // pharmacy's catalog.store simply never has these set, so every one of
+    // these stays null/hidden for pharmacy stores exactly as before this
+    // checkpoint.
+    final businessType = localizedBusinessType(catalog.store?.businessType);
 
     final header = MarketplaceStoreHeader(
       storeName: storeName,
+      businessType: businessType,
       bannerUrl: effectiveBannerUrl,
       logoUrl: effectiveLogoUrl,
       city: city,
@@ -291,6 +300,47 @@ class _StoreBody extends StatelessWidget {
           // itself, below the banner (never overlaid on top of it — see
           // that widget's own header comment for why).
           header,
+          // Public Store Profile + Social Links (2026-08-05) — two
+          // independent sections (Contact, Social & Online), each entirely
+          // absent (not just empty) when the merchant has nothing public in
+          // that category — never an empty MarketplaceSection shell. Both
+          // reuse buildSocialContactActionButtons (widgets/
+          // social_contact_links.dart), the SAME helper Provider public
+          // profiles use, split into two calls so each section only ever
+          // contains its own category of button (Contact never shows a
+          // social icon, Social & Online never shows call/email/WhatsApp).
+          // catalog.store already only carries these fields when the
+          // merchant made them public (publicBusinessProfileFromOrgDoc) —
+          // this widget never re-checks that gate, only renders what it's
+          // given.
+          if (buildSocialContactActionButtons(
+            phone: catalog.store?.phone,
+            email: catalog.store?.email,
+            whatsapp: catalog.store?.whatsapp,
+          ).isNotEmpty)
+            MarketplaceSection(
+              title: 'marketplace_store_contact_section'.tr(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SocialContactActionsRow(
+                  phone: catalog.store?.phone,
+                  email: catalog.store?.email,
+                  whatsapp: catalog.store?.whatsapp,
+                ),
+              ),
+            ),
+          if (buildSocialContactActionButtons(
+            socialLinks: catalog.store?.socialLinks,
+          ).isNotEmpty)
+            MarketplaceSection(
+              title: 'marketplace_store_social_section'.tr(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SocialContactActionsRow(
+                  socialLinks: catalog.store?.socialLinks,
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: MarketplaceSearchBar(
