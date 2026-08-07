@@ -1,6 +1,6 @@
 {
   "name": "TrustyDr – Patient App",
-  "short_name": "TrustyDr",
+  "short_name": "Patient",
   "description": "TrustyDr patient application for booking doctors and managing appointments.",
   "start_url": "/",
   "scope": "/",
