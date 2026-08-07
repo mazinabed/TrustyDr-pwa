@@ -57,6 +57,16 @@ macos/Runner/GoogleService-Info.plist
 **/serviceAccountKey.json
 **/serviceAccount.json
 
+# DeepSeek/Cline eval prep - additional sensitive patterns
+.env
+.env.*
+*.pem
+*.key
+*service-account*.json
+*firebase-adminsdk*.json
+credentials.json
+secrets/
+
 # IDE
 .vscode/
 .idea/
