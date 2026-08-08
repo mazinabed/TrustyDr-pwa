@@ -1,0 +1,108 @@
+Part A — Using TrustyDr Healthcare
+
+1. Introduction and acceptance
+
+These Terms of Service ("Terms") govern your access to and use of TrustyDr Healthcare, an application operated by TrustyDr ("we," "us") that lets you find doctors and medical facilities, book and manage appointments, and communicate with providers.
+
+Before you can use protected features of the App, you must electronically accept the current version of these Terms and our Privacy Policy. Your acceptance is recorded and version-tracked by our systems, and you may be asked to review and accept again if we publish a materially updated version.
+
+These Terms are provided in English, Arabic, and Kurdish. Each version is intended to convey the same meaning; if you have any question about a difference between versions, please contact us using the details in Section 15.
+
+2. Definitions
+
+"App" means the TrustyDr Healthcare Patient application and related services.
+"Provider" means a doctor, medical center, pharmacy, or laboratory/imaging facility that uses TrustyDr Healthcare to offer appointments or services.
+"Appointment" means a booking you make with a Provider through the App.
+"Account" means your registered patient account with the App.
+
+3. Eligibility and account responsibility
+
+You must have the legal capacity to enter into a binding agreement, or be using the App on behalf of a person in your care (for example, a parent booking for a child), to use the App. You are responsible for the accuracy of your account information and for all activity under your account.
+
+Where you book an Appointment or otherwise act on behalf of another person (the actual patient), you represent that you are authorized to do so, and you understand that the App distinguishes the person who created the booking from the actual patient receiving care — the patient's own identity, not yours, is what appears on the medical record.
+
+4. What TrustyDr Healthcare is — and is not
+
+TrustyDr Healthcare is a technology platform that connects patients with independent Providers. We are not a medical practice, a hospital, a pharmacy, or a laboratory. We do not practice medicine, do not employ the doctors who use the App (unless separately and expressly stated), do not make diagnoses, do not prescribe or dispense medicine, and do not review or approve the clinical judgment of any Provider. Each Provider is independently responsible for the care they give you.
+
+Emergency care. TrustyDr Healthcare is not an emergency service and must not be used for medical emergencies. If you believe you are experiencing a medical emergency, contact your local emergency services or go to the nearest emergency facility directly — do not rely on the App.
+
+5. Finding and booking Providers
+
+The App lets you search for Providers and book Appointments. Provider information (specialty, location, availability, pricing) is supplied by each Provider or the facility they belong to. We provide tools to help Providers keep this accurate, but we do not independently verify every detail of every listing, and availability shown in the App may change before a booking is confirmed.
+
+An Appointment booking is a request to be seen by the Provider at the selected time — the Provider or their facility staff may confirm, decline, or reschedule it. You may cancel an Appointment you booked using the tools provided in the App, subject to any cancellation terms the Provider or facility has published.
+
+6. Your medical information and records
+
+Where a Provider records notes, prescriptions, or other information about your care through the App, that record belongs to your ongoing medical history with that Provider and is handled as described in our Privacy Policy. You are responsible for the accuracy of the health information you provide to a Provider.
+
+7. Communications
+
+Where the App provides a way to message a Provider or facility staff, those communications are provided for scheduling and administrative purposes and, where a Provider chooses to use them this way, for care-related communication. They are not a substitute for an in-person or appropriately scheduled consultation, and — consistent with Section 4 — are not appropriate for emergencies.
+
+8. Provider independence and no guarantee of outcome
+
+Every Provider using TrustyDr Healthcare is an independent professional or facility, responsible for their own licensing, clinical judgment, diagnosis, treatment, and prescriptions. We do not guarantee the availability, quality, or outcome of any care you receive from a Provider. Your relationship with a Provider for the care itself is between you and that Provider, not with TrustyDr.
+
+9. Acceptable use
+
+You agree not to use the App to: violate applicable law; provide false information about yourself or the person you are booking for; interfere with the operation or security of the App; attempt to gain unauthorized access to any account or system; or submit false, fraudulent, or misleading bookings, reviews, or information.
+
+Because Iraq does not currently have an enacted cybercrime statute, our practical remedies for misuse of the App rest primarily on this Agreement — including account suspension or termination and pursuit of civil remedies — rather than on a criminal-law backstop.
+
+10. Fees to you as a patient
+
+TrustyDr does not currently charge you a direct fee for using the App beyond any amount a Provider or facility charges for the Appointment or service itself, disclosed to you before booking where applicable.
+
+11. App availability and changes
+
+We may modify, suspend, or discontinue any part of the App at any time. We do not guarantee that the App will be available uninterrupted or error-free.
+
+12. Disclaimers
+
+The App is provided "as is." We make no warranty regarding any specific Provider, their qualifications, availability, or the quality or outcome of care — that responsibility belongs to the Provider. Nothing in this section limits any right you have under Iraqi law that cannot be waived by agreement.
+
+13. Limitation of liability
+
+To the maximum extent permitted by law, TrustyDr's total liability to you arising out of or relating to your use of the App is limited to the amount, if any, you have paid directly to TrustyDr (as distinct from amounts paid to a Provider for care) in the six months before the claim arose. This limitation does not apply to liability that cannot be limited under applicable law, including liability for fraud or gross negligence, and does not limit any Provider's own liability for the care they give you, which is between you and the Provider.
+
+14. Suspension and termination
+
+We may suspend or terminate your access to the App for violation of these Terms, fraud, or conduct that creates legal or security risk for the App or other users.
+
+15. Governing law, dispute resolution, and contact
+
+These Terms are governed by the laws of Iraq. Any dispute will be subject to the jurisdiction of the competent Iraqi courts.
+
+We may update these Terms from time to time. Where a change is material, you will be asked to review and accept the updated Terms before continuing to use protected features of the App.
+
+Questions about these Terms can be sent to support@trustydr.com.
+
+Part B — TrustyDr Marketplace (buying products through the App)
+
+This Part B applies only if and when you use the Marketplace feature of the App to browse or order products (for example, from a pharmacy) — Healthcare-specific features described in Part A are not affected by whether you use the Marketplace.
+
+16. What the Marketplace is — and is not
+
+The Marketplace lets independent businesses ("Stores" — for example, a pharmacy) list and sell products to you through the App. TrustyDr provides the marketplace infrastructure; we are not a party to the contract of sale between you and a Store. Each order is a transaction between you and the Store; the Store is the seller of record.
+
+Where products offered through the Marketplace are medicines or other health products subject to healthcare or pharmaceutical regulation: TrustyDr is not a pharmacy, does not dispense medicine, and does not verify prescriptions. Any Store offering medicines or regulated health products is independently responsible for holding every license and registration required by Iraqi law to sell them lawfully.
+
+17. Orders, pricing, and how a contract is formed
+
+Product prices are set by the Store and shown inclusive of applicable fees and taxes known at the time of listing. Before you submit an order, you will be shown a summary of the transaction and must affirmatively confirm it after reviewing that summary.
+
+Submitting and confirming an order is a request to purchase, sent to the Store — it is not yet a finalized sale. The Store may accept or reject your order. A contract for the sale is formed between you and the Store only once the Store accepts your order, subject to applicable law. You may cancel an order yourself, using the tools provided in the App, at any point before the Store has completed fulfilling it.
+
+18. How you pay for a Marketplace order
+
+Payment for a Marketplace order is made directly between you and the Store — TrustyDr is not involved in, and does not process, hold, settle, or transfer, the funds for your purchase. This may include cash at the Store's location, cash on delivery, card or another method directly with the Store, or an electronic method the Store supports. TrustyDr Healthcare is not a payment processor, acquiring bank, escrow provider, wallet provider, or settlement provider for these transactions.
+
+19. Delivery
+
+Delivery is arranged and performed by the Store, using the Store's own delivery personnel or arrangements. We do not operate a delivery fleet and are not the party responsible for the physical delivery of your order.
+
+20. Returns, refunds, and non-conforming products
+
+Where a product you receive does not conform to what was ordered, you have the right to a return or refund, handled through the Store, using tools provided in the App. This baseline right applies regardless of any Store-specific return policy, except where Iraqi law permits an exception (for example, customized goods, digital content, or perishable goods).

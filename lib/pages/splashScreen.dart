@@ -340,14 +340,17 @@ import 'dart:async'; // 👈 Add this for PWA refresh
 
 import 'package:trustydr/utils/web_location.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
 import 'package:trustydr/pages/bottom_bar.dart';
+import 'package:trustydr/pages/login_signup/legal_consent_gate_page.dart';
 import 'package:trustydr/pages/public_doctor_profile_page.dart';
 import 'package:trustydr/pages/lab/diagnostic_provider_profile_page.dart';
 import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/services/legal_consent_service.dart';
 // Ensure your DatabaseService and BottomBar imports are here
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:trustydr/utils/web_reload.dart';
@@ -364,6 +367,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   bool _navigated = false;
+  // Set synchronously at the top of _route(), unlike _navigated (only set
+  // once a destination is actually chosen) — prevents _start()'s two
+  // _route() call sites from firing a redundant concurrent
+  // getAccountLegalStatus request while the first call's await is still
+  // in flight.
+  bool _routing = false;
   bool _isUpdateAvailable = false; // 👈 Track if update found
 
   @override
@@ -457,7 +466,67 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
   }
 
-  void _route() {
+  // Legal Consent Modernization (v2 rollout) — every cold-start route
+  // decision for a signed-in user now passes through a fresh
+  // getAccountLegalStatus check first, not just at signup. This is the
+  // fix for the previously-confirmed gap: SplashScreen used to route
+  // straight to BottomBar with no consent check at all for a returning
+  // authenticated user. A user whose accepted version is stale (including
+  // every pre-v2 account, since the legacy flat legalAccepted/legalVersion
+  // fields are never read by the new system) is routed to
+  // LegalConsentGatePage instead, and only reaches BottomBar after every
+  // currently non-current document has been re-accepted.
+  Future<void> _route() async {
+    if (_navigated || _routing) return;
+    _routing = true;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      AccountLegalStatus? status;
+      try {
+        status = await LegalConsentService.instance.getAccountLegalStatus();
+      } catch (_) {
+        // Fail closed: a failed status check must never silently fall
+        // through to BottomBar. Retry once after a short delay rather than
+        // permanently stranding a legitimate user on a transient network
+        // blip.
+        await Future.delayed(const Duration(seconds: 2));
+        try {
+          status = await LegalConsentService.instance.getAccountLegalStatus();
+        } catch (_) {
+          _routing = false;
+          if (!mounted || _navigated) return;
+          _showConsentCheckRetryDialog();
+          return;
+        }
+      }
+
+      if (!mounted || _navigated) return;
+
+      if (!status.isFullyCurrent) {
+        _navigated = true;
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => LegalConsentGatePage(
+              status: status!,
+              onAllAccepted: () {
+                Navigator.of(context).pushReplacement(
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => const BottomBar(),
+                    transitionsBuilder: (_, a, __, c) =>
+                        FadeTransition(opacity: a, child: c),
+                  ),
+                );
+              },
+            ),
+            transitionsBuilder: (_, a, __, c) =>
+                FadeTransition(opacity: a, child: c),
+          ),
+        );
+        return;
+      }
+    }
+
     if (_navigated) return;
     _navigated = true;
 
@@ -466,6 +535,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         pageBuilder: (_, __, ___) => const BottomBar(),
         transitionsBuilder: (_, a, __, c) =>
             FadeTransition(opacity: a, child: c),
+      ),
+    );
+  }
+
+  void _showConsentCheckRetryDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('Connection issue'),
+        content: const Text(
+          'We couldn\'t verify your account status. Please check your internet connection.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _route();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

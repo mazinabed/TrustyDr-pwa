@@ -115,6 +115,9 @@ flutter:
     - assets/payment_icon/amazon_pay.png
     - assets/user/placeholder_user.png
     - assets/data/
+    - assets/legal/v2/en/
+    - assets/legal/v2/ar/
+    - assets/legal/v2/ku/
     - lib/l10n/
     - assets/data/specialties.json
     - assets/data/doctors.json
