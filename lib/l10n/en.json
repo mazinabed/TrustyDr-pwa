@@ -573,10 +573,11 @@
   },
   "about": {
     "title": "About Us",
-    "p1": "TrustyDr helps patients find trusted and verified doctors. Patients can view doctor profiles, read reviews from other patients, and choose doctors with confidence based on real experiences.",
-    "p2": "In Iraq, finding a doctor often requires searching for phone numbers and making multiple calls, sometimes only to find that the doctor is unavailable or traveling. TrustyDr solves this by providing clear doctor information and real-time availability in one place.",
-    "p3": "Patients no longer need to arrive early and wait for hours at clinics. With TrustyDr, you can view a doctor’s schedule, book a specific time, and arrive when it’s your turn — saving time and reducing unnecessary waiting.",
-    "p4": "TrustyDr allows patients to add their medical conditions, history, and important health information. Doctors can review this information before the visit, helping them understand the patient better and provide more accurate care."
+    "p1": "TrustyDr helps you find trusted and verified doctors. View doctor profiles, read reviews from other patients, and choose with confidence based on real experiences.",
+    "p2": "Book appointments in a few taps — see real-time availability, pick a time that works for you, and arrive when it's your turn, instead of calling around or waiting for hours at the clinic.",
+    "p3": "Share relevant health information and history with your doctor ahead of your visit, so they can understand your situation better and provide more accurate care.",
+    "p4": "Connect with pharmacies and keep track of your prescriptions where supported, making it easier to get the medication you need.",
+    "p5": "Access lab and imaging services through connected providers, and explore TrustyDr Marketplace for health-related products where available."
   },
   "footer": {
     "rights": "© 2026 TrustyDr. All rights reserved.",

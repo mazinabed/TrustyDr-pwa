@@ -184,9 +184,15 @@ class AboutUs extends StatelessWidget {
                   icon: Icons.schedule_outlined,
                   text: 'about.p3'.tr(),
                 ),
+                SizedBox(height: fixPadding * 2),
                 _aboutCard(
                   icon: Icons.medical_information_outlined,
                   text: 'about.p4'.tr(),
+                ),
+                SizedBox(height: fixPadding * 2),
+                _aboutCard(
+                  icon: Icons.local_pharmacy_outlined,
+                  text: 'about.p5'.tr(),
                 ),
 
                 //Footer
