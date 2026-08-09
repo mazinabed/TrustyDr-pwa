@@ -36,7 +36,7 @@ class LegalConsentGatePage extends StatefulWidget {
 }
 
 class _LegalConsentGatePageState extends State<LegalConsentGatePage> {
-  late final bool _needsTerms = !widget.status.terms.current;
+  late final bool _needsTerms = !widget.status.patientTerms.current;
   late final bool _needsPrivacy = !widget.status.privacy.current;
   bool _termsChecked = false;
   bool _privacyChecked = false;
@@ -76,7 +76,7 @@ class _LegalConsentGatePageState extends State<LegalConsentGatePage> {
                 _documentBlock(
                   viewLabel: 'legal_v2_view_terms'.tr(),
                   checkboxLabel: 'legal_v2_accept_terms_checkbox'.tr(),
-                  version: widget.status.terms.version,
+                  version: widget.status.patientTerms.version,
                   documentKey: 'patient_terms',
                   checked: _termsChecked,
                   onChanged: (v) => setState(() => _termsChecked = v ?? false),
@@ -175,16 +175,10 @@ class _LegalConsentGatePageState extends State<LegalConsentGatePage> {
     try {
       final locale = context.locale.languageCode;
       if (_needsTerms) {
-        await LegalConsentService.instance.acceptAccountLegalDocument(
-          documentType: 'terms',
-          locale: locale,
-        );
+        await LegalConsentService.instance.acceptPatientTerms(locale: locale);
       }
       if (_needsPrivacy) {
-        await LegalConsentService.instance.acceptAccountLegalDocument(
-          documentType: 'privacy',
-          locale: locale,
-        );
+        await LegalConsentService.instance.acceptPrivacy(locale: locale);
       }
       if (!mounted) return;
       widget.onAllAccepted();

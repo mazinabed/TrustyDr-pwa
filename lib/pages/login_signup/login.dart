@@ -721,10 +721,10 @@ import 'dart:ui' as ui;
 
 import 'package:trustydr/features/auth/providers/auth_provider.dart';
 import 'package:trustydr/pages/legal_disclaimer_page.dart';
-import 'package:trustydr/pages/login_signup/consent_screen.dart';
 import 'package:trustydr/pages/login_signup/otp.dart';
 import 'package:trustydr/pages/privacy_policy_page.dart';
 import 'package:trustydr/pages/terms_conditions_page.dart';
+import 'package:trustydr/services/legal_consent_router.dart';
 import 'package:trustydr/widgets/StaticInfoHeader.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -734,7 +734,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 
-import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/widgets/cross_portal_doctor_card.dart';
 import 'package:trustydr/widgets/carrier_notice_widget.dart';
 
@@ -931,13 +930,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (user == null) throw Exception();
 
-      final needsConsent = await ref
-          .read(authControllerProvider.notifier)
-          .checkNeedsConsent(user);
+      // Legal Consent Modernization (v2 rollout, 2026-08-09 fix) —
+      // checkNeedsConsent is still called for its side effect of ensuring
+      // users/{uid} exists, but its legacy v1 boolean is no longer used to
+      // decide routing (see LegalConsentRouter's own doc comment for the
+      // production incident this fixes: first-time and returning
+      // Google/Apple logins never revisited SplashScreen, so this call
+      // site silently used the OLD v1 ConsentScreen regardless of whether
+      // the account was new or returning).
+      await ref.read(authControllerProvider.notifier).checkNeedsConsent(user);
 
       if (!mounted) return;
 
-      _navigateAfterLogin(needsConsent);
+      await LegalConsentRouter.routeAfterAuth(context);
     } catch (e) {
       Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
     } finally {
@@ -955,34 +960,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (user == null) throw Exception();
 
-      final needsConsent = await ref
-          .read(authControllerProvider.notifier)
-          .checkNeedsConsent(user);
+      // See _loginWithApple's comment above — same v2 routing fix.
+      await ref.read(authControllerProvider.notifier).checkNeedsConsent(user);
 
       if (!mounted) return;
 
-      _navigateAfterLogin(needsConsent);
+      await LegalConsentRouter.routeAfterAuth(context);
     } catch (_) {
       await FirebaseAuth.instance.signOut();
       if (mounted) Fluttertoast.showToast(msg: 'auth_failed_try_again'.tr());
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _navigateAfterLogin(bool needsConsent) {
-    if (needsConsent) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const ConsentScreen()),
-        (_) => false,
-      );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const BottomBar()),
-        (_) => false,
-      );
     }
   }
 }

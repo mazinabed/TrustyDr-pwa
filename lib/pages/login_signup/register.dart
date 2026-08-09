@@ -1,12 +1,10 @@
-import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/constant/constant.dart';
 import 'package:trustydr/services/database_service.dart';
-import 'package:trustydr/pages/screens.dart';
+import 'package:trustydr/services/legal_consent_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:trustydr/widgets/cross_portal_doctor_card.dart';
 
@@ -65,15 +63,11 @@ class _RegisterPageState extends State<RegisterPage> {
       );
 
       if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        PageTransition(
-          duration: const Duration(milliseconds: 600),
-          type: PageTransitionType.fade,
-          child: const BottomBar(),
-        ),
-        (route) => false,
-      );
+      // Legal Consent Modernization (v2 rollout, 2026-08-09 fix) — this
+      // path previously went straight to BottomBar with NO legal check at
+      // all (not even the old v1 flow). Now goes through the same shared
+      // v2 check every other authenticated entry point uses.
+      await LegalConsentRouter.routeAfterAuth(context);
     } on FirebaseAuthException catch (e) {
       String message;
       switch (e.code) {

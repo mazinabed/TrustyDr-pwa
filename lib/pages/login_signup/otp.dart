@@ -529,9 +529,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:trustydr/widgets/StaticInfoHeader.dart';
-import 'package:trustydr/pages/login_signup/consent_screen.dart';
-import 'package:trustydr/pages/bottom_bar.dart';
 import 'package:trustydr/services/database_service.dart';
+import 'package:trustydr/services/legal_consent_router.dart';
 import 'package:trustydr/widgets/carrier_notice_widget.dart';
 
 enum _OtpPhase { sending, ready, failed }
@@ -703,10 +702,18 @@ class _OTPScreenState extends State<OTPScreen> {
       return;
     }
 
-    final bool needsConsent;
-
+    // Legal Consent Modernization (v2 rollout, 2026-08-09 fix) —
+    // needsLegalAcceptanceFor is still called for its side effect of
+    // ensuring users/{uid} exists (creating it with role: 'patient' on a
+    // brand-new signup), but its legacy v1 boolean return value no longer
+    // decides routing. Production testing found new signups were being
+    // sent to the OLD combined ConsentScreen while returning logins
+    // correctly reached the new v2 gate via SplashScreen — this call site
+    // never revisited SplashScreen, so it silently used v1. Routing now
+    // always goes through the same shared v2 check every other
+    // authenticated entry point uses.
     try {
-      needsConsent = await DatabaseService.instance
+      await DatabaseService.instance
           .needsLegalAcceptanceFor(user)
           .timeout(const Duration(seconds: 8));
     } catch (_) {
@@ -721,19 +728,7 @@ class _OTPScreenState extends State<OTPScreen> {
 
     if (!mounted) return;
 
-    if (needsConsent) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const ConsentScreen()),
-        (_) => false,
-      );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const BottomBar()),
-        (_) => false,
-      );
-    }
+    await LegalConsentRouter.routeAfterAuth(context);
   }
 
   void _startCountdown() {

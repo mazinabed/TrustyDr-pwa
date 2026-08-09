@@ -5,12 +5,9 @@ import 'package:trustydr/core/providers/home_address_provider.dart';
 import 'package:trustydr/pages/contact_us_page.dart';
 import 'package:trustydr/pages/faq_page.dart';
 import 'package:trustydr/pages/help_support.dart';
-import 'package:trustydr/pages/legal_disclaimer_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
-import 'package:trustydr/pages/privacy_policy_page.dart';
 import 'package:trustydr/pages/profile/home_address_page.dart';
 import 'package:trustydr/pages/screens.dart';
-import 'package:trustydr/pages/terms_conditions_page.dart';
 import 'package:trustydr/services/database_service.dart';
 import 'package:trustydr/services/push_notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -18,6 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/widgets/legal_document_viewer.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 class Profile extends StatefulWidget {
@@ -451,40 +449,42 @@ class _ProfileState extends State<Profile> {
                                         ),
                                       ),
                                     ),
+                                    // Legal Consent Modernization (v2
+                                    // rollout, 2026-08-09 fix) — these two
+                                    // now open the same v2 EN/AR/KU
+                                    // document viewer the mandatory consent
+                                    // gate uses (showLegalDocument),
+                                    // instead of the old hardcoded
+                                    // PrivacyPolicyPage/
+                                    // TermsConditionsPage translation-key
+                                    // pages, which still showed pre-v2
+                                    // content. The standalone Legal &
+                                    // Medical Disclaimer entry below them
+                                    // is retired from active navigation
+                                    // per the approved six-document
+                                    // architecture — its provisions are now
+                                    // incorporated into Patient Terms
+                                    // itself; legal_disclaimer_page.dart
+                                    // and its translation keys are left in
+                                    // the codebase, just no longer linked.
                                     _ActionItem(
                                       color: PatientAppColors.brandIndigo,
                                       icon: Icons.lock_outline,
                                       label: tr('privacy.title'),
-                                      onTap: () => Navigator.push(
+                                      onTap: () => showLegalDocument(
                                         context,
-                                        PageTransition(
-                                          type: PageTransitionType.rightToLeft,
-                                          child: const PrivacyPolicyPage(),
-                                        ),
+                                        title: tr('privacy.title'),
+                                        documentKey: 'privacy',
                                       ),
                                     ),
                                     _ActionItem(
                                       color: PatientAppColors.brandIndigo,
                                       icon: Icons.description_outlined,
                                       label: tr('terms.title'),
-                                      onTap: () => Navigator.push(
+                                      onTap: () => showLegalDocument(
                                         context,
-                                        PageTransition(
-                                          type: PageTransitionType.rightToLeft,
-                                          child: const TermsConditionsPage(),
-                                        ),
-                                      ),
-                                    ),
-                                    _ActionItem(
-                                      color: Colors.redAccent,
-                                      icon: Icons.gavel_outlined,
-                                      label: tr('legal.title'),
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        PageTransition(
-                                          type: PageTransitionType.rightToLeft,
-                                          child: const LegalDisclaimerPage(),
-                                        ),
+                                        title: tr('terms.title'),
+                                        documentKey: 'patient_terms',
                                       ),
                                     ),
                                   ],
