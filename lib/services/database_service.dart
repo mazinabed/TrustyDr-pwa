@@ -387,6 +387,14 @@ class DatabaseService {
         'profileImage': user.photoURL ?? '',
         'createdAt': FieldValue.serverTimestamp(),
 
+        // role is an existing, already-relied-upon schema field (queried by
+        // patient_directory.dart and doctor_functions' legal-consent account
+        // type resolution) that patient signup never wrote — every patient
+        // account was silently indistinguishable from a provider account to
+        // any role-based check. This fills the gap with the same convention
+        // doctor_portal already uses at doctor signup (role: 'doctor').
+        'role': 'patient',
+
         // 🔒 Legal gate fields (not accepted yet)
         'legalAccepted': false,
         'legalAcceptedAt': null,
@@ -433,6 +441,7 @@ class DatabaseService {
         'phoneNumber': user.phoneNumber ?? '',
         'profileImage': user.photoURL ?? '',
         'createdAt': FieldValue.serverTimestamp(),
+        'role': 'patient',
         ...?extra,
       });
     }
