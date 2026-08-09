@@ -188,7 +188,15 @@ class _LegalConsentGatePageState extends State<LegalConsentGatePage> {
       }
       if (!mounted) return;
       widget.onAllAccepted();
-    } catch (_) {
+    } catch (e) {
+      // Both backend accept calls run before this point, so anything caught
+      // here either failed a write or (the confirmed 2026-08-08 production
+      // incident) threw inside onAllAccepted's navigation despite both
+      // writes having already succeeded -- see splashScreen.dart's
+      // NavigatorState-capture fix. debugPrint (not silent) so a future
+      // regression is visible in the console instead of only showing the
+      // generic UI message with zero trace of what actually happened.
+      debugPrint('[legal-consent] _onContinue failed: ${e.runtimeType}: $e');
       if (mounted) {
         setState(() {
           _saving = false;

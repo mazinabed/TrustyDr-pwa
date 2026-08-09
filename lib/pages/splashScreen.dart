@@ -505,12 +505,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       if (!status.isFullyCurrent) {
         _navigated = true;
-        Navigator.of(context).pushReplacement(
+        // Bug fix (2026-08-08, production incident): resolve the
+        // NavigatorState ONCE, here, while `context` is still valid, and
+        // reuse that object inside onAllAccepted below. The closure used to
+        // call Navigator.of(context) lazily instead, using THIS widget's
+        // own BuildContext -- but pushReplacement removes SplashScreen's
+        // route immediately, so by the time onAllAccepted actually fires
+        // (well after the user has read/checked/submitted the real consent
+        // form), that context is a deactivated Element, and looking up an
+        // ancestor through it throws ("Looking up a deactivated widget's
+        // ancestor is unsafe"). That exception propagated synchronously out
+        // of LegalConsentGatePage._onContinue()'s call to
+        // widget.onAllAccepted() and was swallowed by its bare `catch (_)`,
+        // producing the red "Unable to save your response." error even
+        // though both backend acceptAccountLegalDocument calls had already
+        // succeeded (confirmed via production Firestore data). A
+        // NavigatorState object itself is not tied to this widget's
+        // lifecycle -- it belongs to the ancestor Navigator, which is
+        // unaffected by this specific route being replaced -- so holding a
+        // direct reference to it and calling methods on it later is safe.
+        final navigator = Navigator.of(context);
+        navigator.pushReplacement(
           PageRouteBuilder(
             pageBuilder: (_, __, ___) => LegalConsentGatePage(
               status: status!,
               onAllAccepted: () {
-                Navigator.of(context).pushReplacement(
+                navigator.pushReplacement(
                   PageRouteBuilder(
                     pageBuilder: (_, __, ___) => const BottomBar(),
                     transitionsBuilder: (_, a, __, c) =>
