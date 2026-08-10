@@ -337,6 +337,8 @@ class MarketplaceProduct {
     required this.storeNameEn,
     required this.storeNameAr,
     required this.storeNameKu,
+    required this.ratingAverage,
+    required this.ratingCount,
   });
 
   final String orgId;
@@ -377,6 +379,16 @@ class MarketplaceProduct {
   final String? storeNameAr;
   final String? storeNameKu;
 
+  // Product Ratings & Reviews, Phase 5 (2026-08-10) — the ~15-minute-stale
+  // marketplace_products cache summary (Phase 4's own ratingAverage/
+  // ratingCount) — product cards/grids must use THESE, never a live Odoo
+  // read (see marketplaceSync.ts's own "Stock/price must be re-read live"
+  // law, which this mirrors for ratings too). Product Detail overrides
+  // with the live summary once it loads — see MarketplaceProductDetail's
+  // own identical fields.
+  final double ratingAverage;
+  final int ratingCount;
+
   factory MarketplaceProduct.fromMap(Map<String, dynamic> m) {
     final rawCategories = m['categories'];
     return MarketplaceProduct(
@@ -415,6 +427,11 @@ class MarketplaceProduct {
       storeNameEn: m['storeName_en']?.toString(),
       storeNameAr: m['storeName_ar']?.toString(),
       storeNameKu: m['storeName_ku']?.toString(),
+      ratingAverage: (m['ratingAverage'] is num)
+          ? (m['ratingAverage'] as num).toDouble()
+          : 0.0,
+      ratingCount:
+          (m['ratingCount'] is num) ? (m['ratingCount'] as num).toInt() : 0,
     );
   }
 
@@ -510,6 +527,8 @@ class MarketplaceProduct {
         storeNameEn: storeNameEn,
         storeNameAr: storeNameAr,
         storeNameKu: storeNameKu,
+        ratingAverage: ratingAverage,
+        ratingCount: ratingCount,
       );
 }
 
@@ -821,6 +840,8 @@ class MarketplaceProductDetail {
     required this.currencyName,
     required this.quantityAvailable,
     required this.availabilityBadge,
+    required this.ratingAverage,
+    required this.ratingCount,
   });
 
   final String engineId;
@@ -833,6 +854,15 @@ class MarketplaceProductDetail {
   final String? currencyName;
   final double quantityAvailable;
   final String availabilityBadge;
+  // Product Ratings & Reviews, Phase 5 (2026-08-10) — the LIVE rating
+  // summary (getMarketplaceProductDetailForHealthcare's own live read,
+  // never the ~15-minute-stale marketplace_products cache) — Product
+  // Detail must use these once loaded, matching how price/availability
+  // already override MarketplaceProduct's cached values here. See
+  // MarketplaceProduct.ratingAverage/ratingCount for the cache-side
+  // counterpart used by product cards/grids.
+  final double ratingAverage;
+  final int ratingCount;
 
   factory MarketplaceProductDetail.fromMap(Map<String, dynamic> m) {
     final rawVariants = m['variants'];
@@ -862,6 +892,11 @@ class MarketplaceProductDetail {
           ? (m['quantityAvailable'] as num).toDouble()
           : 0.0,
       availabilityBadge: m['availabilityBadge']?.toString() ?? 'out_of_stock',
+      ratingAverage: (m['ratingAverage'] is num)
+          ? (m['ratingAverage'] as num).toDouble()
+          : 0.0,
+      ratingCount:
+          (m['ratingCount'] is num) ? (m['ratingCount'] as num).toInt() : 0,
     );
   }
 

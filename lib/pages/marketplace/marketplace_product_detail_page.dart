@@ -5,11 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:trustydr/core/providers/marketplace_cart_provider.dart';
 import 'package:trustydr/core/providers/marketplace_providers.dart';
+import 'package:trustydr/core/providers/marketplace_review_providers.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_cart_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_image_gallery.dart';
 import 'package:trustydr/pages/marketplace/marketplace_store_page.dart';
+import 'package:trustydr/pages/marketplace/marketplace_widgets.dart'
+    show ensureMarketplaceLogin;
+import 'package:trustydr/pages/marketplace/marketplace_write_review_sheet.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
 /// Product details (Patient Marketplace) — Milestone 5, Patient Product
@@ -63,6 +67,10 @@ class _MarketplaceProductDetailPageState
   // cause a second network round trip.
   bool _specsExpanded = false;
   bool _descriptionExpanded = false;
+  // Product Ratings & Reviews, Phase 5 (2026-08-10) — same collapse
+  // convention as specs/description above: collapsed by default on
+  // mobile, expanded on desktop.
+  bool _reviewsExpanded = false;
   bool _expansionDefaultsApplied = false;
 
   void _applyExpansionDefaultsOnce(bool isDesktop) {
@@ -71,6 +79,7 @@ class _MarketplaceProductDetailPageState
     if (isDesktop) {
       _specsExpanded = true;
       _descriptionExpanded = true;
+      _reviewsExpanded = true;
     }
   }
 
@@ -220,6 +229,7 @@ class _MarketplaceProductDetailPageState
               quantity: _quantity,
               specsExpanded: _specsExpanded,
               descriptionExpanded: _descriptionExpanded,
+              reviewsExpanded: _reviewsExpanded,
               onSelectValue: (attributeKey, valueKey) => setState(() {
                 if (_selections[attributeKey] == valueKey) {
                   _selections.remove(attributeKey);
@@ -232,6 +242,8 @@ class _MarketplaceProductDetailPageState
                   setState(() => _specsExpanded = !_specsExpanded),
               onToggleDescription: () =>
                   setState(() => _descriptionExpanded = !_descriptionExpanded),
+              onToggleReviews: () =>
+                  setState(() => _reviewsExpanded = !_reviewsExpanded),
               onAddToCart: () => _addToCart(detail),
               // Explicit Retry (2026-07-19 fix) — never an automatic
               // background retry loop against a permanent error. Riverpod's
@@ -304,10 +316,12 @@ class _ProductDetailBody extends StatelessWidget {
     required this.quantity,
     required this.specsExpanded,
     required this.descriptionExpanded,
+    required this.reviewsExpanded,
     required this.onSelectValue,
     required this.onQuantityChanged,
     required this.onToggleSpecs,
     required this.onToggleDescription,
+    required this.onToggleReviews,
     required this.onAddToCart,
     required this.onRetry,
   });
@@ -321,10 +335,12 @@ class _ProductDetailBody extends StatelessWidget {
   final int quantity;
   final bool specsExpanded;
   final bool descriptionExpanded;
+  final bool reviewsExpanded;
   final void Function(String attributeKey, String valueKey) onSelectValue;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback onToggleSpecs;
   final VoidCallback onToggleDescription;
+  final VoidCallback onToggleReviews;
   final VoidCallback onAddToCart;
   final VoidCallback onRetry;
 
@@ -347,10 +363,19 @@ class _ProductDetailBody extends StatelessWidget {
     // exactly what was making the visible product photo narrower than the
     // available width.
     final gallery = _MediaColumn(imageUrls: galleryImageUrls);
+    // Product Ratings & Reviews, Phase 5 (2026-08-10) — live summary once
+    // the detail read loads, falling back to the cached card summary while
+    // it's in flight — same "live overrides cache, never a blank value"
+    // pattern already used for price/availability just below.
+    final ratingAverage = detail?.ratingAverage ?? product.ratingAverage;
+    final ratingCount = detail?.ratingCount ?? product.ratingCount;
     final header = _TitleHeader(
       name: name,
       brandName: product.brandName,
       categoryName: categoryName,
+      ratingAverage: ratingAverage,
+      ratingCount: ratingCount,
+      onTapRating: onToggleReviews,
     );
     final purchase = _PurchasePanel(
       product: product,
@@ -375,6 +400,18 @@ class _ProductDetailBody extends StatelessWidget {
       onToggle: onToggleDescription,
     );
     final storeCard = _StoreInfoCard(product: product, storeName: storeName);
+    // Product Ratings & Reviews, Phase 5 (2026-08-10) — placed after the
+    // Description section and before "Sold by", matching the familiar
+    // commerce pattern of reviews sitting alongside other purchase-
+    // decision content rather than after store attribution.
+    final reviewsSection = _ReviewsSection(
+      orgId: product.orgId,
+      engineId: product.engineId,
+      ratingAverage: ratingAverage,
+      ratingCount: ratingCount,
+      expanded: reviewsExpanded,
+      onToggle: onToggleReviews,
+    );
 
     if (isDesktop) {
       // Description/specs get a comfortable reading width below the hero —
@@ -414,6 +451,8 @@ class _ProductDetailBody extends StatelessWidget {
                   specs,
                   const SizedBox(height: 12),
                   descriptionSection,
+                  const SizedBox(height: 12),
+                  reviewsSection,
                   // Future Collection Insertion Point (layout preparation
                   // only — see this file's own top-of-class doc comment).
                   // Similar Items / More From This Store / Related
@@ -442,6 +481,8 @@ class _ProductDetailBody extends StatelessWidget {
           specs,
           const SizedBox(height: 12),
           descriptionSection,
+          const SizedBox(height: 12),
+          reviewsSection,
           const SizedBox(height: 12),
           storeCard,
           // Future Collection Insertion Point (layout preparation only —
@@ -480,11 +521,17 @@ class _TitleHeader extends StatelessWidget {
     required this.name,
     required this.brandName,
     required this.categoryName,
+    required this.ratingAverage,
+    required this.ratingCount,
+    required this.onTapRating,
   });
 
   final String name;
   final String? brandName;
   final String? categoryName;
+  final double ratingAverage;
+  final int ratingCount;
+  final VoidCallback onTapRating;
 
   @override
   Widget build(BuildContext context) {
@@ -512,7 +559,103 @@ class _TitleHeader extends StatelessWidget {
             style: const TextStyle(fontSize: 13, color: Colors.black54),
           ),
         ],
+        const SizedBox(height: 8),
+        _RatingSummaryInline(
+          ratingAverage: ratingAverage,
+          ratingCount: ratingCount,
+          onTap: onTapRating,
+        ),
       ],
+    );
+  }
+}
+
+/// Compact rating summary near the product's main info (item 1 of the
+/// Ratings & Reviews requirements) — small stars + average + count, tap to
+/// jump to the full Ratings & Reviews section below. Renders a neutral "no
+/// ratings yet" state rather than "0.0 (0)" when [ratingCount] is 0 — a
+/// bare zero reads as broken, not as "nothing rated yet."
+class _RatingSummaryInline extends StatelessWidget {
+  const _RatingSummaryInline({
+    required this.ratingAverage,
+    required this.ratingCount,
+    required this.onTap,
+  });
+
+  final double ratingAverage;
+  final int ratingCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _StarRatingDisplay(rating: ratingAverage, size: 15),
+            const SizedBox(width: 6),
+            if (ratingCount > 0) ...[
+              Text(
+                ratingAverage.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: PatientAppColors.darkNavy,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '(${'marketplace_reviews_count'.tr(namedArgs: {
+                      'count': '$ratingCount'
+                    })})',
+                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+              ),
+            ] else
+              Text(
+                'marketplace_rating_no_ratings_yet'.tr(),
+                style: const TextStyle(fontSize: 12.5, color: Colors.black45),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Read-only star display, shared by the inline summary, the Ratings &
+/// Reviews section's own summary block, and every review card. [rating]
+/// may be fractional (e.g. an average like 4.3) — each star fills
+/// proportionally to how much of that star's value is covered, rather than
+/// only ever rendering whole/empty stars, matching the precision an
+/// average rating actually has.
+class _StarRatingDisplay extends StatelessWidget {
+  const _StarRatingDisplay({required this.rating, this.size = 16});
+
+  final double rating;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (i) {
+        final fill = (rating - i).clamp(0.0, 1.0);
+        if (fill <= 0) {
+          return Icon(Icons.star_border_rounded,
+              size: size, color: Colors.amber);
+        }
+        if (fill >= 1) {
+          return Icon(Icons.star_rounded, size: size, color: Colors.amber);
+        }
+        // Partial star (e.g. rating 4.3 -> the 5th star is 30% filled) —
+        // a half-star icon is the closest built-in approximation; exact
+        // fractional clipping isn't worth a custom painter for this.
+        return Icon(Icons.star_half_rounded, size: size, color: Colors.amber);
+      }),
     );
   }
 }
@@ -1131,8 +1274,9 @@ class _DescriptionSection extends StatelessWidget {
 }
 
 /// Hierarchy position 10: pharmacy/store information, reusing exactly the
-/// existing store data already on [MarketplaceProduct] — no ratings,
-/// reviews, or trust badges added (none of that exists in this app yet).
+/// existing store data already on [MarketplaceProduct] — no trust badges
+/// added. Ratings & Reviews (Phase 5, 2026-08-10) is its own section
+/// ([_ReviewsSection]), placed just above this one, not folded into it.
 class _StoreInfoCard extends StatelessWidget {
   const _StoreInfoCard({required this.product, required this.storeName});
 
@@ -1203,6 +1347,460 @@ class _StoreInfoCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Hierarchy position 8-9 (Product Ratings & Reviews, Phase 5, 2026-08-10):
+/// the full Ratings & Reviews section — summary, Write/Edit Review action,
+/// and a paginated review list. A [_CollapsibleSection] like specs/
+/// description above, for the same visual consistency. Never reproduces
+/// Verified Purchase logic — the Write/Edit action is always offered to a
+/// signed-in patient; the backend's own authoritative response (success or
+/// a NOT_VERIFIED_PURCHASE failure) decides the outcome, shown via
+/// [WriteReviewSheet]'s own error state.
+class _ReviewsSection extends ConsumerStatefulWidget {
+  const _ReviewsSection({
+    required this.orgId,
+    required this.engineId,
+    required this.ratingAverage,
+    required this.ratingCount,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final String orgId;
+  final String engineId;
+  final double ratingAverage;
+  final int ratingCount;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  ConsumerState<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
+  // Pagination is local widget state, not provider state — see
+  // marketplace_review_providers.dart's own doc comment on
+  // productReviewsProvider for why. Seeded once from the first-page
+  // provider result; "Load More" appends directly.
+  List<ProductReview>? _reviews;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  Object? _loadMoreError;
+
+  void _seedFromFirstPage(List<ProductReview> firstPage) {
+    if (_reviews != null) return; // seed exactly once
+    _reviews = List.of(firstPage);
+    _hasMore = firstPage.length >= kProductReviewsPageSize;
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _reviews == null) return;
+    setState(() {
+      _loadingMore = true;
+      _loadMoreError = null;
+    });
+    try {
+      final next = await fetchMoreProductReviews(
+        engineId: widget.engineId,
+        offset: _reviews!.length,
+      );
+      if (!mounted) return;
+      setState(() {
+        _reviews!.addAll(next);
+        _hasMore = next.length >= kProductReviewsPageSize;
+        _loadingMore = false;
+      });
+    } catch (err) {
+      if (!mounted) return;
+      setState(() {
+        _loadMoreError = err;
+        _loadingMore = false;
+      });
+    }
+  }
+
+  /// Refreshes every read this section (and the page header's compact
+  /// summary) depends on after a successful submit/edit/withdraw — never a
+  /// local optimistic patch, since the backend-computed rating_avg/
+  /// rating_count must come from Odoo itself, not be guessed client-side.
+  void _refreshAfterChange() {
+    setState(() {
+      _reviews = null; // re-seed from a fresh first page
+      _hasMore = true;
+      _loadMoreError = null;
+    });
+    ref.invalidate(productReviewsProvider(widget.engineId));
+    ref.invalidate(myProductReviewProvider(widget.engineId));
+    ref.invalidate(marketplaceProductDetailProvider(
+      (orgId: widget.orgId, engineId: widget.engineId),
+    ));
+  }
+
+  Future<void> _openWriteSheet(ProductReview? existing) async {
+    if (!await ensureMarketplaceLogin(context)) return;
+    if (!mounted) return;
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (_) => WriteReviewSheet(
+        engineId: widget.engineId,
+        existingRating: existing?.rating,
+        existingFeedback: existing?.feedback,
+      ),
+    );
+    if (changed == true) _refreshAfterChange();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = context.locale.languageCode;
+    final myReviewAsync = ref.watch(myProductReviewProvider(widget.engineId));
+    final myReview = myReviewAsync.when(
+      data: (r) => r,
+      loading: () => null,
+      error: (_, __) => null,
+    );
+
+    return _CollapsibleSection(
+      title: 'marketplace_reviews_section_title'.tr(),
+      summary: widget.ratingCount > 0
+          ? 'marketplace_reviews_count'
+              .tr(namedArgs: {'count': '${widget.ratingCount}'})
+          : 'marketplace_reviews_no_reviews_yet'.tr(),
+      expanded: widget.expanded,
+      onToggle: widget.onToggle,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ReviewsSummaryBlock(
+            ratingAverage: widget.ratingAverage,
+            ratingCount: widget.ratingCount,
+          ),
+          const SizedBox(height: 14),
+          if (myReview != null)
+            _MyReviewCard(
+              review: myReview,
+              lang: lang,
+              onEdit: () => _openWriteSheet(myReview),
+              onWithdraw: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title:
+                        Text('marketplace_review_withdraw_confirm_title'.tr()),
+                    content:
+                        Text('marketplace_review_withdraw_confirm_body'.tr()),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text('cancel'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text('marketplace_review_withdraw'.tr()),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                try {
+                  await withdrawProductReview(
+                    engineId: widget.engineId,
+                    locale: lang,
+                  );
+                  if (!mounted) return;
+                  _refreshAfterChange();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('marketplace_review_withdrawn_success'.tr()),
+                  ));
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('marketplace_review_generic_error'.tr()),
+                  ));
+                }
+              },
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _openWriteSheet(null),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: Text('marketplace_write_review'.tr()),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: PatientAppColors.brandTeal,
+                  side: const BorderSide(color: PatientAppColors.brandTeal),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 12),
+          ref.watch(productReviewsProvider(widget.engineId)).when(
+                data: (firstPage) {
+                  _seedFromFirstPage(firstPage);
+                  final others = (_reviews ?? firstPage)
+                      .where((r) =>
+                          myReview == null ||
+                          r.reviewEngineId != myReview.reviewEngineId)
+                      .toList();
+                  if (others.isEmpty && myReview == null) {
+                    return _ReviewsEmptyState();
+                  }
+                  if (others.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < others.length; i++) ...[
+                        if (i > 0)
+                          const Divider(height: 20, color: Color(0xFFF0F0F0)),
+                        _ReviewCard(review: others[i], lang: lang),
+                      ],
+                      if (_hasMore) ...[
+                        const SizedBox(height: 12),
+                        if (_loadMoreError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              'marketplace_reviews_load_error'.tr(),
+                              style: const TextStyle(
+                                  fontSize: 12.5, color: Colors.red),
+                            ),
+                          ),
+                        Center(
+                          child: TextButton(
+                            onPressed: _loadingMore ? null : _loadMore,
+                            child: _loadingMore
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : Text('marketplace_reviews_load_more'.tr()),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                error: (_, __) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'marketplace_reviews_load_error'.tr(),
+                    style: const TextStyle(fontSize: 13, color: Colors.red),
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Larger rating summary shown at the top of the expanded Ratings &
+/// Reviews section body (distinct from the compact inline one in
+/// [_TitleHeader] — same underlying numbers, different presentation for a
+/// different position on the page).
+class _ReviewsSummaryBlock extends StatelessWidget {
+  const _ReviewsSummaryBlock({
+    required this.ratingAverage,
+    required this.ratingCount,
+  });
+
+  final double ratingAverage;
+  final int ratingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ratingCount == 0) {
+      return Text(
+        'marketplace_reviews_be_first'.tr(),
+        style: const TextStyle(fontSize: 13.5, color: Colors.black54),
+      );
+    }
+    return Row(
+      children: [
+        Text(
+          ratingAverage.toStringAsFixed(1),
+          style: const TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: PatientAppColors.darkNavy,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _StarRatingDisplay(rating: ratingAverage, size: 18),
+            const SizedBox(height: 2),
+            Text(
+              'marketplace_reviews_count'
+                  .tr(namedArgs: {'count': '$ratingCount'}),
+              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewsEmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'marketplace_reviews_no_reviews_yet'.tr(),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'marketplace_reviews_be_first'.tr(),
+            style: const TextStyle(fontSize: 13, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The signed-in patient's own review, shown above the general list with
+/// Edit/Withdraw actions — deduplicated out of the general list below (see
+/// _ReviewsSectionState.build's own filter) so it never appears twice.
+class _MyReviewCard extends StatelessWidget {
+  const _MyReviewCard({
+    required this.review,
+    required this.lang,
+    required this.onEdit,
+    required this.onWithdraw,
+  });
+
+  final ProductReview review;
+  final String lang;
+  final VoidCallback onEdit;
+  final VoidCallback onWithdraw;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: PatientAppColors.brandTeal.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(PatientAppColors.radiusMd),
+        border: Border.all(
+            color: PatientAppColors.brandTeal.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'marketplace_your_review'.tr(),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(
+                onPressed: onEdit,
+                child: Text('marketplace_edit_review'.tr()),
+              ),
+              TextButton(
+                onPressed: onWithdraw,
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text('marketplace_review_withdraw'.tr()),
+              ),
+            ],
+          ),
+          _StarRatingDisplay(rating: review.rating.toDouble(), size: 16),
+          if (review.feedback != null && review.feedback!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              review.feedback!,
+              style: const TextStyle(fontSize: 13.5, height: 1.5),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One other patient's review — stars, optional feedback text, reviewer's
+/// "First L." partial name (blank when the backend didn't resolve one —
+/// never fabricated client-side), and the review date.
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review, required this.lang});
+
+  final ProductReview review;
+  final String lang;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasName = review.reviewerDisplayName.isNotEmpty;
+    final dateText = review.createDate != null
+        ? DateFormat.yMMMd(lang).format(review.createDate!)
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _StarRatingDisplay(rating: review.rating.toDouble(), size: 15),
+            const SizedBox(width: 8),
+            if (hasName)
+              Expanded(
+                child: Text(
+                  review.reviewerDisplayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            if (dateText != null)
+              Text(
+                dateText,
+                style: const TextStyle(fontSize: 11.5, color: Colors.black38),
+              ),
+          ],
+        ),
+        if (review.feedback != null && review.feedback!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            review.feedback!,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.55,
+              color: Colors.black.withValues(alpha: 0.75),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

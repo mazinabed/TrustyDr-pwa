@@ -120,6 +120,14 @@ class MarketplaceProductCard extends StatelessWidget {
                       return _ProductInfo(
                         name: product.localizedName(lang),
                         priceText: '$price $currency'.trim(),
+                        // Product Ratings & Reviews, Phase 5 (2026-08-10) —
+                        // the ~15-minute-stale marketplace_products CACHE
+                        // summary (Phase 4's ratingAverage/ratingCount),
+                        // never a live Odoo read — see MarketplaceProduct's
+                        // own doc comment on these fields for why cards
+                        // must use the cache specifically.
+                        ratingAverage: product.ratingAverage,
+                        ratingCount: product.ratingCount,
                         availabilityText: hasAvailability
                             ? product.availabilityL10nKey.tr()
                             : null,
@@ -147,6 +155,8 @@ class _ProductInfo extends StatelessWidget {
   const _ProductInfo({
     required this.name,
     required this.priceText,
+    required this.ratingAverage,
+    required this.ratingCount,
     required this.availabilityText,
     required this.storeName,
     required this.maxHeight,
@@ -154,6 +164,8 @@ class _ProductInfo extends StatelessWidget {
 
   final String name;
   final String priceText;
+  final double ratingAverage;
+  final int ratingCount;
   final String? availabilityText;
   final String? storeName;
   final double maxHeight;
@@ -164,6 +176,7 @@ class _ProductInfo extends StatelessWidget {
   static const double _titleLine = 12.5 * 1.3;
   static const double _titleBlock = _titleLine * 2; // maxLines: 2
   static const double _priceBlock = 15.0 * 1.35;
+  static const double _ratingBlock = 11.0 * 1.35;
   static const double _availBlock = 11.0 * 1.35;
   static const double _storeBlock = 10.0 * 1.35;
   static const double _gapMed = 5.0;
@@ -172,10 +185,19 @@ class _ProductInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final requiredHeight = _titleBlock + _gapMed + _priceBlock;
+    // Product Ratings & Reviews, Phase 5 (2026-08-10) — same conditional-
+    // budget pattern as availability/store below: only rendered when there
+    // ARE ratings (ratingCount == 0 renders nothing, zero height cost —
+    // most products today, since rating.rating is still empty in
+    // production) and only when the measured space actually allows it.
+    final canShowRating = ratingCount > 0 &&
+        maxHeight >= requiredHeight + _gapSmall + _ratingBlock;
+    final afterRating =
+        requiredHeight + (canShowRating ? _gapSmall + _ratingBlock : 0);
     final canShowAvailability = availabilityText != null &&
-        maxHeight >= requiredHeight + _gapSmall + _availBlock;
+        maxHeight >= afterRating + _gapSmall + _availBlock;
     final afterAvailability =
-        requiredHeight + (canShowAvailability ? _gapSmall + _availBlock : 0);
+        afterRating + (canShowAvailability ? _gapSmall + _availBlock : 0);
     final canShowStore = storeName != null &&
         maxHeight >= afterAvailability + _gapSmall + _storeBlock;
 
@@ -211,6 +233,32 @@ class _ProductInfo extends StatelessWidget {
             color: PatientAppColors.brandTeal,
           ),
         ),
+        if (canShowRating) ...[
+          const SizedBox(height: _gapSmall),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded, size: 12, color: Colors.amber.shade700),
+              const SizedBox(width: 2),
+              Text(
+                ratingAverage.toStringAsFixed(1),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                '($ratingCount)',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: Colors.black.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
+        ],
         if (canShowAvailability) ...[
           const SizedBox(height: _gapSmall),
           Text(
@@ -264,7 +312,14 @@ class _ProductInfo extends StatelessWidget {
 /// cell/item height from this function rather than hardcoding one, or the
 /// two can drift apart exactly like the bug this comment is documenting.
 double marketplaceProductCardTextHeight({bool showStoreName = false}) =>
-    showStoreName ? 130.0 : 104.0;
+    // Product Ratings & Reviews, Phase 5 (2026-08-10) — both bumped by
+    // ~20px (the new optional rating row's own reference block + gap,
+    // _ProductInfo._ratingBlock + _gapSmall) so a card WITH ratings never
+    // needs more room than this budget already reserves. Zero visual
+    // change for a card with no ratings (ratingCount == 0 renders the row
+    // at zero height — see canShowRating) — this is a ceiling, not a
+    // forced minimum.
+    showStoreName ? 150.0 : 124.0;
 
 /// Column count for a given available width — 2 columns on mobile, scaling
 /// up on tablet/desktop so wide screens aren't left with a narrow phone-
