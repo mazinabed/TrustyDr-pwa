@@ -1517,11 +1517,12 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
   Widget build(BuildContext context) {
     final lang = context.locale.languageCode;
     final myReviewAsync = ref.watch(myProductReviewProvider(widget.engineId));
-    final myReview = myReviewAsync.when(
-      data: (r) => r,
-      loading: () => null,
-      error: (_, __) => null,
+    final myReviewStatus = myReviewAsync.when(
+      data: (s) => s,
+      loading: () => MyReviewStatus.none,
+      error: (_, __) => MyReviewStatus.none,
     );
+    final myReview = myReviewStatus.review;
 
     return _CollapsibleSection(
       title: 'marketplace_reviews_section_title'.tr(),
@@ -1583,7 +1584,14 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 }
               },
             )
-          else
+          else if (myReviewStatus.eligibleToReview)
+            // Live-test follow-up (2026-08-11) — this action used to render
+            // unconditionally for every product regardless of purchase
+            // history. eligibleToReview is backend-authoritative (Phase 1's
+            // hasVerifiedPurchase, reused server-side — see
+            // marketplace_review_providers.dart's own doc comment); a
+            // non-purchaser simply never sees this branch, matching the
+            // "hide the write action" option for a non-purchaser.
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

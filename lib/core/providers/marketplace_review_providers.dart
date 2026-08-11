@@ -128,26 +128,47 @@ Future<List<ProductReview>> fetchMoreProductReviews({
       .toList();
 }
 
-/// This patient's own review for a product, or null — used to decide
-/// "Write a Review" vs "Edit Your Review". Guarded against a guest session
-/// the same way every other auth-gated read in this app guards a Firestore
-/// stream (firestore-safety.md §5's Stream.empty() convention, applied
-/// here to a callable instead): a guest has no review by definition, and
-/// calling the backend would only produce an unauthenticated error for no
-/// reason.
+/// This patient's own review status for a product — used to decide between
+/// the three Write/Edit/no-action states (live-test follow-up, 2026-08-11:
+/// every product's write action was appearing regardless of purchase
+/// history). [eligibleToReview] comes straight from the backend's
+/// getMyProductReviewForHealthcare (Phase 1's existing, authoritative
+/// hasVerifiedPurchase check, reused — never recalculated here): this app
+/// must never decide eligibility itself from order history.
+class MyReviewStatus {
+  const MyReviewStatus({required this.review, required this.eligibleToReview});
+
+  final ProductReview? review;
+  final bool eligibleToReview;
+
+  static const none = MyReviewStatus(review: null, eligibleToReview: false);
+}
+
+/// This patient's own review for a product (or null) plus whether they are
+/// eligible to write a new one. Guarded against a guest session the same
+/// way every other auth-gated read in this app guards a Firestore stream
+/// (firestore-safety.md §5's Stream.empty() convention, applied here to a
+/// callable instead): a guest has no review and is never eligible by
+/// definition, and calling the backend would only produce an
+/// unauthenticated error for no reason.
 final myProductReviewProvider =
-    FutureProvider.autoDispose.family<ProductReview?, String>(
+    FutureProvider.autoDispose.family<MyReviewStatus, String>(
   (ref, engineId) async {
-    if (engineId.isEmpty) return null;
-    if (FirebaseAuth.instance.currentUser == null) return null;
+    if (engineId.isEmpty) return MyReviewStatus.none;
+    if (FirebaseAuth.instance.currentUser == null) return MyReviewStatus.none;
     final callable =
         FirebaseFunctions.instance.httpsCallable('getMyProductReview');
     final result =
         await callable.call<Map<String, dynamic>>({'engineId': engineId});
     final data = _asStringKeyedMap(result.data);
     final rawReview = data['review'];
-    if (rawReview == null) return null;
-    return ProductReview.fromMap(_asStringKeyedMap(rawReview));
+    final review = rawReview == null
+        ? null
+        : ProductReview.fromMap(_asStringKeyedMap(rawReview));
+    return MyReviewStatus(
+      review: review,
+      eligibleToReview: data['eligibleToReview'] == true,
+    );
   },
 );
 
