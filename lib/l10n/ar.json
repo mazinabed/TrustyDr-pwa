@@ -198,6 +198,7 @@
   "marketplace_review_invalid_rating": "يرجى اختيار تقييم من 1 إلى 5 نجوم.",
   "marketplace_review_select_rating_required": "يرجى اختيار تقييم بالنجوم.",
   "marketplace_review_generic_error": "تعذر إرسال مراجعتك. يرجى المحاولة مرة أخرى.",
+  "marketplace_only_n_available": "يتوفر {count} فقط",
   "marketplace_search_products": "البحث عن المنتجات",
   "marketplace_search_products_in_store": "ابحث عن منتجات في هذا المتجر",
   "marketplace_all_products_in_store": "جميع المنتجات",

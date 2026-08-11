@@ -204,6 +204,7 @@
   "marketplace_review_invalid_rating": "Please select a rating from 1 to 5 stars.",
   "marketplace_review_select_rating_required": "Please select a star rating.",
   "marketplace_review_generic_error": "Could not submit your review. Please try again.",
+  "marketplace_only_n_available": "Only {count} available",
   "marketplace_search_products": "Search products",
   "marketplace_search_products_in_store": "Search products in this store",
   "marketplace_all_products_in_store": "All Products",

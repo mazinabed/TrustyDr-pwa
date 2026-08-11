@@ -6,6 +6,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/providers/marketplace_providers.dart'
+    show marketplaceOrderStatusLabelKey;
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 import 'package:trustydr/widgets/workflow_timeline.dart';
@@ -239,7 +241,9 @@ class _OrderDetailsBody extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      _statusLabelKeyPublic(localStatus).tr(),
+                      marketplaceOrderStatusLabelKey(
+                              localStatus, fulfillmentStatus)
+                          .tr(),
                       style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
@@ -592,21 +596,6 @@ class _OrderDetailsBody extends ConsumerWidget {
         ],
       ],
     );
-  }
-
-  String _statusLabelKeyPublic(String s) {
-    switch (s) {
-      case 'pending':
-        return 'marketplace_order_status_pending';
-      case 'failed':
-        return 'marketplace_order_status_failed';
-      case 'cancelled':
-        return 'marketplace_order_status_cancelled';
-      case 'confirmed':
-        return 'marketplace_order_status_preparing';
-      default:
-        return 'marketplace_order_status_preparing';
-    }
   }
 
   // Odoo's own sale.order.state is still checked for cancellation (a

@@ -261,14 +261,38 @@ class _MarketplaceProductDetailPageState
   }
 }
 
+/// Marketplace order/inventory lifecycle audit (2026-08-10) — [maxQuantity]
+/// is the live available-to-sell quantity (Odoo `free_qty`, the SAME field
+/// `quoteMarketplaceCartForHealthcare`/`placeMarketplaceOrderForHealthcare`
+/// validate against — see `_PurchasePanel`'s own doc comment on where this
+/// value comes from) — null only while that live value genuinely isn't
+/// known yet (detail still loading, no cached count exists to fall back
+/// on), in which case the `+` button stays unbounded exactly as before
+/// rather than blocking on stale/absent data. This is a UI-side courtesy
+/// cap only — the backend quote/order-create call remains the actual,
+/// final stock check regardless of what this widget allows.
 class _QuantityStepper extends StatelessWidget {
-  const _QuantityStepper({required this.quantity, required this.onChanged});
+  const _QuantityStepper({
+    required this.quantity,
+    required this.onChanged,
+    this.maxQuantity,
+  });
 
   final int quantity;
   final ValueChanged<int> onChanged;
+  final double? maxQuantity;
 
   @override
   Widget build(BuildContext context) {
+    final maxInt = maxQuantity?.floor();
+    final atOrAboveMax = maxInt != null && quantity >= maxInt;
+
+    // Kept as a plain fixed-height Container (unchanged from before this
+    // cap existed) — the "Only N available" message is rendered by
+    // _PurchasePanel itself, OUTSIDE this widget's own 46px height, so it
+    // never disturbs the shared 48dp row this stepper sits in alongside
+    // Add to Cart (see that Row's own doc comment on why the height is
+    // fixed).
     return Container(
       height: 46,
       decoration: BoxDecoration(
@@ -292,7 +316,7 @@ class _QuantityStepper extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.add, size: 18),
-            onPressed: () => onChanged(quantity + 1),
+            onPressed: atOrAboveMax ? null : () => onChanged(quantity + 1),
           ),
         ],
       ),
@@ -721,6 +745,18 @@ class _PurchasePanel extends StatelessWidget {
         product.availabilityBadge;
     final bool outOfStock = availabilityBadge == 'out_of_stock';
     final bool canAddToCart = !outOfStock && !needsSelection;
+    // Marketplace order/inventory lifecycle audit (2026-08-10) — same live
+    // authority chain as price/availability just above: the resolved
+    // variant's own free_qty once one exists, otherwise the live
+    // template-level detail's. Deliberately NO fallback to a cached value
+    // (MarketplaceProduct carries no numeric quantity at all) — null here
+    // means "not yet known," and _QuantityStepper leaves the + button
+    // unbounded in that case rather than guessing.
+    final double? maxQuantity =
+        resolvedVariant?.quantityAvailable ?? detail?.quantityAvailable;
+    final int? maxQuantityInt = maxQuantity?.floor();
+    final bool atOrAboveMaxQuantity =
+        maxQuantityInt != null && quantity >= maxQuantityInt;
 
     final priceText = price.toStringAsFixed(
       price.truncateToDouble() == price ? 0 : 2,
@@ -798,7 +834,10 @@ class _PurchasePanel extends StatelessWidget {
               children: [
                 if (!outOfStock) ...[
                   _QuantityStepper(
-                      quantity: quantity, onChanged: onQuantityChanged),
+                    quantity: quantity,
+                    onChanged: onQuantityChanged,
+                    maxQuantity: maxQuantity,
+                  ),
                   const SizedBox(width: 12),
                 ],
                 Expanded(
@@ -827,6 +866,23 @@ class _PurchasePanel extends StatelessWidget {
               ],
             ),
           ),
+          // Marketplace order/inventory lifecycle audit (2026-08-10) — only
+          // shown once the live available-to-sell quantity is known AND the
+          // patient has actually reached it; rendered outside the fixed-
+          // height Row above (see that Row's own doc comment) so it never
+          // disturbs the stepper/CTA layout.
+          if (!outOfStock &&
+              maxQuantityInt != null &&
+              maxQuantityInt > 0 &&
+              atOrAboveMaxQuantity)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'marketplace_only_n_available'
+                    .tr(namedArgs: {'count': '$maxQuantityInt'}),
+                style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+              ),
+            ),
         ],
       ),
     );

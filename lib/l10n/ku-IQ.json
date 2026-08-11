@@ -197,6 +197,7 @@
   "marketplace_review_invalid_rating": "تکایە هەڵسەنگاندنێک لە 1 بۆ 5 ئەستێرە هەڵبژێرە.",
   "marketplace_review_select_rating_required": "تکایە هەڵسەنگاندنێکی ئەستێرەیی هەڵبژێرە.",
   "marketplace_review_generic_error": "نەتوانرا ڕەخنەکەت بنێردرێت. تکایە دووبارە هەوڵ بدەرەوە.",
+  "marketplace_only_n_available": "تەنها {count} بەردەستە",
   "marketplace_search_products": "گەڕان بۆ بەرهەم",
   "marketplace_search_products_in_store": "گەڕان بۆ بەرهەم لەم فرۆشگایە",
   "marketplace_all_products_in_store": "هەموو بەرهەمەکان",

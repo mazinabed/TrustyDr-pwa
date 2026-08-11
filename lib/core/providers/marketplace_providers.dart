@@ -1336,3 +1336,65 @@ final marketplaceProductDetailProvider = FutureProvider.autoDispose
 class MarketplaceProductDetailRequestError implements Exception {
   const MarketplaceProductDetailRequestError();
 }
+
+/// Marketplace order/inventory lifecycle audit (2026-08-10) — the ONE
+/// patient-facing status-label mapping, shared by marketplace_orders_page.dart
+/// (list) and marketplace_order_details_page.dart (detail top badge), which
+/// previously each held an independent, identical, but WRONG copy of this
+/// logic (keyed on `localStatus` alone). Root cause of the "status never
+/// updates after a merchant action" bug: `localStatus` (Firestore field
+/// `status`) is written only twice in this order's entire lifecycle —
+/// 'pending' at creation, then 'confirmed' immediately after — and never
+/// touched again. Every merchant action past that point (Accept/Preparing/
+/// Ready/Out for Delivery/Completed) is recorded in a DIFFERENT field,
+/// `fulfillmentStatus` (written by doctor_functions/functions/commerce/
+/// pharmacyOrderActions.js's `applyFulfillmentTransition`), which a
+/// `localStatus`-only mapping can never see — so every one of those
+/// transitions fell through to the same default label forever. This
+/// function is now the single source of truth for both call sites, so the
+/// two can never drift apart again the way the original two independent
+/// copies did. Reuses the exact existing `marketplace_order_status_*`/
+/// `marketplace_order_stage_*` l10n keys already established for the order-
+/// details fulfillment timeline — no new status wording invented.
+String marketplaceOrderStatusLabelKey(
+  String localStatus,
+  String fulfillmentStatus,
+) {
+  switch (localStatus) {
+    case 'pending':
+      return 'marketplace_order_status_pending';
+    case 'failed':
+      return 'marketplace_order_status_failed';
+    case 'cancelled':
+      return 'marketplace_order_status_cancelled';
+  }
+  switch (fulfillmentStatus) {
+    case 'accepted':
+      return 'marketplace_order_stage_accepted';
+    case 'preparing':
+      return 'marketplace_order_stage_preparing';
+    case 'readyForPickup':
+      return 'marketplace_order_stage_ready_for_pickup';
+    // readyForDelivery is the intermediate "packed, awaiting courier pickup"
+    // stage for delivery orders — grouped with outForDelivery here since
+    // there is no distinct existing label for it and, unlike readyForPickup,
+    // it is not yet independently patient-actionable (see the notification
+    // workflow's own deliberate silence on this exact stage, same
+    // reasoning: outForDelivery is the real patient-facing moment for the
+    // delivery path, mirroring readyForPickup's role on the pickup path).
+    case 'readyForDelivery':
+    case 'outForDelivery':
+      return 'marketplace_order_stage_out_for_delivery';
+    case 'completed':
+      return 'marketplace_order_status_completed';
+    case 'rejected':
+      return 'marketplace_order_stage_rejected';
+    case 'deliveryFailed':
+      return 'marketplace_order_stage_delivery_failed';
+    default:
+      // 'new' (order confirmed, merchant hasn't acted yet), empty (legacy
+      // pre-fulfillment-tracking order), or any other value — same
+      // fallback both original copies always used.
+      return 'marketplace_order_status_preparing';
+  }
+}

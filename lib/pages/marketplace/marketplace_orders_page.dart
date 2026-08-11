@@ -5,6 +5,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trustydr/core/providers/marketplace_providers.dart'
+    show marketplaceOrderStatusLabelKey;
 import 'package:trustydr/core/theme/patient_app_colors.dart';
 import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
@@ -253,6 +255,7 @@ class _ParsedOrder {
     required this.orderId,
     required this.name,
     required this.localStatus,
+    required this.fulfillmentStatus,
     required this.amountTotal,
     required this.currencyName,
     required this.isDelivery,
@@ -264,6 +267,14 @@ class _ParsedOrder {
   final String orderId;
   final String name;
   final String localStatus;
+  // Marketplace order/inventory lifecycle audit (2026-08-10) — the field
+  // pharmacyOrderActions.js's merchant actions (Accept/Preparing/Ready/...)
+  // actually advance; `status` itself is frozen at 'confirmed' for the
+  // entire rest of the lifecycle (see marketplaceCheckout.js's
+  // placeMarketplaceOrder/cancelMarketplaceOrder — the only two writers of
+  // `status`). Root cause of the "status never updates" bug: this widget
+  // used to derive its label from `localStatus` alone.
+  final String fulfillmentStatus;
   final num? amountTotal;
   final String currencyName;
   final bool isDelivery;
@@ -281,6 +292,7 @@ class _ParsedOrder {
       final order =
           orderRaw is Map ? Map<String, dynamic>.from(orderRaw) : const {};
       final localStatus = (raw['status'] ?? '').toString();
+      final fulfillmentStatus = (raw['fulfillmentStatus'] ?? '').toString();
       final name = (order['name'] ?? '').toString();
       final amountTotalRaw = order['amountTotal'];
       final amountTotal = amountTotalRaw is num ? amountTotalRaw : null;
@@ -307,6 +319,7 @@ class _ParsedOrder {
         orderId: doc.id,
         name: name,
         localStatus: localStatus,
+        fulfillmentStatus: fulfillmentStatus,
         amountTotal: amountTotal,
         currencyName: currencyName,
         isDelivery: isDelivery,
@@ -327,23 +340,6 @@ class _OrderCard extends StatelessWidget {
   const _OrderCard({required this.order});
 
   final _ParsedOrder order;
-
-  // Thin, patient-facing label over the locally-cached status only — no
-  // per-order live Odoo read just to render a list (low-read architecture).
-  String _statusLabelKey(String localStatus) {
-    switch (localStatus) {
-      case 'pending':
-        return 'marketplace_order_status_pending';
-      case 'failed':
-        return 'marketplace_order_status_failed';
-      case 'cancelled':
-        return 'marketplace_order_status_cancelled';
-      case 'confirmed':
-        return 'marketplace_order_status_preparing';
-      default:
-        return 'marketplace_order_status_preparing';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +385,9 @@ class _OrderCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _statusLabelKey(order.localStatus).tr(),
+                    marketplaceOrderStatusLabelKey(
+                            order.localStatus, order.fulfillmentStatus)
+                        .tr(),
                     style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
