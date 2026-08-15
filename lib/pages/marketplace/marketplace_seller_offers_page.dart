@@ -75,8 +75,12 @@ class MarketplaceSellerOffersPage extends StatelessWidget {
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
+                    // Derived from the actual rendered offers list, never
+                    // the separately-carried group.sellerCount field — the
+                    // count shown must always match what the patient can
+                    // actually see and tap below.
                     'marketplace_seller_count'
-                        .tr(namedArgs: {'count': '${group.sellerCount}'}),
+                        .tr(namedArgs: {'count': '${group.offers.length}'}),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -200,10 +204,10 @@ class _SellerOfferTile extends StatelessWidget {
                         color: Colors.black87,
                       ),
                     ),
-                    if (offer.availabilityBadge != null) ...[
+                    if (offer.availabilityL10nKey.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        offer.availabilityBadge!,
+                        offer.availabilityL10nKey.tr(),
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 11,

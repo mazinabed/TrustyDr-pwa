@@ -1069,6 +1069,25 @@ class MarketplaceProductOffer {
       imageUrl: m['imageUrl']?.toString(),
     );
   }
+
+  /// l10n KEY (not display text) for this offer's availability — mirrors
+  /// [MarketplaceProduct.availabilityL10nKey] exactly (same raw badge
+  /// values, same convention of resolving `.tr()` at the widget layer).
+  /// Fixes MarketplaceSellerOffersPage previously rendering the raw
+  /// backend enum string (e.g. "in_stock") verbatim instead of
+  /// human-readable text.
+  String get availabilityL10nKey {
+    switch (availabilityBadge) {
+      case 'in_stock':
+        return 'marketplace_availability_in_stock';
+      case 'low_stock':
+        return 'marketplace_availability_low_stock';
+      case 'out_of_stock':
+        return 'marketplace_availability_out_of_stock';
+      default:
+        return '';
+    }
+  }
 }
 
 /// A canonical product with 2+ approved seller offers — Marketplace

@@ -132,8 +132,13 @@ class MarketplaceGroupedProductCard extends StatelessWidget {
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
-                          'marketplace_seller_count'
-                              .tr(namedArgs: {'count': '${group.sellerCount}'}),
+                          // Derived from the actual offers list, never the
+                          // separately-carried group.sellerCount field —
+                          // see MarketplaceSellerOffersPage's own identical
+                          // fix for why these must never be allowed to
+                          // diverge.
+                          'marketplace_seller_count'.tr(
+                              namedArgs: {'count': '${group.offers.length}'}),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
