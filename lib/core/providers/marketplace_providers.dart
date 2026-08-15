@@ -1027,12 +1027,113 @@ class MarketplaceProductDetail {
 /// Combined Store/Product/Category browse payload — one Healthcare call
 /// powers all three Marketplace landing-page tabs, never a per-tab or
 /// per-store request loop.
+/// One seller's offer within a [GroupedMarketplaceProduct] — Marketplace
+/// Platform Phase 2 (Multi-Seller Aggregated Discovery). Mirrors the exact
+/// fields getApprovedCanonicalLinksForHealthcare / getActiveMarketplaceStores.js's
+/// new `groupedProducts` field returns per offer.
+class MarketplaceProductOffer {
+  const MarketplaceProductOffer({
+    required this.orgId,
+    required this.engineId,
+    required this.storeNameEn,
+    required this.storeNameAr,
+    required this.storeNameKu,
+    required this.displayPrice,
+    required this.currencyName,
+    required this.availabilityBadge,
+    required this.imageUrl,
+  });
+
+  final String orgId;
+  final String engineId;
+  final String? storeNameEn;
+  final String? storeNameAr;
+  final String? storeNameKu;
+  final double displayPrice;
+  final String? currencyName;
+  final String? availabilityBadge;
+  final String? imageUrl;
+
+  factory MarketplaceProductOffer.fromMap(Map<String, dynamic> m) {
+    return MarketplaceProductOffer(
+      orgId: m['orgId']?.toString() ?? '',
+      engineId: m['engineId']?.toString() ?? '',
+      storeNameEn: m['storeName_en']?.toString(),
+      storeNameAr: m['storeName_ar']?.toString(),
+      storeNameKu: m['storeName_ku']?.toString(),
+      displayPrice: (m['displayPrice'] is num)
+          ? (m['displayPrice'] as num).toDouble()
+          : 0,
+      currencyName: m['currencyName']?.toString(),
+      availabilityBadge: m['availabilityBadge']?.toString(),
+      imageUrl: m['imageUrl']?.toString(),
+    );
+  }
+}
+
+/// A canonical product with 2+ approved seller offers — Marketplace
+/// Platform Phase 2. Purely additive: a product with no approved canonical
+/// link never appears here, and continues to render only in
+/// [MarketplaceBrowseData.products] exactly as it always has (the "current
+/// fallback path" every unlinked listing keeps using, unchanged).
+class GroupedMarketplaceProduct {
+  const GroupedMarketplaceProduct({
+    required this.canonicalId,
+    required this.nameEn,
+    required this.nameAr,
+    required this.brandName,
+    required this.categoryKey,
+    required this.representativeImageUrl,
+    required this.lowestPrice,
+    required this.currencyName,
+    required this.sellerCount,
+    required this.offers,
+  });
+
+  final String canonicalId;
+  final String nameEn;
+  final String nameAr;
+  final String? brandName;
+  final String? categoryKey;
+  final String? representativeImageUrl;
+  final double lowestPrice;
+  final String? currencyName;
+  final int sellerCount;
+  // Already sorted cheapest-first by the backend (rankGroupedProducts'
+  // sibling, computeGroupedProducts) — never re-sorted client-side.
+  final List<MarketplaceProductOffer> offers;
+
+  factory GroupedMarketplaceProduct.fromMap(Map<String, dynamic> m) {
+    final rawOffers = m['offers'];
+    return GroupedMarketplaceProduct(
+      canonicalId: m['canonicalId']?.toString() ?? '',
+      nameEn: m['name_en']?.toString() ?? '',
+      nameAr: m['name_ar']?.toString() ?? '',
+      brandName: m['brandName']?.toString(),
+      categoryKey: m['categoryKey']?.toString(),
+      representativeImageUrl: m['representativeImageUrl']?.toString(),
+      lowestPrice:
+          (m['lowestPrice'] is num) ? (m['lowestPrice'] as num).toDouble() : 0,
+      currencyName: m['currencyName']?.toString(),
+      sellerCount:
+          (m['sellerCount'] is num) ? (m['sellerCount'] as num).toInt() : 0,
+      offers: rawOffers is List
+          ? rawOffers
+              .map((e) => MarketplaceProductOffer.fromMap(
+                  e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : {}))
+              .toList()
+          : const [],
+    );
+  }
+}
+
 class MarketplaceBrowseData {
   const MarketplaceBrowseData({
     required this.stores,
     required this.products,
     required this.categories,
     required this.hasMoreProducts,
+    this.groupedProducts = const [],
   });
 
   final List<MarketplaceStore> stores;
@@ -1044,6 +1145,11 @@ class MarketplaceBrowseData {
   // list was truncated at the currently-applied
   // [marketplaceProductsLimitProvider] value.
   final bool hasMoreProducts;
+  // Marketplace Platform Phase 2 — additive, defaults to empty. Every
+  // product that appears in a group ALSO still appears in [products]
+  // individually (never removed/suppressed there) — this is a purely
+  // additional comparison view, not a replacement of the existing list.
+  final List<GroupedMarketplaceProduct> groupedProducts;
 
   bool get isEmpty => stores.isEmpty && products.isEmpty;
 
@@ -1052,6 +1158,7 @@ class MarketplaceBrowseData {
     products: [],
     categories: [],
     hasMoreProducts: false,
+    groupedProducts: [],
   );
 }
 
@@ -1127,11 +1234,22 @@ final marketplaceBrowseProvider =
           .toList()
       : <MarketplaceCategory>[];
 
+  // Marketplace Platform Phase 2 — additive parsing only. Absent/malformed
+  // simply yields an empty list; every existing field above is parsed
+  // exactly as before this addition.
+  final rawGroupedProducts = data['groupedProducts'];
+  final groupedProducts = rawGroupedProducts is List
+      ? rawGroupedProducts
+          .map((e) => GroupedMarketplaceProduct.fromMap(_asStringKeyedMap(e)))
+          .toList()
+      : <GroupedMarketplaceProduct>[];
+
   return MarketplaceBrowseData(
     stores: stores,
     products: products,
     categories: categories,
     hasMoreProducts: data['hasMoreProducts'] == true,
+    groupedProducts: groupedProducts,
   );
 });
 

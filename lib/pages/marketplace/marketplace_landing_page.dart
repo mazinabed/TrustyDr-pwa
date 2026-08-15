@@ -10,6 +10,7 @@ import 'package:trustydr/pages/marketplace/marketplace_cart_action.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_nav_bar.dart';
 import 'package:trustydr/pages/marketplace/marketplace_category_utils.dart';
 import 'package:trustydr/pages/marketplace/marketplace_collection_section.dart';
+import 'package:trustydr/pages/marketplace/marketplace_grouped_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_orders_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_product_card.dart';
 import 'package:trustydr/pages/marketplace/marketplace_products_page.dart';
@@ -300,6 +301,40 @@ class _DiscoverView extends StatelessWidget {
                       ),
                     ),
                 ],
+              ),
+            ),
+          // Marketplace Platform Phase 2 (Multi-Seller Aggregated
+          // Discovery) — purely additive section. Only renders once at
+          // least one canonical product has an admin-approved multi-seller
+          // link (Phase 1); every product shown here ALSO still appears in
+          // the ordinary product grid above, individually, exactly as
+          // before this feature existed. Zero effect on any existing
+          // section/provider/route when groupedProducts is empty (today's
+          // default for most catalogs).
+          if (data.groupedProducts.isNotEmpty)
+            MarketplaceSection(
+              title: 'marketplace_compare_sellers_title'.tr(),
+              child: SizedBox(
+                // 250, not 234 (the unrelated Featured Stores rail's own
+                // height) — MarketplaceGroupedProductCard's text stack
+                // (2-line name + price line + seller-count row) needs a
+                // little more room than a store card's; a real widget test
+                // (marketplace_grouped_discovery_flow_test.dart) caught a
+                // 6px overflow at 234 before this was corrected.
+                height: 250,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: data.groupedProducts.length,
+                  separatorBuilder: (context, i) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) => SizedBox(
+                    width: 148,
+                    child: MarketplaceGroupedProductCard(
+                      group: data.groupedProducts[i],
+                      allProducts: data.products,
+                    ),
+                  ),
+                ),
               ),
             ),
           if (featuredStores.isNotEmpty)
