@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:trustydr/core/providers/marketplace_cart_provider.dart';
 import 'package:trustydr/core/theme/patient_app_colors.dart';
+import 'package:trustydr/pages/marketplace/marketplace_multi_order_summary_page.dart';
 import 'package:trustydr/pages/marketplace/marketplace_order_details_page.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
@@ -449,12 +450,123 @@ String buildUnavailableItemsMessage({
       : lines.join('\n');
 }
 
+/// Marketplace Platform Phase 3 (Multi-Seller Cart + Split Checkout,
+/// 2026-08-15) — what should happen immediately after ONE seller's order is
+/// successfully placed, given who else is left to check out. Kept as a
+/// pure function, deliberately separate from the Cloud Functions call
+/// itself, for the same reason [resolveUnavailableCartEntries] above is
+/// separate from its own `.tr()`-using caller: this repo has no mocking
+/// layer for live Cloud Functions callables (see
+/// marketplace_write_review_sheet_test.dart's own header), so the actual
+/// decision logic worth getting right and regression-testing must not
+/// depend on one.
+sealed class NextCheckoutStep {}
+
+/// Another seller is still waiting — push this page again for [nextOrgId].
+class ContinueToNextSeller extends NextCheckoutStep {
+  ContinueToNextSeller({
+    required this.nextOrgId,
+    required this.remainingSellerOrgIds,
+    required this.placedOrderIds,
+  });
+  final String nextOrgId;
+  final List<String> remainingSellerOrgIds;
+  final List<String> placedOrderIds;
+}
+
+/// Every seller has been placed and there was only ever one order overall
+/// (the ordinary single-seller case) — go straight to its details page,
+/// exactly as this page always has.
+class FinishSingleOrder extends NextCheckoutStep {
+  FinishSingleOrder(this.orderId);
+  final String orderId;
+}
+
+/// Every seller has been placed and there was more than one order overall —
+/// go to the multi-order summary instead of any one order's details page.
+class FinishMultiOrder extends NextCheckoutStep {
+  FinishMultiOrder(this.orderIds);
+  final List<String> orderIds;
+}
+
+NextCheckoutStep resolveNextCheckoutStep({
+  required String justPlacedOrderId,
+  required List<String> remainingSellerOrgIds,
+  required List<String> previouslyPlacedOrderIds,
+}) {
+  final placedOrderIds = [...previouslyPlacedOrderIds, justPlacedOrderId];
+  if (remainingSellerOrgIds.isNotEmpty) {
+    return ContinueToNextSeller(
+      nextOrgId: remainingSellerOrgIds.first,
+      remainingSellerOrgIds: remainingSellerOrgIds.sublist(1),
+      placedOrderIds: placedOrderIds,
+    );
+  }
+  return placedOrderIds.length == 1
+      ? FinishSingleOrder(placedOrderIds.single)
+      : FinishMultiOrder(placedOrderIds);
+}
+
 /// Checkout (Milestone 6). Reached only after ensureMarketplaceLogin has
 /// already confirmed the caller is signed in (the Cart page's own gate) —
 /// this page itself does not re-check auth, matching every other
 /// already-gated page in this app.
+///
+/// Marketplace Platform Phase 3 (Multi-Seller Cart + Split Checkout,
+/// 2026-08-15) — this page now checks out exactly ONE seller
+/// ([sellerOrgId]) at a time, never "the whole cart." For an ordinary
+/// single-seller cart (still the common case), [remainingSellerOrgIds] and
+/// [placedOrderIds] both start (and stay) empty, [checkoutGroupId] stays
+/// null, and this page behaves byte-for-byte the same as it did before this
+/// phase: one quote, one order, one navigation to
+/// [MarketplaceOrderDetailsPage]. For a cart spanning N sellers, the Cart
+/// page (marketplace_cart_page.dart) pushes this page once for the FIRST
+/// seller with the other N-1 orgIds carried in [remainingSellerOrgIds];
+/// each successful placement here removes ONLY that seller's items from the
+/// cart (never the whole cart — see CartNotifier.removeSeller) and then
+/// EITHER pushes this same page again for the next seller in the list
+/// (accumulating the just-placed orderId into [placedOrderIds]) OR, once
+/// every seller has been placed, navigates to a single order-details page
+/// (exactly 1 order placed overall) or [MarketplaceMultiOrderSummaryPage]
+/// (more than 1). [checkoutGroupId] is a client-generated id shared by every
+/// order in one multi-seller attempt, sent to the backend purely so those
+/// orders can be displayed as belonging together — it never changes order
+/// placement, pricing, or Odoo behavior in any way (every order is still
+/// placed via the exact same single-seller placeMarketplaceOrder call this
+/// page always made; Odoo's own "one company per sale.order" rule is
+/// completely untouched by this phase).
+///
+/// A failure partway through a multi-seller checkout is never silently
+/// lost: this page simply stays put (its existing error handling already
+/// keeps the quote/form state and lets the patient retry or back out) while
+/// every EARLIER seller's order in [placedOrderIds] is already confirmed on
+/// the backend and already removed from the cart — nothing about a later
+/// failure can undo an earlier success.
 class MarketplaceCheckoutPage extends ConsumerStatefulWidget {
-  const MarketplaceCheckoutPage({super.key});
+  const MarketplaceCheckoutPage({
+    super.key,
+    required this.sellerOrgId,
+    this.remainingSellerOrgIds = const [],
+    this.checkoutGroupId,
+    this.placedOrderIds = const [],
+  });
+
+  /// The ONE seller this checkout screen instance places an order for.
+  final String sellerOrgId;
+
+  /// Other sellers still waiting their turn after this one (multi-seller
+  /// checkout only) — empty for an ordinary single-seller checkout.
+  final List<String> remainingSellerOrgIds;
+
+  /// Correlates every order from ONE multi-seller checkout attempt for
+  /// display purposes only — null (and never sent to the backend) for an
+  /// ordinary single-seller checkout.
+  final String? checkoutGroupId;
+
+  /// Order ids already successfully placed earlier in this SAME
+  /// multi-seller checkout attempt, accumulated as the flow moves from
+  /// seller to seller.
+  final List<String> placedOrderIds;
 
   @override
   ConsumerState<MarketplaceCheckoutPage> createState() =>
@@ -520,6 +632,14 @@ class _MarketplaceCheckoutPageState
     super.dispose();
   }
 
+  /// Phase 3 — this page checks out exactly ONE seller
+  /// ([MarketplaceCheckoutPage.sellerOrgId]); every quote/place-order call
+  /// below must only ever see THAT seller's own lines, never any other
+  /// seller's still-unprocessed items sitting in the same shared cart.
+  Cart _scopedCart(Cart full) => Cart(
+        items: full.items.where((i) => i.orgId == widget.sellerOrgId).toList(),
+      );
+
   void _scheduleQuote() {
     _quoteVersion++;
     // The order attempt this key was reserved for is now stale (cart,
@@ -527,8 +647,8 @@ class _MarketplaceCheckoutPageState
     // mint a new one, never reuse a key tied to a since-changed order.
     _checkoutIdempotencyKey = null;
     _quoteDebounce?.cancel();
-    final cart = ref.read(marketplaceCartProvider);
-    if (cart.isEmpty || cart.orgId == null) {
+    final cart = _scopedCart(ref.read(marketplaceCartProvider));
+    if (cart.isEmpty) {
       setState(() {
         _quote = null;
         _quoteForVersion = null;
@@ -543,15 +663,15 @@ class _MarketplaceCheckoutPageState
 
   Future<void> _fetchQuote() async {
     final requestVersion = _quoteVersion;
-    final cart = ref.read(marketplaceCartProvider);
-    if (cart.isEmpty || cart.orgId == null) return;
+    final cart = _scopedCart(ref.read(marketplaceCartProvider));
+    if (cart.isEmpty) return;
 
     try {
       final callable =
           FirebaseFunctions.instance.httpsCallable('quoteMarketplaceCart');
       final result =
           await callable.call<Map<String, dynamic>>(<String, dynamic>{
-        'orgId': cart.orgId,
+        'orgId': widget.sellerOrgId,
         'lines': cart.items
             .map((i) => {
                   'productEngineId': i.productEngineId,
@@ -639,9 +759,13 @@ class _MarketplaceCheckoutPageState
 
       final callable =
           FirebaseFunctions.instance.httpsCallable('placeMarketplaceOrder');
+      final storeNameEn =
+          cart.items.isNotEmpty ? cart.items.first.storeNameEn : null;
+      final storeNameAr =
+          cart.items.isNotEmpty ? cart.items.first.storeNameAr : null;
       final result =
           await callable.call<Map<String, dynamic>>(<String, dynamic>{
-        'orgId': cart.orgId,
+        'orgId': widget.sellerOrgId,
         'idempotencyKey': idempotencyKey,
         // Milestone 5 (Patient Product Experience) — variantEngineId is
         // included only when the line actually has one (a multi-variant
@@ -670,8 +794,8 @@ class _MarketplaceCheckoutPageState
               }
             : null,
         'locale': context.locale.languageCode,
-        'storeNameEn': cart.storeNameEn,
-        'storeNameAr': cart.storeNameAr,
+        'storeNameEn': storeNameEn,
+        'storeNameAr': storeNameAr,
         // Phase C Priority 1 (2026-07-26) — finalize the SAME draft
         // quotation the patient just reviewed (never a fresh one), and
         // re-forward the coupon code so the backend's own final,
@@ -685,6 +809,12 @@ class _MarketplaceCheckoutPageState
           'quotationEngineId': _quote!.quotationEngineId,
         if (_couponController.text.trim().isNotEmpty)
           'couponCode': _couponController.text.trim(),
+        // Phase 3 — display-correlation only (see this widget's own doc
+        // comment); omitted entirely for an ordinary single-seller
+        // checkout, so the request shape is byte-for-byte unchanged from
+        // before this phase in that case.
+        if (widget.checkoutGroupId != null)
+          'checkoutGroupId': widget.checkoutGroupId,
       });
 
       // The order is confirmed as of this point — the backend has already
@@ -699,16 +829,68 @@ class _MarketplaceCheckoutPageState
       _checkoutIdempotencyKey = null;
 
       try {
-        await ref.read(marketplaceCartProvider.notifier).clear();
+        // Phase 3 — remove ONLY this seller's items (never the whole
+        // cart): a multi-seller checkout still in progress must keep every
+        // OTHER seller's not-yet-placed items exactly as they were.
+        await ref
+            .read(marketplaceCartProvider.notifier)
+            .removeSeller(widget.sellerOrgId);
         if (!mounted) return;
-        // Land directly on the new order's details page — the confirmation
-        // flow's real entry point, not a temporary SnackBar the patient
-        // could miss (a lightweight toast is shown alongside, not instead
-        // of, this navigation).
+
+        final nextStep = resolveNextCheckoutStep(
+          justPlacedOrderId: orderId,
+          remainingSellerOrgIds: widget.remainingSellerOrgIds,
+          previouslyPlacedOrderIds: widget.placedOrderIds,
+        );
+
+        if (nextStep
+            case ContinueToNextSeller(
+              :final nextOrgId,
+              :final remainingSellerOrgIds,
+              :final placedOrderIds,
+            )) {
+          // More sellers left in this multi-seller checkout attempt — move
+          // on to the next one. This seller's order is already confirmed
+          // and already removed from the cart; nothing about what happens
+          // next (including a later failure) can undo that.
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('marketplace_order_placed'.tr(namedArgs: {
+                'name': (order['name'] ?? '').toString(),
+              })),
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MarketplaceCheckoutPage(
+                sellerOrgId: nextOrgId,
+                remainingSellerOrgIds: remainingSellerOrgIds,
+                checkoutGroupId: widget.checkoutGroupId,
+                placedOrderIds: placedOrderIds,
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Last (or only) seller in this checkout attempt — land on the
+        // confirmation flow's real entry point, not a temporary SnackBar
+        // the patient could miss (a lightweight toast is shown alongside,
+        // not instead of, this navigation). A single order overall keeps
+        // navigating exactly where it always did, byte-for-byte; more than
+        // one goes to the multi-order summary instead.
         Navigator.of(context).popUntil((route) => route.isFirst);
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => MarketplaceOrderDetailsPage(orderId: orderId),
+            builder: (_) => switch (nextStep) {
+              FinishSingleOrder(:final orderId) =>
+                MarketplaceOrderDetailsPage(orderId: orderId),
+              FinishMultiOrder(:final orderIds) =>
+                MarketplaceMultiOrderSummaryPage(orderIds: orderIds),
+              ContinueToNextSeller() =>
+                throw StateError('unreachable — handled above'),
+            },
           ),
         );
         ScaffoldMessenger.of(context).showSnackBar(
@@ -790,29 +972,47 @@ class _MarketplaceCheckoutPageState
 
   @override
   Widget build(BuildContext context) {
-    final cart = ref.watch(marketplaceCartProvider);
+    final cart = _scopedCart(ref.watch(marketplaceCartProvider));
     // Phase C Priority 1 (2026-07-26) — "Recalculate when cart quantities
     // ... change." The cart is a global provider that can change from
     // OTHER pages (e.g. the Cart page's own quantity steppers, if the
     // patient navigates back) — this re-quotes whenever that happens,
     // never relying solely on this page's own explicit input handlers.
+    // Phase 3 — scoped to THIS seller's own items only, so another
+    // seller's still-unprocessed lines changing in the background (a
+    // multi-seller checkout in progress) never triggers an irrelevant
+    // requote here.
     ref.listen<Cart>(marketplaceCartProvider, (previous, next) {
-      if (previous == null ||
-          _cartPricingSignature(previous) != _cartPricingSignature(next)) {
+      final previousScoped = previous == null ? null : _scopedCart(previous);
+      final nextScoped = _scopedCart(next);
+      if (previousScoped == null ||
+          _cartPricingSignature(previousScoped) !=
+              _cartPricingSignature(nextScoped)) {
         _scheduleQuote();
       }
     });
-    final orgId = cart.orgId;
-    final deliveryMethodsAsync = orgId == null
-        ? const AsyncValue<List<_DeliveryMethod>>.data(_pickupOnlyFallback)
-        : ref.watch(_deliveryMethodsProvider(orgId));
+    final orgId = widget.sellerOrgId;
+    final deliveryMethodsAsync = ref.watch(_deliveryMethodsProvider(orgId));
     final profileAsync = ref.watch(_checkoutProfileProvider);
     profileAsync.whenData(_applyPrefill);
+
+    // Phase 3 — "Store 2 of 3" progress only when this checkout attempt
+    // genuinely spans more than one seller; an ordinary single-seller
+    // checkout shows the exact same plain title as before this phase.
+    final totalSellers =
+        widget.placedOrderIds.length + 1 + widget.remainingSellerOrgIds.length;
+    final sellerPosition = widget.placedOrderIds.length + 1;
+    final title = totalSellers > 1
+        ? '${'marketplace_checkout_title'.tr()} (${'marketplace_checkout_seller_progress'.tr(namedArgs: {
+                'position': '$sellerPosition',
+                'total': '$totalSellers',
+              })})'
+        : 'marketplace_checkout_title'.tr();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('marketplace_checkout_title'.tr()),
+        title: Text(title),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
@@ -927,9 +1127,13 @@ class _MarketplaceCheckoutPageState
         .toList();
     final selectedMethod = selected.isNotEmpty ? selected.first : null;
     final isDelivery = selectedMethod != null && !selectedMethod.isPickup;
-    final storeName = (lang == 'ar' ? cart.storeNameAr : cart.storeNameEn) ??
-        cart.storeNameEn ??
-        cart.storeNameAr ??
+    final storeNameEn =
+        cart.items.isNotEmpty ? cart.items.first.storeNameEn : null;
+    final storeNameAr =
+        cart.items.isNotEmpty ? cart.items.first.storeNameAr : null;
+    final storeName = (lang == 'ar' ? storeNameAr : storeNameEn) ??
+        storeNameEn ??
+        storeNameAr ??
         '';
 
     final currency =

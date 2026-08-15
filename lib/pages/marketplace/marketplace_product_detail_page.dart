@@ -106,53 +106,21 @@ class _MarketplaceProductDetailPageState
         .join(', ');
     final resolvedPrice = resolvedVariant?.salePrice ?? detail?.listPrice;
 
-    try {
-      await notifier.addItem(
-        product: widget.product,
-        storeNameEn: widget.product.storeNameEn ?? storeName,
-        storeNameAr: widget.product.storeNameAr ?? storeName,
-        variantEngineId: resolvedVariant?.variantEngineId,
-        variantLabel: (variantLabel ?? '').isEmpty ? null : variantLabel,
-        resolvedPrice: resolvedPrice,
-        quantity: _quantity,
-      );
-      _showAddedSnackBar();
-    } on CartStoreConflictException catch (e) {
-      if (!mounted) return;
-      final currentName = lang == 'ar' && e.currentStoreNameAr.isNotEmpty
-          ? e.currentStoreNameAr
-          : e.currentStoreNameEn;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('marketplace_cart_switch_store_title'.tr()),
-          content: Text('marketplace_cart_switch_store_body'
-              .tr(namedArgs: {'store': currentName})),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text('cancel'.tr()),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text('marketplace_cart_switch_store_confirm'.tr()),
-            ),
-          ],
-        ),
-      );
-      if (confirmed == true) {
-        await notifier.replaceCartWith(
-          product: widget.product,
-          storeNameEn: widget.product.storeNameEn ?? storeName,
-          storeNameAr: widget.product.storeNameAr ?? storeName,
-          variantEngineId: resolvedVariant?.variantEngineId,
-          variantLabel: (variantLabel ?? '').isEmpty ? null : variantLabel,
-          resolvedPrice: resolvedPrice,
-          quantity: _quantity,
-        );
-        _showAddedSnackBar();
-      }
-    }
+    // Phase 3 (Multi-Seller Cart + Split Checkout, 2026-08-15) — adding an
+    // item from a store not already in the cart no longer conflicts with
+    // anything (see marketplace_cart_provider.dart's own header); it simply
+    // joins that store's own seller group alongside whatever else is
+    // already in the cart.
+    await notifier.addItem(
+      product: widget.product,
+      storeNameEn: widget.product.storeNameEn ?? storeName,
+      storeNameAr: widget.product.storeNameAr ?? storeName,
+      variantEngineId: resolvedVariant?.variantEngineId,
+      variantLabel: (variantLabel ?? '').isEmpty ? null : variantLabel,
+      resolvedPrice: resolvedPrice,
+      quantity: _quantity,
+    );
+    _showAddedSnackBar();
   }
 
   void _showAddedSnackBar() {

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,11 +11,21 @@ import 'package:trustydr/pages/marketplace/marketplace_store_card.dart'
 import 'package:trustydr/pages/marketplace/marketplace_widgets.dart';
 import 'package:trustydr/widgets/web_scaffold_container.dart';
 
-/// Review Cart (Milestone 6). Purely a view over [marketplaceCartProvider]'s
-/// local (shared_preferences) state — no server call happens here. Prices
-/// shown are the DISPLAY-ONLY cached values from when each item was added;
-/// clearly labeled as an estimate, since the real total is only known once
-/// Odoo revalidates live at checkout (never trusted from this screen).
+/// Review Cart (Milestone 6, extended by Marketplace Platform Phase 3 —
+/// Multi-Seller Cart + Split Checkout, 2026-08-15). Purely a view over
+/// [marketplaceCartProvider]'s local (shared_preferences) state — no server
+/// call happens here. Prices shown are the DISPLAY-ONLY cached values from
+/// when each item was added; clearly labeled as an estimate, since the real
+/// total (per seller) is only known once Odoo revalidates live at that
+/// seller's own checkout step (never trusted from this screen).
+///
+/// Phase 3: the cart may now hold items from more than one seller — this
+/// page renders one section per [CartSellerGroup] (store header + its own
+/// subtotal) instead of one flat list under a single store banner. "Proceed
+/// to Checkout" starts the split-checkout flow (marketplace_checkout_page.dart)
+/// against the FIRST seller group, carrying the rest along to be checked
+/// out one after another — see that file's own header for the full
+/// orchestration.
 class MarketplaceCartPage extends ConsumerWidget {
   const MarketplaceCartPage({super.key});
 
@@ -81,7 +92,7 @@ class _CartBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(marketplaceCartProvider.notifier);
-    final storeName = cart.localizedStoreName(lang) ?? '';
+    final groups = cart.sellerGroups;
 
     return Column(
       children: [
@@ -89,36 +100,91 @@ class _CartBody extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (storeName.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.storefront_outlined,
-                          size: 18, color: PatientAppColors.brandTeal),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          storeName,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
-                  ),
+              for (final group in groups) ...[
+                _SellerGroupSection(
+                  group: group,
+                  lang: lang,
+                  onQuantityChanged: (item, q) => notifier.updateQuantity(
+                      item.orgId,
+                      item.productEngineId,
+                      item.variantEngineId,
+                      q),
+                  onRemove: (item) => notifier.removeItem(
+                      item.orgId, item.productEngineId, item.variantEngineId),
                 ),
-              ...cart.items.map((item) => _CartItemTile(
-                    item: item,
-                    lang: lang,
-                    onQuantityChanged: (q) => notifier.updateQuantity(
-                        item.productEngineId, item.variantEngineId, q),
-                    onRemove: () => notifier.removeItem(
-                        item.productEngineId, item.variantEngineId),
-                  )),
+                const SizedBox(height: 18),
+              ],
             ],
           ),
         ),
         _CartSummaryBar(cart: cart),
+      ],
+    );
+  }
+}
+
+/// Phase 3 — one seller's own section of the cart: store header (name +
+/// this seller's own subtotal), then its items. Multiple sections stack
+/// vertically when the cart spans more than one seller; a single-seller
+/// cart (still the common case) renders exactly one section, visually
+/// equivalent to the pre-Phase-3 layout plus this header.
+class _SellerGroupSection extends StatelessWidget {
+  const _SellerGroupSection({
+    required this.group,
+    required this.lang,
+    required this.onQuantityChanged,
+    required this.onRemove,
+  });
+
+  final CartSellerGroup group;
+  final String lang;
+  final void Function(CartItem item, int quantity) onQuantityChanged;
+  final void Function(CartItem item) onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final storeName = group.localizedStoreName(lang) ?? '';
+    final subtotal = group.subtotal.toStringAsFixed(
+      group.subtotal.truncateToDouble() == group.subtotal ? 0 : 2,
+    );
+    final currency =
+        group.items.isNotEmpty ? (group.items.first.currencyName ?? '') : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (storeName.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.storefront_outlined,
+                    size: 18, color: PatientAppColors.brandTeal),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    storeName,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Text(
+                  '$subtotal $currency'.trim(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ...group.items.map((item) => _CartItemTile(
+              item: item,
+              lang: lang,
+              onQuantityChanged: (q) => onQuantityChanged(item, q),
+              onRemove: () => onRemove(item),
+            )),
       ],
     );
   }
@@ -250,6 +316,7 @@ class _CartSummaryBar extends StatelessWidget {
     );
     final currency =
         cart.items.isNotEmpty ? (cart.items.first.currencyName ?? '') : '';
+    final sellerCount = cart.sellerGroups.length;
 
     return SafeArea(
       child: Container(
@@ -277,6 +344,20 @@ class _CartSummaryBar extends StatelessWidget {
                         fontSize: 16, fontWeight: FontWeight.w800)),
               ],
             ),
+            // Phase 3 — only shown once the cart genuinely spans more than
+            // one seller, so a single-seller cart (still the common case)
+            // looks exactly as it always has.
+            if (sellerCount > 1) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  'marketplace_cart_multi_seller_notice'
+                      .tr(namedArgs: {'count': '$sellerCount'}),
+                  style: const TextStyle(fontSize: 11.5, color: Colors.black45),
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -292,11 +373,26 @@ class _CartSummaryBar extends StatelessWidget {
                 onPressed: () async {
                   if (!await ensureMarketplaceLogin(context)) return;
                   if (!context.mounted) return;
+                  final groups = cart.sellerGroups;
+                  if (groups.isEmpty) return;
+                  final orgIds = groups.map((g) => g.orgId).toList();
+                  // Phase 3 — correlates every order placed in this ONE
+                  // checkout attempt for display purposes only (see
+                  // marketplace_checkout_page.dart); never generated (stays
+                  // null) for the ordinary single-seller case, matching that
+                  // request shape exactly as before this phase.
+                  final checkoutGroupId = orgIds.length > 1
+                      ? FirebaseFirestore.instance.collection('_').doc().id
+                      : null;
                   Navigator.push(
                     context,
                     PageTransition(
                       type: PageTransitionType.rightToLeft,
-                      child: const MarketplaceCheckoutPage(),
+                      child: MarketplaceCheckoutPage(
+                        sellerOrgId: orgIds.first,
+                        remainingSellerOrgIds: orgIds.sublist(1),
+                        checkoutGroupId: checkoutGroupId,
+                      ),
                     ),
                   );
                 },

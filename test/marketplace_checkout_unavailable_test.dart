@@ -12,8 +12,12 @@ CartItem _item({
   String? variantEngineId,
   String nameEn = 'Paracetamol',
   String nameAr = 'باراسيتامول',
+  String orgId = 'org_a',
 }) {
   return CartItem(
+    orgId: orgId,
+    storeNameEn: 'Al Noor Pharmacy',
+    storeNameAr: '',
     productEngineId: productEngineId,
     variantEngineId: variantEngineId,
     variantLabel: null,
