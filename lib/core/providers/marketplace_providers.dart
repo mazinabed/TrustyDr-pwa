@@ -1042,6 +1042,8 @@ class MarketplaceProductOffer {
     required this.currencyName,
     required this.availabilityBadge,
     required this.imageUrl,
+    this.isSponsored = false,
+    this.sponsoredPlacementId,
   });
 
   final String orgId;
@@ -1053,6 +1055,14 @@ class MarketplaceProductOffer {
   final String? currencyName;
   final String? availabilityBadge;
   final String? imageUrl;
+  // Marketplace Platform Phase 5 (Sponsored/Promoted Monetization) —
+  // additive, defaults false/null. Never derived from price/availability;
+  // set only when Commerce's marketplace_sponsored_placements has an
+  // active placement matching this exact offer (see
+  // applySponsoredPlacements in doctor_functions). Purely a placement
+  // label — never affects displayPrice/availabilityBadge/store identity.
+  final bool isSponsored;
+  final String? sponsoredPlacementId;
 
   factory MarketplaceProductOffer.fromMap(Map<String, dynamic> m) {
     return MarketplaceProductOffer(
@@ -1067,6 +1077,8 @@ class MarketplaceProductOffer {
       currencyName: m['currencyName']?.toString(),
       availabilityBadge: m['availabilityBadge']?.toString(),
       imageUrl: m['imageUrl']?.toString(),
+      isSponsored: m['isSponsored'] == true,
+      sponsoredPlacementId: m['sponsoredPlacementId']?.toString(),
     );
   }
 
@@ -1107,6 +1119,7 @@ class GroupedMarketplaceProduct {
     required this.currencyName,
     required this.sellerCount,
     required this.offers,
+    this.isSponsored = false,
   });
 
   final String canonicalId;
@@ -1121,6 +1134,11 @@ class GroupedMarketplaceProduct {
   // Already sorted cheapest-first by the backend (rankGroupedProducts'
   // sibling, computeGroupedProducts) — never re-sorted client-side.
   final List<MarketplaceProductOffer> offers;
+  // Marketplace Platform Phase 5 — true iff at least one offer within this
+  // group carries an active sponsored placement (see
+  // MarketplaceProductOffer.isSponsored). Never affects lowestPrice/
+  // sellerCount/offer contents — a purely additive placement label.
+  final bool isSponsored;
 
   factory GroupedMarketplaceProduct.fromMap(Map<String, dynamic> m) {
     final rawOffers = m['offers'];
@@ -1142,6 +1160,7 @@ class GroupedMarketplaceProduct {
                   e is Map ? e.map((k, v) => MapEntry(k.toString(), v)) : {}))
               .toList()
           : const [],
+      isSponsored: m['isSponsored'] == true,
     );
   }
 }
@@ -1337,6 +1356,28 @@ final citiesLookupProvider =
   final snap = await FirebaseFirestore.instance.collection('cities').get();
   return snap.docs.map((d) => d.data()).toList();
 });
+
+/// Marketplace Platform Phase 5 (Sponsored/Promoted Monetization) —
+/// impression/click measurement foundation. Fire-and-forget by design: a
+/// failure here must never surface to the patient or interrupt browsing
+/// (see doctor_functions' recordSponsoredEvent.js header for the matching
+/// server-side posture) — this is why callers await this without wrapping
+/// it themselves, and why it never throws.
+Future<void> recordSponsoredEvent({
+  required String placementId,
+  required String eventType,
+}) async {
+  try {
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('recordSponsoredEvent');
+    await callable.call<Map<String, dynamic>>(<String, dynamic>{
+      'placementId': placementId,
+      'eventType': eventType,
+    });
+  } catch (_) {
+    // Swallowed on purpose — see doc comment above.
+  }
+}
 
 /// Resolves a Commerce standalone store's raw `provinceKey`/`cityEn` codes
 /// (see [MarketplaceStoreBranding]) into a localized "City, Province"

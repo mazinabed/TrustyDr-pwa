@@ -17,7 +17,15 @@ import 'package:trustydr/pages/marketplace/marketplace_seller_offers_page.dart';
 /// Tapping opens [MarketplaceSellerOffersPage] — the existing per-store
 /// product detail flow (cart/checkout, unchanged) is reached only after the
 /// patient picks one specific seller there, never directly from this card.
-class MarketplaceGroupedProductCard extends StatelessWidget {
+///
+/// Marketplace Platform Phase 5 (Sponsored/Promoted Monetization) — a
+/// [StatefulWidget] (was [StatelessWidget]) purely so a sponsored card can
+/// fire exactly one impression event per mount via [initState], and one
+/// click event on tap. Both are fire-and-forget (see
+/// [recordSponsoredEvent]'s own doc comment) and never affect layout,
+/// navigation, price, or seller-count — the sponsored placement label is
+/// the only visible change for a non-sponsored group.
+class MarketplaceGroupedProductCard extends StatefulWidget {
   const MarketplaceGroupedProductCard({
     super.key,
     required this.group,
@@ -33,7 +41,37 @@ class MarketplaceGroupedProductCard extends StatelessWidget {
   final List<MarketplaceProduct> allProducts;
 
   @override
+  State<MarketplaceGroupedProductCard> createState() =>
+      _MarketplaceGroupedProductCardState();
+}
+
+class _MarketplaceGroupedProductCardState
+    extends State<MarketplaceGroupedProductCard> {
+  // The specific sponsored offer's placementId, if any — a group may have
+  // more than one seller, only one of which is sponsored; this is always
+  // the first sponsored offer found, matching how the "Sponsored" badge
+  // itself represents the group as a whole rather than one price.
+  String? get _sponsoredPlacementId {
+    for (final offer in widget.group.offers) {
+      if (offer.isSponsored && offer.sponsoredPlacementId != null) {
+        return offer.sponsoredPlacementId;
+      }
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final placementId = _sponsoredPlacementId;
+    if (placementId != null) {
+      recordSponsoredEvent(placementId: placementId, eventType: 'impression');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final group = widget.group;
     final lang = context.locale.languageCode;
     final name =
         lang == 'ar' && group.nameAr.isNotEmpty ? group.nameAr : group.nameEn;
@@ -43,17 +81,23 @@ class MarketplaceGroupedProductCard extends StatelessWidget {
     final currency = group.currencyName ?? '';
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        PageTransition(
-          type: PageTransitionType.fade,
-          duration: const Duration(milliseconds: 300),
-          child: MarketplaceSellerOffersPage(
-            group: group,
-            allProducts: allProducts,
+      onTap: () {
+        final placementId = _sponsoredPlacementId;
+        if (placementId != null) {
+          recordSponsoredEvent(placementId: placementId, eventType: 'click');
+        }
+        Navigator.push(
+          context,
+          PageTransition(
+            type: PageTransitionType.fade,
+            duration: const Duration(milliseconds: 300),
+            child: MarketplaceSellerOffersPage(
+              group: group,
+              allProducts: widget.allProducts,
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -70,29 +114,61 @@ class MarketplaceGroupedProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                color: const Color(0xFFF5F6F8),
-                padding: const EdgeInsets.all(10),
-                child: !(group.representativeImageUrl ?? '').startsWith('http')
-                    ? Icon(
-                        Icons.medication_outlined,
-                        color:
-                            PatientAppColors.brandTeal.withValues(alpha: 0.35),
-                        size: 32,
-                      )
-                    : Image.network(
-                        group.representativeImageUrl!,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.medication_outlined,
-                          color: PatientAppColors.brandTeal
-                              .withValues(alpha: 0.35),
-                          size: 32,
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    color: const Color(0xFFF5F6F8),
+                    padding: const EdgeInsets.all(10),
+                    child: !(group.representativeImageUrl ?? '')
+                            .startsWith('http')
+                        ? Icon(
+                            Icons.medication_outlined,
+                            color: PatientAppColors.brandTeal
+                                .withValues(alpha: 0.35),
+                            size: 32,
+                          )
+                        : Image.network(
+                            group.representativeImageUrl!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => Icon(
+                              Icons.medication_outlined,
+                              color: PatientAppColors.brandTeal
+                                  .withValues(alpha: 0.35),
+                              size: 32,
+                            ),
+                          ),
+                  ),
+                ),
+                // Marketplace Platform Phase 5 — clear, always-visible
+                // sponsored-placement label. Purely visual: never affects
+                // sort order (already decided server-side), price, or
+                // seller-count; a group with isSponsored false renders
+                // identically to before this phase.
+                if (group.isSponsored)
+                  PositionedDirectional(
+                    top: 6,
+                    start: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'marketplace_sponsored_label'.tr(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.2,
                         ),
                       ),
-              ),
+                    ),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
