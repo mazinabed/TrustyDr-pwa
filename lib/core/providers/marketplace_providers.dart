@@ -103,6 +103,8 @@ class MarketplaceStore {
     this.whatsapp,
     this.streetAddress,
     this.locationNotes,
+    this.isSponsored = false,
+    this.sponsoredPlacementId,
   });
 
   final String providerId;
@@ -169,6 +171,15 @@ class MarketplaceStore {
   final String? streetAddress;
   final String? locationNotes;
 
+  // Marketplace Platform Phase 5 — Patient-visibility gap correction
+  // (2026-08-16). Additive, defaults false/null — absent for every store
+  // whenever no "featured_store" placement is active for it (the case for
+  // every store before this correction and for every non-sponsoring store
+  // after it). Never derived from productCount/branding/anything else —
+  // set only by doctor_functions' applySponsoredPlacementsToStores.
+  final bool isSponsored;
+  final String? sponsoredPlacementId;
+
   factory MarketplaceStore.fromMap(Map<String, dynamic> m) {
     // Standalone Commerce store name fallback (Stage 1, 2026-08-04) —
     // Commerce's own Organization schema has a single `name` field, never
@@ -226,6 +237,8 @@ class MarketplaceStore {
       whatsapp: m['whatsapp']?.toString(),
       streetAddress: m['streetAddress']?.toString(),
       locationNotes: m['locationNotes']?.toString(),
+      isSponsored: m['isSponsored'] == true,
+      sponsoredPlacementId: m['sponsoredPlacementId']?.toString(),
     );
   }
 
@@ -339,6 +352,8 @@ class MarketplaceProduct {
     required this.storeNameKu,
     required this.ratingAverage,
     required this.ratingCount,
+    this.isSponsored = false,
+    this.sponsoredPlacementId,
   });
 
   final String orgId;
@@ -389,6 +404,17 @@ class MarketplaceProduct {
   final double ratingAverage;
   final int ratingCount;
 
+  // Marketplace Platform Phase 5 — Patient-visibility gap correction
+  // (2026-08-16). Additive, defaults false/null — set only for a
+  // "sponsored_offer" placement matching this exact orgId+engineId (never
+  // for a different seller's competing listing, even one of the same
+  // canonical product). Set by doctor_functions'
+  // applySponsoredPlacementsToProducts on the flat/ordinary product list —
+  // separate from GroupedMarketplaceProduct's own isSponsored (Compare
+  // Sellers), which a canonical-linked listing also carries independently.
+  final bool isSponsored;
+  final String? sponsoredPlacementId;
+
   factory MarketplaceProduct.fromMap(Map<String, dynamic> m) {
     final rawCategories = m['categories'];
     return MarketplaceProduct(
@@ -432,6 +458,8 @@ class MarketplaceProduct {
           : 0.0,
       ratingCount:
           (m['ratingCount'] is num) ? (m['ratingCount'] as num).toInt() : 0,
+      isSponsored: m['isSponsored'] == true,
+      sponsoredPlacementId: m['sponsoredPlacementId']?.toString(),
     );
   }
 
@@ -529,6 +557,8 @@ class MarketplaceProduct {
         storeNameKu: storeNameKu,
         ratingAverage: ratingAverage,
         ratingCount: ratingCount,
+        isSponsored: isSponsored,
+        sponsoredPlacementId: sponsoredPlacementId,
       );
 }
 

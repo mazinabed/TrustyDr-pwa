@@ -43,7 +43,12 @@ import 'package:trustydr/pages/marketplace/marketplace_product_detail_page.dart'
 /// the old "badge on every card" problem happen. A badge is a claim about
 /// being exceptional; only the caller who built the ranked list knows what's
 /// actually exceptional in it.
-class MarketplaceProductCard extends StatelessWidget {
+/// Marketplace Platform Phase 5 (Sponsored/Promoted Monetization) —
+/// Patient-visibility gap correction (2026-08-16). A [StatefulWidget] (was
+/// [StatelessWidget]) purely so a sponsored ("sponsored_offer") card can
+/// fire exactly one impression event per mount and one click event on tap.
+/// Never affects layout, price, or navigation for a non-sponsored product.
+class MarketplaceProductCard extends StatefulWidget {
   const MarketplaceProductCard({
     super.key,
     required this.product,
@@ -56,7 +61,24 @@ class MarketplaceProductCard extends StatelessWidget {
   final bool highlightBadge;
 
   @override
+  State<MarketplaceProductCard> createState() => _MarketplaceProductCardState();
+}
+
+class _MarketplaceProductCardState extends State<MarketplaceProductCard> {
+  @override
+  void initState() {
+    super.initState();
+    final placementId = widget.product.sponsoredPlacementId;
+    if (widget.product.isSponsored && placementId != null) {
+      recordSponsoredEvent(placementId: placementId, eventType: 'impression');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final product = widget.product;
+    final showStoreName = widget.showStoreName;
+    final highlightBadge = widget.highlightBadge;
     final lang = context.locale.languageCode;
     final price = product.displayPrice.toStringAsFixed(
       product.displayPrice.truncateToDouble() == product.displayPrice ? 0 : 2,
@@ -68,6 +90,10 @@ class MarketplaceProductCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
+        final placementId = product.sponsoredPlacementId;
+        if (product.isSponsored && placementId != null) {
+          recordSponsoredEvent(placementId: placementId, eventType: 'click');
+        }
         Navigator.push(
           context,
           PageTransition(
@@ -106,6 +132,34 @@ class MarketplaceProductCard extends StatelessWidget {
                       start: 8,
                       child: _Badge(
                         label: 'marketplace_section_popular'.tr(),
+                      ),
+                    ),
+                  // Marketplace Platform Phase 5 — clear, always-visible
+                  // sponsored-placement label. Opposite corner from the
+                  // "Popular" highlight badge so both can coexist without
+                  // overlapping. Purely visual: never affects sort order
+                  // (already decided server-side/client-side), price, or
+                  // navigation for a non-sponsored product.
+                  if (product.isSponsored)
+                    PositionedDirectional(
+                      top: 8,
+                      end: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'marketplace_sponsored_label'.tr(),
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
                     ),
                 ],

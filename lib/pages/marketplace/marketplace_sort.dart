@@ -36,7 +36,17 @@ List<MarketplaceProduct> sortMarketplaceProducts(
   final list = List.of(products);
   switch (sort) {
     case MarketplaceProductSort.recommended:
-      list.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+      // Marketplace Platform Phase 5 — Patient-visibility gap correction
+      // (2026-08-16). isSponsored is a NEW leading tiebreak, ahead of the
+      // existing isFeatured one below it — additive only: when nothing in
+      // the list is sponsored, sponsoredDiff is always 0 for every pair and
+      // this falls straight through to the exact pre-existing isFeatured
+      // comparator, unchanged.
+      list.sort((a, b) {
+        final sponsoredDiff = (b.isSponsored ? 1 : 0) - (a.isSponsored ? 1 : 0);
+        if (sponsoredDiff != 0) return sponsoredDiff;
+        return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+      });
       break;
     case MarketplaceProductSort.nameAsc:
       list.sort(

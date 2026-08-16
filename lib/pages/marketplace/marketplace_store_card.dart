@@ -28,7 +28,15 @@ import 'package:trustydr/pages/marketplace/marketplace_store_page.dart';
 /// section's organizing idea (see marketplace_landing_page.dart's
 /// "Featured Stores" section, not "Nearby Stores") since real numeric
 /// distance isn't in the data model today and isn't fabricated here.
-class MarketplaceStoreCard extends StatelessWidget {
+///
+/// Marketplace Platform Phase 5 (Sponsored/Promoted Monetization) —
+/// Patient-visibility gap correction (2026-08-16). A [StatefulWidget] (was
+/// [StatelessWidget]) purely so a sponsored ("featured_store") card can
+/// fire exactly one impression event per mount and one click event on
+/// either the card tap or the "Visit Store" button — both are the SAME
+/// navigation target, so both are wired through the one handler. Never
+/// affects layout, branding, or navigation for a non-sponsored store.
+class MarketplaceStoreCard extends StatefulWidget {
   const MarketplaceStoreCard({
     super.key,
     required this.store,
@@ -41,7 +49,49 @@ class MarketplaceStoreCard extends StatelessWidget {
   final int? categoryCount;
 
   @override
+  State<MarketplaceStoreCard> createState() => _MarketplaceStoreCardState();
+}
+
+class _MarketplaceStoreCardState extends State<MarketplaceStoreCard> {
+  @override
+  void initState() {
+    super.initState();
+    final placementId = widget.store.sponsoredPlacementId;
+    if (widget.store.isSponsored && placementId != null) {
+      recordSponsoredEvent(placementId: placementId, eventType: 'impression');
+    }
+  }
+
+  void _navigateToStore(BuildContext context, String name, String city,
+      String bannerUrl, String logoUrl, String? tagline, String? description) {
+    final placementId = widget.store.sponsoredPlacementId;
+    if (widget.store.isSponsored && placementId != null) {
+      recordSponsoredEvent(placementId: placementId, eventType: 'click');
+    }
+    Navigator.push(
+      context,
+      PageTransition(
+        type: PageTransitionType.fade,
+        duration: const Duration(milliseconds: 400),
+        child: MarketplaceStorePage(
+          providerId: widget.store.providerId,
+          orgId: widget.store.orgId,
+          storeName: name,
+          bannerUrl: bannerUrl,
+          logoUrl: logoUrl,
+          city: city,
+          tagline: tagline,
+          description: description,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final store = widget.store;
+    final categorySummary = widget.categorySummary;
+    final categoryCount = widget.categoryCount;
     final lang = context.locale.languageCode;
     final name = store.localizedName(lang);
     // Public Store Profile (2026-08-05) — city ALONE was already flowing
@@ -75,25 +125,8 @@ class MarketplaceStoreCard extends StatelessWidget {
         .toList();
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          PageTransition(
-            type: PageTransitionType.fade,
-            duration: const Duration(milliseconds: 400),
-            child: MarketplaceStorePage(
-              providerId: store.providerId,
-              orgId: store.orgId,
-              storeName: name,
-              bannerUrl: bannerUrl,
-              logoUrl: logoUrl,
-              city: city,
-              tagline: tagline,
-              description: description,
-            ),
-          ),
-        );
-      },
+      onTap: () => _navigateToStore(
+          context, name, city, bannerUrl, logoUrl, tagline, description),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -111,7 +144,11 @@ class MarketplaceStoreCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            _StoreBanner(bannerUrl: bannerUrl, logoUrl: logoUrl),
+            _StoreBanner(
+              bannerUrl: bannerUrl,
+              logoUrl: logoUrl,
+              isSponsored: store.isSponsored,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
               child: Column(
@@ -182,25 +219,8 @@ class MarketplaceStoreCard extends StatelessWidget {
                     width: double.infinity,
                     height: 32,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          PageTransition(
-                            type: PageTransitionType.fade,
-                            duration: const Duration(milliseconds: 400),
-                            child: MarketplaceStorePage(
-                              providerId: store.providerId,
-                              orgId: store.orgId,
-                              storeName: name,
-                              bannerUrl: bannerUrl,
-                              logoUrl: logoUrl,
-                              city: city,
-                              tagline: tagline,
-                              description: description,
-                            ),
-                          ),
-                        );
-                      },
+                      onPressed: () => _navigateToStore(context, name, city,
+                          bannerUrl, logoUrl, tagline, description),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PatientAppColors.brandTeal,
                         foregroundColor: Colors.white,
@@ -264,10 +284,15 @@ class _Tag extends StatelessWidget {
 /// image when set; otherwise a brand-teal gradient stands in (never a blank
 /// or a clinical icon) so every card still has real visual presence.
 class _StoreBanner extends StatelessWidget {
-  const _StoreBanner({required this.bannerUrl, required this.logoUrl});
+  const _StoreBanner({
+    required this.bannerUrl,
+    required this.logoUrl,
+    this.isSponsored = false,
+  });
 
   final String bannerUrl;
   final String logoUrl;
+  final bool isSponsored;
 
   @override
   Widget build(BuildContext context) {
@@ -315,6 +340,30 @@ class _StoreBanner extends StatelessWidget {
                   : const MarketplaceLogoFallback(),
             ),
           ),
+          // Marketplace Platform Phase 5 — clear, always-visible sponsored-
+          // placement label. Purely visual: never affects sort order
+          // (already decided server-side), branding, or navigation.
+          if (isSponsored)
+            PositionedDirectional(
+              top: 6,
+              start: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'marketplace_sponsored_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
